@@ -1,0 +1,10 @@
+# Optional offline mode: local S3 + DynamoDB via moto server.
+# Bedrock and Location are mocked with MOCK_BEDROCK / MOCK_LOCATION.
+services:
+  moto:
+    image: motoserver/moto:latest
+    ports:
+      - "5000:5000"
+    environment:
+      - MOTO_PORT=5000
+    restart: unless-stopped

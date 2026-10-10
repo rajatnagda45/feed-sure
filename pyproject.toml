@@ -1,0 +1,35 @@
+[project]
+name = "feedsure-cbg"
+version = "0.1.0"
+description = "Pre-pickup wet-waste quality check and route planner for CBG plants"
+requires-python = ">=3.12"
+dependencies = [
+  "boto3>=1.35",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8",
+  "moto[s3,dynamodb]>=5",
+  "ruff>=0.6",
+  "fastapi>=0.115",
+  "uvicorn>=0.30",
+]
+
+[tool.setuptools.packages.find]
+where = ["backend/src"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["backend/src", "backend", "scripts"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]

@@ -1,0 +1,410 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: FeedSure CBG M0 serverless skeleton
+
+Parameters:
+  Stage:
+    Type: String
+    Default: dev
+  ApiName:
+    Type: String
+    Default: feedsure-dev-api
+  GeneratorsTableName:
+    Type: String
+    Default: feedsure-dev-Generators
+  HistoryTableName:
+    Type: String
+    Default: feedsure-dev-History
+  SubmissionsTableName:
+    Type: String
+    Default: feedsure-dev-Submissions
+  PlansTableName:
+    Type: String
+    Default: feedsure-dev-Plans
+  PhotosBucketName:
+    Type: String
+    Default: feedsure-dev-photos-change-me
+  UploadMinBytes:
+    Type: Number
+    Default: 1024
+  UploadMaxBytes:
+    Type: Number
+    Default: 3500000
+  UploadExpirySeconds:
+    Type: Number
+    Default: 300
+  AdminToken:
+    Type: String
+    Default: CHANGE_ME
+    NoEcho: true
+  BedrockModelId:
+    Type: String
+    Default: global.anthropic.claude-haiku-4-5-20251001-v1:0
+  BedrockRegion:
+    Type: String
+    Default: ap-south-1
+  MockBedrock:
+    Type: String
+    Default: "false"
+    AllowedValues:
+      - "true"
+      - "false"
+  MockBedrockFixture:
+    Type: String
+    Default: auto
+    AllowedValues:
+      - auto
+      - clean
+      - plastic
+      - low_confidence
+      - malformed
+  LocationRegion:
+    Type: String
+    Default: ap-south-1
+  PlantLat:
+    Type: Number
+    Default: 12.681
+  PlantLng:
+    Type: Number
+    Default: 77.474
+  TargetKg:
+    Type: Number
+    Default: 1700
+  TruckCapacityKg:
+    Type: Number
+    Default: 2000
+  ShiftStart:
+    Type: String
+    Default: "06:00"
+  ShiftEnd:
+    Type: String
+    Default: "11:00"
+  ServiceMin:
+    Type: Number
+    Default: 10
+  MaxRadiusKm:
+    Type: Number
+    Default: 15
+  RoadFactor:
+    Type: Number
+    Default: 1.3
+  FallbackSpeedKmph:
+    Type: Number
+    Default: 20
+  StopAtTarget:
+    Type: String
+    Default: "false"
+    AllowedValues:
+      - "true"
+      - "false"
+  MockLocation:
+    Type: String
+    Default: "false"
+    AllowedValues:
+      - "true"
+      - "false"
+  AllowedOrigin:
+    Type: String
+    Default: http://localhost:5173
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Architectures:
+      - arm64
+    MemorySize: 512
+    Timeout: 29
+    CodeUri: src/
+    Environment:
+      Variables:
+        STAGE: !Ref Stage
+        BEDROCK_REGION: !Ref BedrockRegion
+        LOCATION_REGION: !Ref LocationRegion
+        TZ_NAME: Asia/Kolkata
+        GENERATORS_TABLE: !Ref GeneratorsTable
+        HISTORY_TABLE: !Ref HistoryTable
+        SUBMISSIONS_TABLE: !Ref SubmissionsTable
+        PLANS_TABLE: !Ref PlansTable
+        PHOTOS_BUCKET: !Ref PhotosBucket
+        UPLOAD_MIN_BYTES: !Ref UploadMinBytes
+        UPLOAD_MAX_BYTES: !Ref UploadMaxBytes
+        UPLOAD_EXPIRY_SECONDS: !Ref UploadExpirySeconds
+        BEDROCK_MODEL_ID: !Ref BedrockModelId
+        MOCK_BEDROCK: !Ref MockBedrock
+        MOCK_BEDROCK_FIXTURE: !Ref MockBedrockFixture
+        ADMIN_TOKEN: !Ref AdminToken
+        ALLOWED_ORIGIN: !Ref AllowedOrigin
+        PLANT_LAT: !Ref PlantLat
+        PLANT_LNG: !Ref PlantLng
+        TARGET_KG: !Ref TargetKg
+        TRUCK_CAPACITY_KG: !Ref TruckCapacityKg
+        SHIFT_START: !Ref ShiftStart
+        SHIFT_END: !Ref ShiftEnd
+        SERVICE_MIN: !Ref ServiceMin
+        MAX_RADIUS_KM: !Ref MaxRadiusKm
+        ROAD_FACTOR: !Ref RoadFactor
+        FALLBACK_SPEED_KMPH: !Ref FallbackSpeedKmph
+        STOP_AT_TARGET: !Ref StopAtTarget
+        MOCK_LOCATION: !Ref MockLocation
+
+Resources:
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      Name: !Ref ApiName
+      StageName: $default
+      CorsConfiguration:
+        AllowOrigins:
+          - !Ref AllowedOrigin
+        AllowHeaders:
+          - content-type
+          - x-admin-token
+        AllowMethods:
+          - GET
+          - POST
+        MaxAge: 600
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: 40
+        ThrottlingRateLimit: 20
+
+  GeneratorsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub feedsure-${Stage}-generators
+      Handler: feedsure.handlers.generators.lambda_handler
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref GeneratorsTable
+      Events:
+        ListGenerators:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Method: GET
+            Path: /generators
+        GetGenerator:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Method: GET
+            Path: /generators/{generatorId}
+
+  UploadsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub feedsure-${Stage}-uploads
+      Handler: feedsure.handlers.uploads.lambda_handler
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref GeneratorsTable
+        - S3WritePolicy:
+            BucketName: !Ref PhotosBucket
+      Events:
+        CreateUploads:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Method: POST
+            Path: /uploads
+
+  SubmissionsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub feedsure-${Stage}-submissions
+      Handler: feedsure.handlers.submissions.lambda_handler
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref GeneratorsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SubmissionsTable
+        - S3ReadPolicy:
+            BucketName: !Ref PhotosBucket
+        - Statement:
+            - Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+              Resource: !Sub arn:${AWS::Partition}:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/${BedrockModelId}
+      Events:
+        CreateSubmission:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Method: POST
+            Path: /submissions
+        ListSubmissions:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Method: GET
+            Path: /submissions
+
+  PlansFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub feedsure-${Stage}-plans
+      Handler: feedsure.handlers.plans.lambda_handler
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref GeneratorsTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref HistoryTable
+        - DynamoDBReadPolicy:
+            TableName: !Ref SubmissionsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref PlansTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - geo-routes:CalculateRouteMatrix
+              Resource: "*"
+      Events:
+        CreatePlan:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Method: POST
+            Path: /plans
+        GetPlan:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Method: GET
+            Path: /plans/{date}
+
+  GeneratorsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref GeneratorsTableName
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: generatorId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: generatorId
+          KeyType: HASH
+
+  HistoryTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref HistoryTableName
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: generatorId
+          AttributeType: S
+        - AttributeName: date
+          AttributeType: S
+      KeySchema:
+        - AttributeName: generatorId
+          KeyType: HASH
+        - AttributeName: date
+          KeyType: RANGE
+
+  SubmissionsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref SubmissionsTableName
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: generatorId
+          AttributeType: S
+        - AttributeName: ts
+          AttributeType: S
+        - AttributeName: date
+          AttributeType: S
+      KeySchema:
+        - AttributeName: generatorId
+          KeyType: HASH
+        - AttributeName: ts
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: byDate
+          KeySchema:
+            - AttributeName: date
+              KeyType: HASH
+            - AttributeName: ts
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+
+  PlansTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref PlansTableName
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: date
+          AttributeType: S
+        - AttributeName: planId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: date
+          KeyType: HASH
+        - AttributeName: planId
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+
+  PhotosBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Ref PhotosBucketName
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      CorsConfiguration:
+        CorsRules:
+          - AllowedOrigins:
+              - !Ref AllowedOrigin
+            AllowedHeaders:
+              - "*"
+            AllowedMethods:
+              - GET
+              - POST
+            MaxAge: 300
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteSubmissionsAfter30Days
+            Prefix: submissions/
+            Status: Enabled
+            ExpirationInDays: 30
+
+  PhotosBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref PhotosBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: EnforceTls
+            Effect: Deny
+            Principal: "*"
+            Action: s3:*
+            Resource:
+              - !GetAtt PhotosBucket.Arn
+              - !Sub ${PhotosBucket.Arn}/*
+            Condition:
+              Bool:
+                aws:SecureTransport: false
+
+Outputs:
+  ApiUrl:
+    Value: !Sub https://${HttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}
+  PhotosBucketName:
+    Value: !Ref PhotosBucket
+  GeneratorsTableName:
+    Value: !Ref GeneratorsTable
+  HistoryTableName:
+    Value: !Ref HistoryTable
+  SubmissionsTableName:
+    Value: !Ref SubmissionsTable
+  PlansTableName:
+    Value: !Ref PlansTable
