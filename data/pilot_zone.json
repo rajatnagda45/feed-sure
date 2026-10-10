@@ -1,0 +1,24 @@
+{
+  "_comment": "Generator volumes are simulated. Plant is real (Carbon Masters, Harohalli); coordinates are approximate (Harohalli town centre) — verify with a map pin before running scripts/seed_data.py.",
+  "plant": {
+    "name": "Carbon Masters (Carbonlites) CBG Plant, Harohalli",
+    "lat": 12.681,
+    "lng": 77.474
+  },
+  "radius_km": { "min": 2, "max": 12 },
+  "rng_seed": 42,
+  "history_days": 14,
+  "history_end_date": "2026-10-09",
+  "generators": [
+    { "id": "hostel-1", "name": "Hostel 1 Mess", "type": "hostel_mess", "kg_range": [100, 160], "lang": "hi" },
+    { "id": "hostel-2", "name": "Hostel 2 Mess", "type": "hostel_mess", "kg_range": [100, 160], "lang": "hi" },
+    { "id": "hostel-3", "name": "Hostel 3 Mess", "type": "hostel_mess", "kg_range": [100, 160], "lang": "hi" },
+    { "id": "hostel-4", "name": "Hostel 4 Mess", "type": "hostel_mess", "kg_range": [100, 160], "lang": "en" },
+    { "id": "hotel-a", "name": "Hotel A Kitchen", "type": "hotel", "kg_range": [150, 300], "lang": "en" },
+    { "id": "hotel-b", "name": "Hotel B Kitchen", "type": "hotel", "kg_range": [150, 300], "lang": "en" },
+    { "id": "corp-cafe", "name": "Tech Park Cafeteria", "type": "corporate_cafeteria", "kg_range": [120, 200], "lang": "en" },
+    { "id": "hospital-canteen", "name": "Hospital Canteen", "type": "hospital_canteen", "kg_range": [100, 150], "lang": "hi" },
+    { "id": "college-canteen", "name": "College Canteen", "type": "college_canteen", "kg_range": [80, 120], "lang": "en" },
+    { "id": "veg-market", "name": "Vegetable Market", "type": "veg_market", "kg_range": [400, 700], "lang": "hi" }
+  ]
+}
