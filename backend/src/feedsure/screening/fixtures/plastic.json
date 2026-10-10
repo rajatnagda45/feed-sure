@@ -1,0 +1,10 @@
+{
+  "items": [
+    {"type": "plastic_wrapper", "count": 3, "confidence": 0.91}
+  ],
+  "visible_contaminant_pct": 8,
+  "hazard": false,
+  "image_quality": "ok",
+  "confidence": 0.86,
+  "notes": "Several plastic wrappers are visible across the top and tray views."
+}
