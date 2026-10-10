@@ -58,9 +58,7 @@ _TODO after M7:_ "On N labelled test photos: X false accepts, Y caught contamina
 - Photo screening sees only **visible** contamination. It is a triage aid, not a lab test, and does
   not estimate moisture or methane yield.
 
-## AI tools used
 
-- Codex (GPT-5.6 Sol)
 
 ## Team
 
