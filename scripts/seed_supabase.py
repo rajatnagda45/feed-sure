@@ -6,6 +6,7 @@ import argparse
 import json
 import os
 from datetime import date, datetime, timedelta, timezone
+from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
 from urllib.request import HTTPRedirectHandler, Request, build_opener
@@ -16,11 +17,13 @@ from export_demo_dataset import TABLE_KEYS, build_dataset, table_rows
 class NoRedirect(HTTPRedirectHandler):
     """Keep server credentials on the explicitly configured destination."""
 
-    def redirect_request(self, req, fp, code, msg, headers, newurl):
+    def redirect_request(
+        self, req: Request, fp: Any, code: int, msg: str, headers: Any, newurl: str
+    ) -> None:
         return None
 
 
-def insert_dataset(url: str, key: str, dataset: dict) -> dict[str, int]:
+def insert_dataset(url: str, key: str, dataset: dict[str, Any]) -> dict[str, int]:
     """Insert missing demo rows; reruns never replace previously edited rows."""
     parsed = urlparse(url)
     local = parsed.hostname in {"localhost", "127.0.0.1", "::1"}

@@ -73,8 +73,9 @@ That process holds fictional profiles in its process-local Moto database. Files 
 disk do not refresh that database, and the non-destructive seed keeps existing profile edits,
 credentials, confirmations and frozen routes. The session's port-5200 frontend was restarted
 against a fresh mapped API on port 8890, with the existing local login accounts read privately.
-The old port-8800 API and its demo records were left running. A separate mapped preview also
-uses frontend 5210 / API 8810. These process choices are local to this session; start a fresh
+The old port-8800 API and its demo records were left running. The initial mapped preview used
+frontend 5210 / API 8810; its frontend was retired after port 5200 switched. These process
+choices are local to this session; start a fresh
 demo from this branch for a repeatable installation, rather than resetting an active database.
 
 ## Research
