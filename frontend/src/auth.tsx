@@ -68,6 +68,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }).catch((issue) => {
           if (live && current === generation.current) {
             verifiedUser.current = null; setAccount(null);
+            // A pending account is the normal "finish your profile" state, not a
+            // failure. Keep the message, but let the UI present it as guidance
+            // (via `pending`) rather than a red error.
             setPending(issue instanceof ApiError && issue.code === "ACCOUNT_PENDING");
             setError(authMessage(issue));
           }
@@ -102,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {!recovery && <Link to="/account">My profile</Link>}
       {account?.accountRole === "admin" && <Link to="/accounts">Manage accounts</Link>}
       <button type="button" disabled={signingOut} onClick={() => void signOut()}>{signingOut ? "Signing out…" : "Sign out"}</button>
-      {error && <p role="alert">{error}</p>}
+      {error && <p role={pending ? "status" : "alert"} className={pending ? "account-pending-note" : undefined}>{error}</p>}
     </aside>}
   </AuthContext.Provider>;
 }

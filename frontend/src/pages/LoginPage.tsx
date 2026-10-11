@@ -51,7 +51,7 @@ export function LoginPage() {
           value={email} onChange={(event) => setEmail(event.currentTarget.value)} /></label>
         <label className="field"><span>Password</span><input type="password" autoComplete="current-password" required
           value={password} onChange={(event) => setPassword(event.currentTarget.value)} /></label>
-        {(error || verificationError) && <p role="alert" className="inline-error">{error || verificationError}</p>}
+        {(error || (verificationError && !pending)) && <p role="alert" className="inline-error">{error || verificationError}</p>}
         <button className="button button-primary" disabled={busy || loading} type="submit">
           {busy || loading ? "Signing in…" : "Sign in"}</button>
       </form>}
