@@ -166,17 +166,19 @@ class Accounts:
             "role": role,
             **{
                 key: text(payload.get(key), key, required=True, limit=200)
-                for key in ("organisation", "contact", "address")
+                for key in ("organisation", "contact")
             },
+            "address": text(payload.get("address", ""), "address", limit=200),
         }
         if role == "kitchen":
             if payload.get("type") not in {"hotel", "hostel_mess", "pg", "restaurant", "canteen"}:
                 invalid("Choose a valid generator type.")
-            result["profile"] = {
-                "lat": number(payload.get("lat"), "lat", -90, 90),
-                "lng": number(payload.get("lng"), "lng", -180, 180),
-                "type": payload["type"],
-            }
+            result["profile"] = {"type": payload["type"]}
+            if "lat" in payload or "lng" in payload:
+                result["profile"].update(
+                    lat=number(payload.get("lat"), "lat", -90, 90),
+                    lng=number(payload.get("lng"), "lng", -180, 180),
+                )
         elif role in {"cbg", "owner"}:
             result["capacityKg"] = number(payload.get("capacityKg"), "capacityKg", 0.01, 1e9)
         return result
@@ -224,6 +226,11 @@ class Accounts:
         # their existing domain record until an Admin supplies reviewed details.
         if not profile and not gid.startswith("registered-"):
             return
+        if profile.get("lat") is None or profile.get("lng") is None:
+            invalid(
+                "Complete the pickup address and confirm the entrance pin "
+                "in My profile before approval."
+            )
         lat = number(profile.get("lat"), "lat", -90, 90)
         lng = number(profile.get("lng"), "lng", -180, 180)
         if profile.get("type") not in {"hotel", "hostel_mess", "pg", "restaurant", "canteen"}:
@@ -287,7 +294,7 @@ class Accounts:
         )
         action = payload.get("action")
         if action not in (
-            {"password", "delete"}
+            {"password", "delete", "update"}
             if own
             else {"activate", "suspend", "delete", "update", "password"}
         ):
@@ -295,7 +302,7 @@ class Accounts:
         expected = revision(payload.get("expectedRevision"))
         if target["revision"] != expected:
             raise ApiError(409, "CONFLICT", "Account changed. Refresh before retrying.")
-        if own:
+        if own and action in {"password", "delete"}:
             current = text(
                 payload.get("currentPassword"), "currentPassword", required=True, limit=256
             )
@@ -329,9 +336,18 @@ class Accounts:
             if target["role"] != "kitchen" or not isinstance(profile, dict):
                 invalid("Pickup details apply only to a generator account.")
             fields(profile, {"lat", "lng", "type"})
-            merged = {**public(target), "profile": profile}
-            self.enroll(merged, validate_only=True)
+            if profile.get("type") not in {"hotel", "hostel_mess", "pg", "restaurant", "canteen"}:
+                invalid("Choose a valid generator type.")
+            self.enroll({**public(target), "profile": profile}, validate_only=True)
             changes["profile"] = profile
+        if (
+            action == "update"
+            and target["role"] == "kitchen"
+            and ("address" in changes and changes["address"] != target["address"])
+            and "profile" not in changes
+        ):
+            if target["status"] == "ACTIVE":
+                invalid("Confirm the new pickup entrance when changing your address.")
         if action == "update" and "capacityKg" in payload:
             if target["role"] not in {"cbg", "owner"}:
                 invalid("Capacity applies only to a plant account.")
@@ -343,7 +359,12 @@ class Accounts:
                 self.enroll(public(target), validate_only=True)
             elif target["role"] in {"cbg", "owner"}:
                 number(target.get("capacity_kg"), "capacityKg", 0.01, 1e9)
-        result = self.rpc(action, p_target=target["id"], p_revision=expected, p_changes=changes)
+        result = self.rpc(
+            "self_update" if own and action == "update" else action,
+            p_target=target["id"],
+            p_revision=expected,
+            p_changes=changes,
+        )
         if (
             action in {"activate", "update"}
             and result["status"] == "ACTIVE"

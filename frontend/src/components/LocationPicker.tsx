@@ -6,9 +6,9 @@ import { mapRequest, selectBasemap } from "./mapModel";
 import { requestGps } from "../workflow";
 
 type Point = { lat: number; lng: number; label?: string };
-export function LocationPicker({ address, onChange }: { address: string; onChange: (point: Point | null) => void }) {
+export function LocationPicker({ address, initialPoint, onChange }: { address: string; initialPoint?: Point; onChange: (point: Point | null) => void }) {
   const [pin, setPin] = useState("");
-  const [point, setPoint] = useState<Point | null>(null);
+  const [point, setPoint] = useState<Point | null>(initialPoint ?? null);
   const [results, setResults] = useState<Point[]>([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");

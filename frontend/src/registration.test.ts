@@ -46,6 +46,14 @@ it("stops before signup when the account migration or backend is unavailable", a
   expect(supabase!.auth.signUp).not.toHaveBeenCalled();
 });
 
+it("creates a pending login without coordinates or a pickup address", async () => {
+  const {lat: _lat, lng: _lng, ...draft} = payload;
+  await registerAccount({...draft, address: ""});
+  const request = vi.mocked(supabase!.auth.signUp).mock.calls[0][0];
+  expect(request.options?.data).toMatchObject({feedsure_registration: {profile: {type: "hotel"}, address: ""}});
+  expect(JSON.stringify(request.options?.data)).not.toContain('"lat"');
+});
+
 it("explains the no-email setup when Supabase still requires delivery", async () => {
   vi.mocked(supabase!.auth.signUp).mockResolvedValue({ data: { user: null, session: null },
     error: new AuthApiError("Email address not authorized", 403, "email_address_not_authorized") });

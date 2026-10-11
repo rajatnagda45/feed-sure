@@ -21,7 +21,8 @@ DynamoDB retains collection, dispatch and intake data; the private Supabase imag
 2. Run `supabase/migrations/202610110001_private_photos.sql`, then
    `supabase/migrations/202610110002_accounts.sql`, then
    `supabase/migrations/202610110003_admin_creation_role.sql`, then
-   `supabase/migrations/20261011150000_user_flows.sql` once in the SQL editor. The second migration
+   `supabase/migrations/20261011150000_user_flows.sql`, then
+   `supabase/migrations/20261011170000_profile_completion.sql` in the SQL editor. The second migration
    imports existing **trusted app_metadata** assignments as active accounts; other users and
    public signups remain pending. Review imported Admin assignments first.
    The third migration handles the Admin API's delayed trusted role metadata and repairs
@@ -95,17 +96,20 @@ it after relying on its revocation controls.
 
 ## Screens and permissions
 
-- `/register`: generators, CBG operations and plant owners request access. Generators supply
-  a PIN code/address or optional live GPS and confirm their pickup entrance on a movable map pin;
-  coordinates are saved automatically. Plant teams supply capacity. The Auth insert trigger captures pending
+- `/register`: generators, CBG operations and plant owners create their login and request access.
+  The address is optional and no map, coordinates or GPS is needed during signup.
+  Plant teams supply capacity. The Auth insert trigger captures pending
   details. Browser metadata cannot grant Admin access or approve a registration.
 - `/login`: sign in with email/password. Pending users can check approval status and sign out;
   operational dashboards remain unavailable until approval. The SDK persists and refreshes sessions.
 - `/accounts`: only active **Admin accounts** create, approve, edit contact details, reset,
   suspend/reactivate and delete accounts. `/accounts/new` can create another Admin. Admin-created
   users have confirmed email status; share their temporary password privately. Creation is pending.
-- `/account`: view your profile, change password or delete your login with current-password
-  verification. No separate local ID/password registry or account session token is used.
+- `/account` (My profile): pending and active users edit their own organisation, contact and address.
+  Generators confirm or update their pickup entrance using PIN/address search or optional live GPS.
+  Pending users can save contact/address details before confirming the location. Plant users can update
+  capacity. Profile saves do not require re-entering a password; password changes and deletion still do.
+  Login email changes require the Admin. No separate local ID/password registry or account session token is used.
 
 CBG operations has dispatcher permissions but cannot manage accounts. Owners have the existing
 intake desk and gate logging, without planning/dispatch. Plant approval grants access to the
@@ -117,6 +121,12 @@ Generator approval enrolls its immutable `registered-<user UUID>` scope in Dynam
 pickup defaults. Review location and collection suitability first. Reviewed location, type, name
 and address corrections synchronize to future planning snapshots. Draft plans reject changed
 profile revisions at dispatch; previously dispatched plans retain their captured details.
+An incomplete pickup profile cannot be approved. Pending users can complete their profile before approval,
+but cannot access collection endpoints. Active users must reconfirm the entrance when changing address.
+The profile is persisted in `public.feedsure_accounts` in Supabase; approved generator details synchronize
+to DynamoDB/Moto for operational use. Collection submissions, trips, pickups and gate records remain in
+the operational database, not in the account registry. Profile editing does not change roles, approval,
+email identity, generator scope or driver assignment. Conflicting revisions require reloading the profile.
 
 ## Optional email delivery later
 
@@ -179,8 +189,9 @@ Signup/login/refresh/sign-out use the official JS SDK rather than local `/auth/l
 | GET `/auth/session` | Active | Verified role, `accountRole`, generator/trip scope |
 | GET `/auth/account` | Signed-in pending/active | Own reviewed profile |
 | POST `/auth/account` | Active + current password | `action,expectedRevision,currentPassword,password?`; password/delete |
+| POST `/auth/account` | Signed-in pending/active | `action:"update",expectedRevision,organisation?,contact?,address?,profile?,capacityKg?`; own profile only |
 | GET `/auth/accounts` | Active Admin | `{accounts:[...]}` excluding deleted tombstones |
-| POST `/auth/accounts` | Active Admin | `email,password,role,organisation,contact,address`; generator `lat,lng,type`, plant `capacityKg` |
+| POST `/auth/accounts` | Active Admin | `email,password,role,organisation,contact,address?`; generator `type` with optional paired `lat,lng`, plant `capacityKg` |
 | POST `/auth/accounts/{accountId}` | Active Admin | UUID target; `action,expectedRevision`; activate/suspend/delete/update/password |
 
 Run `python -m pytest -q`; in `frontend`, run `npm test` and `npm run build`. SQL checks:

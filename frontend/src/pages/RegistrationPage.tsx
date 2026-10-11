@@ -1,5 +1,5 @@
 import { AuthShell } from "./auth/AuthShell";
-import { LocationPicker } from "../components/LocationPicker";
+import { useAccount } from "../auth";
 import { emailDeliveryEnabled } from "../authEmail";
 import { FormEvent, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -8,6 +8,7 @@ import { AccountRole, accountLabels, registerAccount } from "../accounts";
 import { supabase } from "../supabase";
 
 export function RegistrationPage({ admin = false }: { admin?: boolean }) {
+  const { userId } = useAccount();
   const [params] = useSearchParams();
   const requested = params.get("role");
   const initial: AccountRole = requested === "cbg" || requested === "owner" ? requested : "kitchen";
@@ -48,11 +49,11 @@ export function RegistrationPage({ admin = false }: { admin?: boolean }) {
   async function submit(event: FormEvent) {
     event.preventDefault(); setError(null);
     if (fields.password !== fields.confirm) { setError("The passwords do not match."); return; }
-    if (role === "kitchen" && (!fields.lat || !fields.lng)) { setError("Find your location and confirm the pickup entrance pin."); return; }
+    if (busy || !ready) return;
     setBusy(true);
     const payload = { role, email: fields.email.trim(), password: fields.password,
       organisation: fields.organisation.trim(), contact: fields.contact.trim(), address: fields.address.trim(),
-      ...(role === "kitchen" ? { lat: Number(fields.lat), lng: Number(fields.lng), type: fields.type }
+      ...(role === "kitchen" ? { type: fields.type }
         : (role === "admin" || role === "driver") ? {} : { capacityKg: Number(fields.capacityKg) }),
     };
     try {
@@ -68,10 +69,10 @@ export function RegistrationPage({ admin = false }: { admin?: boolean }) {
     <h1>{admin ? "Create an account" : "Create a new login"}</h1>
     {saved ? <div role="status"><h2>Registration saved</h2>
       <p>{admin ? "The account is pending. Review its details and approve it from Manage accounts."
-        : emailDeliveryEnabled ? "Check your email to confirm your address, then wait for Admin approval. If already registered, sign in or use password recovery." : "Your request has been submitted. Ask the plant Admin to review and approve your access, then sign in. This pilot does not send account emails. If sign-in asks for confirmation, the operator must finish the approval-only setup."}</p>
-      <Link className="button button-primary" to={admin ? "/accounts" : `/login?role=${role === "kitchen" ? "generator" : role}`}>{admin ? "Review accounts" : "Go to sign in"}</Link>
+        : emailDeliveryEnabled ? "Check your email, then sign in to complete your profile. An Admin reviews your registration before collection access is enabled." : "Your login has been created. Complete your profile and pickup location next. An Admin reviews your registration before collection access is enabled. No confirmation email is needed."}</p>
+      <Link className="button button-primary" to={admin ? "/accounts" : userId ? "/account" : "/login"}>{admin ? "Review accounts" : userId ? "Complete my profile" : "Sign in to complete my profile"}</Link>
     </div> : <form onSubmit={(event) => void submit(event)}>
-      <p>Register your organic waste site or CBG plant team. Your details go to an Admin for review.</p>
+      <p>Create your login first. Add or confirm your address and pickup location in My profile afterwards. Your details go to an Admin for review.</p>
       {checking && <p role="status">Checking registration setup…</p>}
       {setupError && <div role="alert"><p className="inline-error">Registration unavailable: {setupError}</p>
         <button className="button button-secondary" type="button" onClick={() => setSetupAttempt((value) => value + 1)}>Try again</button>
@@ -83,13 +84,13 @@ export function RegistrationPage({ admin = false }: { admin?: boolean }) {
         </select></label>
         {field("organisation", role === "kitchen" ? "Organisation / site name" : role === "admin" ? "Organisation name" : "CBG plant name")}
         {field("contact", "Contact name and phone or email")}
-        {field("address", role === "kitchen" ? "Pickup address" : "Plant / organisation address")}
+        {field("address", "Address (optional — you can add it in your profile)", "text", { required: false, autoComplete: "street-address" })}
         {role === "kitchen" ? <>
           <label className="field"><span>Generator type</span><select value={fields.type} onChange={(event) => setFields({ ...fields, type: event.currentTarget.value })}>
             <option value="hotel">Hotel</option><option value="hostel_mess">Hostel / mess</option>
             <option value="pg">PG</option><option value="restaurant">Restaurant</option><option value="canteen">Canteen</option>
           </select></label>
-          <LocationPicker address={fields.address} onChange={(point) => setFields((current) => ({ ...current, lat: point ? String(point.lat) : "", lng: point ? String(point.lng) : "" }))} />
+          <p className="muted">No map or GPS is needed to create your login. Confirm the pickup entrance in your profile before Admin approval.</p>
         </> : (role === "cbg" || role === "owner") && <>{field("capacityKg", "Plant intake capacity (kg/day)", "number", { min: 0.01, max: 1000000000, step: "any" })}
           <p className="muted">You are joining the existing pilot plant. This does not create a separate plant. Capacity is reviewed by the Admin and does not change route settings.</p></>}
         {field("email", "Email address", "email", { autoComplete: "username", autoCapitalize: "none", spellCheck: false })}

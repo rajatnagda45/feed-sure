@@ -41,10 +41,10 @@ export function LoginPage() {
   return <AuthShell><section className="token-panel">
     <Link className="brand" to="/"><span className="brand-mark">F</span><span>FeedSure CBG</span></Link>
     <h1>Sign in</h1>
-    <p>Sign in with your email after your registration has been approved.</p>
+    <p>Sign in with your email to complete your profile or open your dashboard.</p>
     {userId && !loading && <div role="status"><h2>{pending ? "Waiting for Admin approval" : "Account access needs attention"}</h2>
-      <p>{pending ? "Your registration is awaiting review. After approval, sign out and sign in again to activate your access." : "Retry the account check, or sign out below and sign in again. Contact your plant Admin if access was suspended."}</p>
-      <button className="button button-secondary" onClick={refresh}>Check account status</button><Link to="/account">View my registration</Link></div>}
+      <p>{pending ? "Complete your profile and confirm your pickup location while the Admin reviews your registration. After approval, sign out and sign in again to activate collection access." : "Retry the account check, or sign out below and sign in again. Contact your plant Admin if access was suspended."}</p>
+      <button className="button button-secondary" onClick={refresh}>Check account status</button><Link className="button button-primary" to="/account">Complete my profile</Link></div>}
     {!supabase ? <p role="status">{supabaseEnabled ? "Supabase configuration is incomplete." : "Account login is not configured for this installation. Use your private access link."}</p>
       : <form onSubmit={login}>
         <label className="field"><span>Email</span><input type="email" autoComplete="username" required
