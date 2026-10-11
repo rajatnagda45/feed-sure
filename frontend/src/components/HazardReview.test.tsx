@@ -1,0 +1,25 @@
+import { act, create } from "react-test-renderer";
+import { expect, it, vi } from "vitest";
+import { HazardReview } from "./HazardReview";
+import { OperationGenerator, recordHazardReview } from "../api";
+vi.mock("../api", () => ({ recordHazardReview: vi.fn() }));
+it("requires human confirmation and reason, persists a review and shows attribution", async () => {
+  const onSaved = vi.fn();
+  const review = { action: "RESOLVE", reason: "Tool outside bin", actor: { id: "reviewer", type: "ADMIN" }, recordedAt: "2026-10-12T06:00:00Z" };
+  vi.mocked(recordHazardReview).mockResolvedValue({ hazard: review, inputRevision: 2 } as never);
+  const generator = { generatorId: "g1", name: "Test site", unresolvedHazards: [{ hazardId: "h1" }] } as OperationGenerator;
+  let tree!: ReturnType<typeof create>;
+  await act(async () => { tree = create(<HazardReview generator={generator} date="2026-10-12" token="test" onSaved={onSaved} />); });
+  const button = () => tree.root.findByType("button");
+  expect(button().props.disabled).toBe(true);
+  await act(async () => { tree.root.findAllByType("input")[1].props.onChange({ currentTarget: { value: "Tool outside bin" } }); });
+  expect(button().props.disabled).toBe(true);
+  await act(async () => { tree.root.findAllByType("input")[0].props.onChange({ currentTarget: { checked: true } }); });
+  expect(button().props.disabled).toBe(false);
+  await act(async () => { button().props.onClick(); });
+  expect(recordHazardReview).toHaveBeenCalledWith("g1", "test", { collectionDate: "2026-10-12", action: "RESOLVE", reason: "Tool outside bin", expectedHazardId: "h1" });
+  expect(onSaved).toHaveBeenCalledOnce();
+  expect(JSON.stringify(tree.toJSON())).toContain("Human verified");
+  expect(JSON.stringify(tree.toJSON())).toContain("reviewer");
+  act(() => tree.unmount());
+});

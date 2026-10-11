@@ -17,8 +17,8 @@ Validated 12 October 2026 against main `c62b5f9` in an isolated checkout. All op
 
 ## Verification performed
 
-- Backend: **363 passed**, one existing Starlette/httpx deprecation warning.
-- Frontend: **122 passed**, three existing opt-in live tests skipped.
+- Backend: **364 passed**, one existing Starlette/httpx deprecation warning.
+- Frontend: **123 passed**, three existing opt-in live tests skipped.
 - Production build: passed. One parallel build attempt failed with a Rust memory allocation error; a sequential retry with `RAYON_NUM_THREADS=2` passed. Existing large MapLibre/Three.js chunk warnings remain.
 - Ruff and Git whitespace checks passed.
 - Route evaluation: 18 fixed scenarios; JSON and Markdown match the committed reports byte-for-byte. 16 ties, one shorter primary route, one capacity trade-off. Synthetic evaluation makes no field-savings claim.
@@ -46,3 +46,9 @@ The verifier mutates this demo's synthetic records; restart the disposable API b
 No deployment, merge or hosted migration was performed. These changes require deployment of both frontend and backend before the public Amplify URL changes. Configure `PHOTO_ANALYSIS_PROVIDER=nvidia`, `MOCK_BEDROCK=false`, a private working key, and the model/token/timeout values in [DEPLOYMENT.md](DEPLOYMENT.md). Existing SAM parameter overrides must be updated explicitly; defaults alone do not switch an existing stack. No new database migration is needed.
 
 Local routing used labelled fallback estimates. This run does not verify hosted AWS IAM, production road-routing availability, live Supabase login, or real GPS capture. Existing auth tests ran, but the browser collection test used scoped local tokens. Dispatched routes remain frozen; selecting another date creates a separate planning workflow. Photos remain optional assistance, and a gate record is not a processing certificate.
+
+## Human verification follow-up
+
+Dispatcher supplier actions now provide **Mark human verified — resolve hazard**. Review the saved photo, check with the supplier or on site, tick the explicit confirmation, and enter the verification reason. The action removes the planning hold and displays the saved reviewer, timestamp and reason after refresh. Keep the hold when the issue remains; replace unrelated images. Drafts require re-planning, and dispatched routes stay frozen.
+
+Automated coverage checks that both the checkbox and reason are required, the specific flag ID is submitted, attribution is shown, unauthorised suppliers cannot resolve holds, empty reasons are rejected, changed flag IDs are rejected, and the resolved review persists in the operations snapshot. No migration is required.

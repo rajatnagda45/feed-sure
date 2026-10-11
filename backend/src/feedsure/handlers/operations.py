@@ -280,6 +280,7 @@ class Service:
                     readiness=ready,
                     readinessStatus=ready["status"] if ready else "UNCONFIRMED",
                     unresolvedHazards=[hazard] if hazard and hazard["action"] == "ENTER" else [],
+                    lastHazardReview=hazard if hazard and hazard["action"] == "RESOLVE" else None,
                 )
                 profiles.append(profile)
             if before["inputRevision"] == self.meta(day)["inputRevision"]:
@@ -398,7 +399,7 @@ class Service:
         """Enter or resolve a human hazard, preserving attributable history."""
         actor = self.admin()
         generator, _ = self.generator(gid, allow_admin=True)
-        fields(request, {"collectionDate", "action", "reason"})
+        fields(request, {"collectionDate", "action", "reason", "expectedHazardId"})
         day = service_date(request.get("collectionDate"))
         action = request.get("action")
         if action not in ("ENTER", "RESOLVE"):
@@ -412,6 +413,9 @@ class Service:
         )
         if action == "RESOLVE" and (not current or current["hazard"]["action"] != "ENTER"):
             conflict("There is no unresolved hazard to resolve.")
+        if action == "RESOLVE" and request.get("expectedHazardId") is not None:
+            if request["expectedHazardId"] != current["hazard"].get("hazardId"):
+                conflict("The hazard changed. Refresh and review the latest evidence.")
         record = {
             "schemaVersion": 3,
             "generatorId": gid,

@@ -480,6 +480,7 @@ class Photos:
                     )
                     if not current or current["hazard"]["action"] != "ENTER":
                         hazard = {
+                            "hazardId": "h-" + secrets.token_hex(8),
                             "schemaVersion": 3,
                             "generatorId": gid,
                             "collectionDate": day,

@@ -242,6 +242,8 @@ export interface ReadinessRecord {
 }
 
 export interface HazardRecord {
+  hazardId?: string;
+  actor?: { type: string; id: string };
   action: "ENTER" | "RESOLVE";
   reason: string;
   generatorId: string;
@@ -254,6 +256,7 @@ export interface OperationGenerator extends GeneratorProfile {
   readiness: ReadinessRecord | null;
   readinessStatus: ReadinessStatus;
   unresolvedHazards: HazardRecord[];
+  lastHazardReview?: HazardRecord | null;
 }
 
 export interface PlannerParams {
@@ -535,7 +538,7 @@ export function getOperations(date: string, token: string, signal?: AbortSignal)
 export function recordHazardReview(
   generatorId: string,
   token: string,
-  request: { collectionDate: string; action: "ENTER" | "RESOLVE"; reason: string },
+  request: { collectionDate: string; action: "ENTER" | "RESOLVE"; reason: string; expectedHazardId?: string },
 ) {
   return apiRequest<{ hazard: HazardRecord; inputRevision: number }>(
     `/generators/${encodeURIComponent(generatorId)}/hazard-reviews`,

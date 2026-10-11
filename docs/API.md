@@ -237,3 +237,7 @@ With `AUTH_PROVIDER=supabase`, all operational routes require `Authorization: Be
 Readiness `collectionPlan` only describes a plan containing the requesting supplier on the requested collection date. `state` is DRAFT, DISPATCHED or CLOSED; `stale` identifies a draft whose input revision changed. Other suppliers, stops and driver credentials are not exposed.
 
 Plan envelopes include `plantDistances`, a generator-ID map of outbound plant-to-site matrix distances in km (null where unavailable). These are the distances used for the maximum-distance exclusion, not total route distances or necessarily straight-line distances. The existing matrix source labels still distinguish estimates from road routing. Older saved plans may omit this additive field.
+
+### Human verification of a hazard
+
+The admin-only hazard review endpoint accepts optional `expectedHazardId` on `RESOLVE`; a changed flag returns 409. New AI-generated flags also have a stable `hazardId`. Operations generator rows expose nullable `lastHazardReview` after resolution, including the server-authenticated actor, time and reason. The UI requires a reason and explicit human confirmation, displays the saved review, and refreshes planning inputs. Resolution clears the hold but never rewrites the model observation, automatically dispatches a route, or certifies a load. Existing historical flags without IDs remain reviewable.

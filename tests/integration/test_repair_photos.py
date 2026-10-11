@@ -587,3 +587,33 @@ def test_unrelated_photo_is_advice_not_approval_and_keeps_readiness(photo_http, 
     assert saved_record["analysis"]["mode"] == "nvidia"
     assert saved_record["analysis"]["observations"]["image_quality"] == "not_waste"
     assert saved_record["status"] == "READY" and saved_record["confirmedKg"] == 100
+
+
+def test_human_verification_is_authorized_attributed_and_rejects_stale_flag(photo_http):
+    http = photo_http
+    record, _ = attached(http)
+    http.state.config = replace(http.state.config, mock_bedrock_fixture="hazard")
+    mutation(http, record, "screen", key="human-review-flag")
+    admin = {"X-Admin-Token": "photo-test-admin"}
+    path = f"/generators/{GID}/hazard-reviews"
+    snapshot = http.get(f"/operations?date={DAY}", headers=admin).json()
+    site = next(g for g in snapshot["generators"] if g["generatorId"] == GID)
+    hazard_id = site["unresolvedHazards"][0]["hazardId"]
+    payload = {"collectionDate": DAY, "action": "RESOLVE", "reason": ""}
+    assert http.post(path, headers=admin, json=payload).status_code == 400
+    payload.update(reason="Supplier confirmed tool is outside bin", expectedHazardId=hazard_id)
+    assert http.post(path, headers=auth(http), json=payload).status_code == 401
+    assert (
+        http.post(path, headers=admin, json={**payload, "expectedHazardId": "old"}).status_code
+        == 409
+    )
+    result = http.post(path, headers=admin, json=payload)
+    assert result.status_code == 200, result.text
+    review = result.json()["hazard"]
+    assert review["actor"] == {"type": "ADMIN", "id": "dispatcher"}
+    assert review["recordedAt"] and review["reason"] == payload["reason"]
+    snapshot = http.get(f"/operations?date={DAY}", headers=admin).json()
+    site = next(g for g in snapshot["generators"] if g["generatorId"] == GID)
+    assert site["unresolvedHazards"] == []
+    assert site["lastHazardReview"] == review
+    assert snapshot["inputRevision"] == result.json()["inputRevision"]

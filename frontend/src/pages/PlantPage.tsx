@@ -1,3 +1,4 @@
+import { HazardReview } from "../components/HazardReview";
 import { DriverAssignment } from "../components/DriverAssignment";
 
 import { useAccount } from "../auth";
@@ -7,7 +8,6 @@ import { Link } from "react-router-dom";
 import {
   ApiError,
   apiRequest,
-  OperationGenerator,
   OperationsSnapshot,
   PlanDetailsResponse,
   PlanEnvelope,
@@ -19,7 +19,6 @@ import {
   getLatestPlan,
   getOperations,
   getPlanDetails,
-  recordHazardReview,
   saveReadiness,
 } from "../api";
 import { RouteMap } from "../components/RouteMap";
@@ -103,7 +102,6 @@ export function PlantPage() {
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [phone, setPhone] = useState<PhoneForm | null>(null);
-  const [hazardReasons, setHazardReasons] = useState<Record<string, string>>({});
   const [driverAccess, setDriverAccess] = useState<{ token: string; expiresAt: string; planKey: string } | null>(null);
   const [supplyFilter, setSupplyFilter] = useState("all");
   const [driverLinkVisible, setDriverLinkVisible] = useState(false);
@@ -333,24 +331,6 @@ export function PlantPage() {
     }
   };
 
-  const updateHazard = async (generator: OperationGenerator) => {
-    if (!adminToken) return;
-    const reason = (hazardReasons[generator.generatorId] ?? "").trim();
-    if (!reason) {
-      setError("Add a reason before entering or resolving a hazard.");
-      return;
-    }
-    const action = generator.unresolvedHazards.length ? "RESOLVE" : "ENTER";
-    try {
-      await recordHazardReview(generator.generatorId, adminToken, { collectionDate: date, action, reason });
-      setHazardReasons((current) => ({ ...current, [generator.generatorId]: "" }));
-      setMessage(action === "RESOLVE" ? "Hazard resolved. Re-plan with the new input revision." : "Hazard recorded. The waste supplier is held from planning.");
-      setRefreshKey((value) => value + 1);
-    } catch (reasonValue) {
-      setError(displayError(reasonValue));
-    }
-  };
-
   if (!adminToken) {
     return (
       <main className="auth-shell">
@@ -495,10 +475,9 @@ export function PlantPage() {
                     {distance != null && <p className="muted">Plant-to-site distance in saved plan: {distance.toFixed(1)} km · limit {activePlan?.params.maxRadiusKm} km · {activePlan?.matrixSource === "fallback" ? "estimated fallback, not measured road distance" : activePlan?.matrixSource}. Pickup: {generator.lat.toFixed(5)}, {generator.lng.toFixed(5)}.</p>}
                     {hazardous && <p className="hazard-detail">Unresolved hazard: {generator.unresolvedHazards.map((hazard) => hazard.reason).join("; ")}</p>}
                     {generator.readiness && <PhotoEvidence key={generator.readiness.submissionId} submission={generator.readiness} adminToken={adminToken} />}
+                    <HazardReview key={`${date}:${generator.generatorId}:${generator.unresolvedHazards[0]?.hazardId ?? generator.lastHazardReview?.hazardId ?? "none"}`} generator={generator} date={date} token={adminToken} onSaved={() => setRefreshKey((value) => value + 1)} />
                     <div className="row-actions">
                       <button className="text-button" type="button" onClick={() => setPhone({ generatorId: generator.generatorId, status: "READY", kg: generator.readiness?.confirmedKg ? String(generator.readiness.confirmedKg) : "", source: generator.readiness?.weightSource ?? "ESTIMATE", start: generator.readiness?.window?.start ?? generator.pickupWindow.start, end: generator.readiness?.window?.end ?? generator.pickupWindow.end, confirmedBy: "", reason: "" })}>Record phone confirmation</button>
-                      <input aria-label={`Hazard reason for ${generator.name}`} placeholder={hazardous ? "Resolution reason" : "Hazard reason"} value={hazardReasons[generator.generatorId] ?? ""} onChange={(event) => { const value = event.currentTarget.value; setHazardReasons((current) => ({ ...current, [generator.generatorId]: value })); }} />
-                      <button className="text-button" type="button" onClick={() => void updateHazard(generator)}>{hazardous ? "Resolve hazard" : "Record hazard"}</button>
                     </div>
                   </article>
                 );
