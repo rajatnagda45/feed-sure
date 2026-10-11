@@ -132,3 +132,15 @@ S3 has 30-day object lifecycle; operational audit records are retained separatel
 ## Optional Supabase provider
 
 Supabase mode denies legacy token bypasses and verifies the current user with Auth before checking administrator-controlled role and supplier/trip assignments. User-editable metadata cannot grant access. Service role credentials stay on the backend; the browser receives only single-object upload/read capabilities. Photo attachment validates bytes and freezes a private copy. Use the dedicated private bucket with no broad browser CRUD policies and configure Storage API retention cleanup. See [Supabase security/setup](SUPABASE.md).
+
+## Browser camera capture
+
+Opening the camera explicitly requests video-only permission and optional high-accuracy GPS.
+The UI explains that supplier ID, device UTC capture time, coordinates and accuracy become a
+visible image footer and are stored with the photo only after upload. Denied, unavailable,
+invalid or older-than-30-second fixes are tagged as unknown. Existing uploaded images are
+not given current GPS. These device assertions do not verify presence, collection or safety.
+No coordinate, image or permission data is logged. Camera tracks and GPS watches stop on
+close, capture completion, component removal, hidden page or camera disconnection. Late camera
+permission grants after cancellation are immediately released. The tagged JPEG uses the same
+private photo access and retention as other evidence; tags are not separate operational fields.

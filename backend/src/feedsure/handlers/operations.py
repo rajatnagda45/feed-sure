@@ -47,6 +47,7 @@ PROFILE_FIELDS = {
     "defaultLang",
     "supportedMaterial",
     "simulated",
+    "locationSource",
 }
 
 

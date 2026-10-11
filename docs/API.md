@@ -2,6 +2,14 @@
 
 ## Shipped v3 API
 
+### Mapped demo venue references
+
+Seeded demo profiles optionally include `locationSource`: OSM element type/ID/URL, node versus
+feature-center coordinate kind, attribution, license links and retrieval date. The kitchen page
+links to the mapped venue and credits OpenStreetMap contributors. Names have a `(demo)` suffix;
+`simulated:true` still describes collection records, not verification of business participation.
+Existing profiles without this field remain supported. See [data sources](../data/README.md).
+
 ### Separate plant owner access
 
 `GET /intake?date=YYYY-MM-DD` requires `X-Plant-Token: <PLANT_OWNER_TOKEN>` and returns `{schemaVersion:3,collectionDate,database,trips}`. Each trip contains `planKey`, `collectionDate`, `dispatchedAt`, `returnAt`, `simulated`, pickup summaries (`generatorId,name,outcome,kg,weightSource,recordedAt`), the current `gate`, and recomputed `reconciliation`. Only dispatched v3 trips for that date appear; drafts, driver credentials, kitchen readiness inputs and precise pickup GPS are omitted.
