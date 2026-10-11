@@ -29,19 +29,19 @@ Open `http://localhost:5173/admin` for dispatch (`/plant` remains compatible) an
 
 For deployment, configure a distinct secret with SAM parameter `PlantOwnerToken` (NoEcho), which supplies backend `PLANT_OWNER_TOKEN`. It defaults to disabled access. The ordinary local shim reads `PLANT_OWNER_TOKEN` from its process environment. Never use the admin token as the owner token or put either in frontend build variables. Redeploy the SAM API/Lambda changes and publish the rebuilt frontend together to enable `/intake` and its CORS header.
 
-The runner binds loopback, seeds ten fictional kitchens and executes real handlers, transactions, planner and reconciliation with in-process Moto. Routing uses labelled fallback estimates. The in-progress photo repair adds local byte storage and explicit mock screening fixtures. Operational data and credentials are recreated when the runner starts; database state disappears on shutdown. Photo bytes are files under the selected private photo directory. This mode does not establish live AWS use. Photo/map runtime checks remain pending the final owner handoffs.
+The runner binds loopback, seeds ten fictional kitchens and executes real handlers, transactions, planner and reconciliation with in-process Moto. Routing uses labelled fallback estimates. Photos use private local byte storage and explicit mock screening fixtures unrelated to the image. Operational data and credentials are recreated when the runner starts; database state disappears on shutdown. Photo bytes persist under the selected private photo directory. Browser upload, retrieval, replacement and removal are verified locally; this mode does not establish live AWS use.
 
 ## Preserve an existing demo
 
-Do not stop or reseed the active API/frontend on 8787/5173. A separate port alone is insufficient: the earlier runner always wrote the default access manifest. The photo repair now exposes `--manifest`, `--photo-dir` and `--photo-fixture`. After the repair owners freeze editing, use an unused port pair and a separate private path:
+Do not stop or reseed the active API/frontend on 8787/5173. Use an unused port pair, a separate manifest and a separate photo directory:
 
 ```powershell
 python scripts/local_demo.py --date 2026-10-12 --port 8793 --frontend-port 5193 --manifest .tmp/repair-integration-access.json --photo-dir .tmp/repair-integration-photos --photo-fixture clean
 ```
 
-From `frontend/`, set `VITE_API_BASE_URL=http://localhost:8793` and start Vite with port 5193 and `--strictPort`. Do not open the default demo access file for this run. This command has been checked against the runner's argument definitions; final live startup/photo verification is pending. Independent in-process HTTP regression remains available in [TESTING.md](TESTING.md) and writes no access manifest.
+From `frontend/`, set `VITE_API_BASE_URL=http://localhost:8793` and start Vite with port 5193 and `--strictPort`. Do not open the default demo access file for this run. These isolated startup options and live photo workflows have been exercised. Follow [TESTING.md](TESTING.md) for fresh-fixture client and HTTP checks.
 
-Use matching API base URL, frontend port and allowed origin. Always use Vite `--strictPort`; do not silently fall onto another origin. Do not set `FEEDSURE_LOCAL_INTEGRATION=1` until the opt-in client tests support the same private manifest. No current demo credentials should be copied or overwritten for tests.
+Use matching API base URL, frontend port and allowed origin. Always use Vite `--strictPort`; do not silently fall onto another origin. Set `FEEDSURE_LOCAL_ACCESS_FILE` to the separate manifest when enabling the opt-in tests. Never copy or overwrite current demo credentials for tests. The home page explains each role: kitchen and driver links remain private, and the dispatcher enters the credential from this runtime manifest. Share neither the manifest nor access links publicly.
 
 ## Cloud preparation: not a deployment claim
 
