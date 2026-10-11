@@ -441,6 +441,57 @@
 .fs-reconcilerow--head span:not(:first-child), .fs-reconcilerow span:not(.fs-ledger__name):not(:first-child) { text-align: right; }
 .fs-delta { color: #7a4a12; }
 
+/* ============================ COLLECTION FILM ============================== */
+.fs-film { background: var(--fs-ivory); }
+.fs-film .fs-section__head { max-width: var(--fs-maxw); margin-inline: auto; }
+.fs-film__grid {
+  display: grid;
+  gap: clamp(32px, 5vw, 64px);
+  align-items: start;
+  max-width: var(--fs-maxw);
+  margin: clamp(40px, 6vw, 64px) auto 0;
+}
+.fs-film__main { min-width: 0; }
+
+/* The video sits in a forest "theatre" so the bright scenes pop on dark */
+.fs-film__theater {
+  margin: 0;
+  padding: clamp(10px, 1.2vw, 16px);
+  border-radius: 20px;
+  background: linear-gradient(165deg, var(--fs-forest) 0%, var(--fs-deep) 100%);
+  box-shadow: 0 40px 80px -48px rgb(13 46 37 / 60%);
+}
+.fs-film__chrome { display: flex; align-items: center; justify-content: space-between; padding: 6px 10px 12px; }
+.fs-film__live { display: inline-flex; align-items: center; gap: 8px; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fs-ivory); }
+.fs-film__livedot { width: 8px; height: 8px; border-radius: 50%; background: var(--fs-lime); box-shadow: 0 0 0 3px rgb(208 244 90 / 30%); }
+.fs-film__dur { font-size: 0.72rem; color: var(--fs-moss); letter-spacing: 0.04em; }
+.fs-film__screen { position: relative; border-radius: 12px; overflow: hidden; background: #000; aspect-ratio: 16 / 9; }
+.fs-film__video { display: block; width: 100%; height: 100%; object-fit: cover; background: var(--fs-deep); }
+.fs-film__meta { margin: 16px 2px 0; font-size: 0.76rem; line-height: 1.6; color: var(--fs-moss); }
+.fs-film__transcript { margin-top: 10px; }
+.fs-film__transcript summary { cursor: pointer; padding: 8px 2px; font-size: 0.82rem; font-weight: 700; color: var(--fs-forest); width: fit-content; }
+.fs-film__transcript p { margin: 8px 0 0; max-width: 72ch; font-size: 0.86rem; line-height: 1.7; color: color-mix(in srgb, var(--fs-ink) 74%, transparent); }
+
+/* Numbered story beside the film */
+.fs-film__story { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
+.fs-film__step { position: relative; padding: 22px 0 22px 2px; border-top: 1px solid var(--fs-line); }
+.fs-film__step:first-child { border-top: 0; padding-top: 0; }
+.fs-film__stephead { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.fs-film__num { font-size: 0.82rem; color: var(--fs-moss); }
+.fs-film__stage {
+  display: inline-flex;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--fs-sage);
+  color: var(--fs-forest);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.fs-film__step h3 { margin: 0 0 6px; font-family: var(--fs-display); font-weight: 540; font-size: clamp(1.25rem, 2vw, 1.55rem); color: var(--fs-forest); }
+.fs-film__step p { margin: 0; max-width: 46ch; font-size: 0.9rem; line-height: 1.65; color: color-mix(in srgb, var(--fs-ink) 78%, transparent); }
+
 /* ============================ OPERATIONS (dark) =========================== */
 .fs-ops { background: var(--fs-deep); color: var(--fs-ivory); }
 .fs-ops .fs-eyebrow { color: var(--fs-lime); }
@@ -572,6 +623,7 @@
   .fs-workflow__track { grid-template-columns: repeat(2, 1fr); gap: 56px 64px; }
   .fs-stage:nth-child(odd) .fs-stage__bar::before { display: none; }
   .fs-ops__grid { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); }
+  .fs-film__grid { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
 }
 @media (max-width: 860px) {
   .fs-nav__links { display: none; }

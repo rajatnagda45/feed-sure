@@ -8,9 +8,11 @@ FeedSure is a single-truck collection prototype connecting a CBG plant with wast
 
 [![Watch the 18-second FeedSure collection workflow video](frontend/public/media/collection.webp)](frontend/public/media/collection-workflow.mp4)
 
-**[▶ Watch the video — 18 seconds](frontend/public/media/collection-workflow.mp4)**
+**[▶ Watch the film — 18 seconds](frontend/public/media/collection-workflow.mp4)**
 
-The same illustrated video shown on the landing page follows readiness, collection and plant intake. Click the preview to open it. Silent, with on-screen explanations; [English captions](frontend/public/media/collection-workflow.en.vtt) are also available. Scenes are AI-generated illustrations, not pilot footage. See [media provenance](docs/FRONTEND-MEDIA.md).
+The landing page features this film in a dedicated "One collection. A clear record at every step." section — a forest-green theatre with the video beside a three-step story: **Ready → Collected → Reconcile**. It follows one collection from kitchen readiness through routed pickup to net plant intake, so the hand-off between each role stays visible.
+
+Silent, with on-screen explanations; [English captions](frontend/public/media/collection-workflow.en.vtt) are also available, and a full transcript sits under the player. Scenes are AI-generated illustrations, not pilot footage, and the records shown do not prove downstream processing. See [media provenance](docs/FRONTEND-MEDIA.md).
 
 ## What works locally
 
