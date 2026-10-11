@@ -1,4 +1,6 @@
+import { supabaseEnabled } from "../supabase";
 import { Link } from "react-router-dom";
+import { KitchenHeroMedia, WorkflowMedia } from "../components/WorkflowMedia";
 
 export function LandingPage() {
   return (
@@ -9,45 +11,44 @@ export function LandingPage() {
           <span>FeedSure CBG</span>
         </Link>
         <span className="data-tag">Operational pilot</span>
+        {supabaseEnabled && <Link className="button button-primary" to="/login">Sign in</Link>}
+        {supabaseEnabled && <Link className="text-button" to="/register">Register</Link>}
       </header>
 
       <section className="hero" aria-labelledby="hero-title">
         <div className="hero-copy">
-          <p className="context-line">Kitchen waste to CBG plant</p>
+          <p className="context-line">Food waste to CBG plant</p>
           <h1 id="hero-title">Know what is ready before the truck leaves.</h1>
           <p className="hero-summary">
-            Hotels, hostels and canteens confirm food waste for collection. Dispatchers build a feasible route, and the
+            Hotels, hostels, PGs, canteens and other bulk food-waste sources confirm waste for collection. Dispatchers build a feasible route, and the
             driver records what was actually collected. Plant intake closes the loop.
           </p>
           <nav className="hero-actions" aria-label="FeedSure destinations">
-            <Link className="button button-primary" to="/login">Sign in</Link>
-            <Link className="button button-secondary" to="/register?role=generator">Register organic waste generator</Link>
-            <Link className="button button-secondary" to="/register?role=owner">Register CBG plant</Link>
-            <Link className="button button-secondary" to="/kitchen-access">Kitchen access</Link>
-            <Link className="button button-primary" to="/plant">Open operations desk</Link>
+            <Link className="button button-secondary" to="/supplier-access">Waste supplier access</Link>
+            <Link className="button button-primary" to="/admin">Admin / dispatcher</Link>
+            <Link className="button button-secondary" to="/owner">CBG plant owner</Link>
             <Link className="button button-secondary" to="/driver-access">Driver access</Link>
           </nav>
           <p className="private-link-note">
-            Kitchens use a dispatcher-issued kitchen link. Drivers receive a trip link after dispatch.
-            Dispatchers enter their access credential. <a href="#demo-guide">Explore the local demo</a>.
+            {supabaseEnabled ? "Sign in with your assigned account to confirm readiness, manage dispatch or record intake."
+              : "Waste suppliers use a private link issued by the dispatcher. Drivers receive a trip link after dispatch. Admins and plant owners enter separate access credentials."} <a href="#demo-guide">Explore the local demo</a>.
           </p>
         </div>
 
-        <div className="process-band" aria-label="FeedSure product loop">
-          <div><strong>Ready</strong><span>Kitchen confirms quantity and window</span></div>
-          <div><strong>Collect</strong><span>Driver records full or partial pickup</span></div>
-          <div><strong>Reconcile</strong><span>Plant compares pickup with gate intake</span></div>
-        </div>
+        <KitchenHeroMedia />
       </section>
 
+      <WorkflowMedia />
+
       <section className="demo-guide" id="demo-guide" aria-labelledby="demo-guide-title">
-        <div className="section-heading"><div><p className="context-line">Three roles, one trip</p><h2 id="demo-guide-title">Follow a collection from readiness to intake</h2></div></div>
+        <div className="section-heading"><div><p className="context-line">Four roles, one trip</p><h2 id="demo-guide-title">Follow a collection from readiness to intake</h2></div></div>
         <div className="demo-roles">
-          <article><h3>Kitchen supervisor</h3><p>Confirm waste readiness, quantity and a pickup window. View your kitchen&apos;s saved confirmation and collection record.</p><span className="access-note">Requires a kitchen-specific link</span><Link className="text-button" to="/kitchen-access">Open kitchen access</Link></article>
-          <article><h3>Dispatcher</h3><p>Open the operations desk with the runtime admin token. Review cancellations, unconfirmed kitchens and capacity conflicts. Build and review a draft before freezing the trip.</p><Link className="text-button" to="/plant">Open dispatcher access</Link></article>
+          <article><h3>Waste supplier</h3><p>For hotels, hostels, PG owners, canteens and organisations with bulk food waste. Confirm quantity and a pickup window. View your saved confirmation and collection record.</p><span className="access-note">Requires a supplier-specific link</span><Link className="text-button" to="/supplier-access">Open waste supplier access</Link></article>
+          <article><h3>Dispatcher</h3><p>Open the operations desk with the runtime admin token. Review cancellations, unconfirmed waste suppliers and capacity conflicts. Build and review a draft before freezing the trip.</p><Link className="text-button" to="/admin">Open dispatcher access</Link></article>
+          <article><h3>CBG plant owner</h3><p>Review recorded pickups, enter net received weight, and check intake discrepancies. Use your separate plant owner credential.</p><Link className="text-button" to="/owner">Open plant owner access</Link></article>
           <article><h3>Driver</h3><p>Open the assigned trip, follow the ordered stops and save pickup outcomes while parked. Return to the plant for gate intake.</p><span className="access-note">Driver link is issued after dispatch</span><Link className="text-button" to="/driver-access">Open driver access</Link></article>
         </div>
-        <details className="demo-scenario"><summary>What to try in a local demo</summary><ol><li>Build a route and inspect the omitted kitchens. The target may remain unmet.</li><li>Record a phone confirmation or change a window, then re-plan. Review the new input revision.</li><li>Dispatch once, record collected, partial or skipped outcomes, and compare recorded pickup with net plant intake.</li></ol><p>Ask the demo operator for private access. Synthetic suppliers, local database and fallback travel estimates are identified in the operations desk. Public map tiles do not demonstrate AWS operation.</p></details>
+        <details className="demo-scenario"><summary>What to try in a local demo</summary><ol><li>Build a route and inspect the omitted waste suppliers. The target may remain unmet.</li><li>Record a phone confirmation or change a window, then re-plan. Review the new input revision.</li><li>Dispatch once, record collected, partial or skipped outcomes, and compare recorded pickup with net plant intake.</li></ol><p>Ask the demo operator for private access. Synthetic suppliers, local database and fallback travel estimates are identified in the operations desk. Public map tiles do not demonstrate AWS operation.</p></details>
       </section>
 
       <footer className="site-footer">

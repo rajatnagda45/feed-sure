@@ -1,10 +1,11 @@
+import { accessToken, supabaseEnabled } from "./supabase";
 import { ApiError, apiRequest, createIdempotencyKey, ReadinessRecord, PhotoStatus } from "./api";
 
 export interface PhotoRecord extends ReadinessRecord {
   photoRevision?: number;
   analysis?: {
     state: "FAILED" | "COMPLETE";
-    mode: "mock" | "aws";
+    mode: "mock" | "aws" | "nvidia";
     observations: { items: { type: string; count: number; confidence: number }[];
       image_quality: string; confidence: number; notes: string; hazard: boolean } | null;
     limit: string;
@@ -14,7 +15,7 @@ export interface PhotoUpload {
   key: string;
   url: string;
   fields: Record<string, string>;
-  transport: "local" | "s3";
+  transport: "local" | "s3" | "supabase";
 }
 
 export function getKitchenReadiness(id: string, date: string, token: string, signal?: AbortSignal) {
@@ -39,7 +40,7 @@ export function analyzePhoto(record: PhotoRecord, token: string, key: string) {
       body: JSON.stringify({ expectedPhotoRevision: record.photoRevision ?? 0 }) });
 }
 export function getEvidence(id: string, token: string) {
-  return apiRequest<{ url: string; transport: "local" | "s3" }>(
+  return apiRequest<{ url: string; transport: "local" | "s3" | "supabase" }>(
     `/submissions/${encodeURIComponent(id)}/evidence`, { generatorToken: token });
 }
 export { createIdempotencyKey };
@@ -60,8 +61,9 @@ export interface PhotoRequest {
   send(body: Blob | FormData): void;
 }
 
-export function uploadPhoto(upload: PhotoUpload, photo: Blob, token: string,
+export async function uploadPhoto(upload: PhotoUpload, photo: Blob, token: string,
   progress: (value: number) => void, factory: () => PhotoRequest = () => new XMLHttpRequest()) {
+  const bearer = upload.transport === "local" && supabaseEnabled ? await accessToken() : null;
   return new Promise<void>((resolve, reject) => {
     const xhr = factory();
     xhr.timeout = 30_000;
@@ -81,7 +83,13 @@ export function uploadPhoto(upload: PhotoUpload, photo: Blob, token: string,
         reject(new Error("Invalid local photo upload address.")); return;
       }
       xhr.open("POST", `${base.replace(/\/$/, "")}${upload.url}`);
-      xhr.setRequestHeader("X-Generator-Token", token);
+      if (bearer) xhr.setRequestHeader("Authorization", `Bearer ${bearer}`);
+      else xhr.setRequestHeader("X-Generator-Token", token);
+      xhr.setRequestHeader("Content-Type", photo.type);
+      xhr.send(photo);
+    } else if (upload.transport === "supabase") {
+      // Upload capability is scoped to one object. Never send application credentials.
+      xhr.open("PUT", upload.url);
       xhr.setRequestHeader("Content-Type", photo.type);
       xhr.send(photo);
     } else {

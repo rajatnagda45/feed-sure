@@ -1,12 +1,13 @@
 # SECURITY — FeedSure CBG
 
-The local demo supports pending registration, Admin approval, salted hashes and revocable
-sessions. See [ACCOUNTS.md](ACCOUNTS.md) for lifecycle, legacy-token limits and storage. This
-account service is not hosted authentication.
+Supabase account management supports pending registration, Admin approval and per-request
+lifecycle checks. Passwords remain in Supabase Auth. The registry enables RLS and exposes its
+transactional RPC only to the backend service role. See [ACCOUNTS.md](ACCOUNTS.md) for session
+revocation, retention and provider failure recovery. Legacy credentials are rejected in Supabase mode.
 
 ## Shipped v3 controls and limits
 
-Admin, generator and driver credentials travel in separate headers. Blank/placeholder admin
+Admin, plant owner, generator and driver credentials travel in separate headers. Blank/placeholder admin
 configuration fails closed. Driver access is scoped to one dispatched trip, expires after 12 hours
 by default, and requires a dedicated `DRIVER_TOKEN_SECRET` of at least 32 characters. Storage keeps
 only the token hash/expiry; authenticated dispatch retries regenerate access using server HMAC
@@ -20,10 +21,18 @@ corrections and gate intake. Positive pickup checks the current hazard flag atom
 receipts query only their own index partition. API errors omit provider details, and reads omit
 credential hashes. Bodies are bounded to 16 KB and numeric inputs must be finite.
 
-SAM exposes the three auth headers plus Idempotency-Key in CORS. The optional photo implementation
+The owner desk uses a separate sessionStorage key and sends only `X-Plant-Token`. `PLANT_OWNER_TOKEN` must be nonempty, nonplaceholder and different from `ADMIN_TOKEN`; unset owner access is disabled. It permits dispatched-trip intake reads and gate writes only. The API checks permissions independently of the UI and attributes owner gate records explicitly. Admin gate API compatibility is retained. Owner summaries omit readiness snapshots, driver secrets and precise GPS. This prototype still uses one shared credential per staff role, not individual staff identities.
+
+SAM exposes the four auth headers plus Idempotency-Key in CORS. The optional photo implementation
 adds scoped S3 GetObject/PutObject and configured Bedrock model/profile invocation to the operational
 function. Optional uploads are private JPEG/PNG presigned POSTs, 1,024–3,500,000 bytes and
 five-minute expiry by default. S3 lifecycle retention defaults to 30 days.
+
+Selecting `PHOTO_ANALYSIS_PROVIDER=nvidia` sends validated photo bytes to the configured
+HTTPS NVIDIA API only on an explicit screen request. `NVIDIA_API_KEY` is backend-only,
+excluded from config repr, and supplied to SAM through a NoEcho parameter. Never store
+it in frontend variables, manifests or Git. NVIDIA failures use the same bounded retry,
+redacted response and unresolved-hazard rules as Bedrock.
 
 Photo issue, attachment, analysis, current-readiness and evidence routes authenticate the owning
 kitchen or dispatcher. A scoped prefix alone never authorizes another kitchen. Local binary
@@ -130,3 +139,19 @@ Photos and precise GPS can contain personal data; the earlier no-personal-data c
 UI asks users to photograph waste only, avoiding faces/IDs. Local byte files require private folder
 permissions and idle-file cleanup; access-triggered expiry does not establish a background sweeper.
 S3 has 30-day object lifecycle; operational audit records are retained separately.
+
+## Optional Supabase provider
+
+Supabase mode denies legacy token bypasses and verifies the current user with Auth before checking administrator-controlled role and supplier/trip assignments. User-editable metadata cannot grant access. Service role credentials stay on the backend; the browser receives only single-object upload/read capabilities. Photo attachment validates bytes and freezes a private copy. Use the dedicated private bucket with no broad browser CRUD policies and configure Storage API retention cleanup. See [Supabase security/setup](SUPABASE.md).
+
+## Browser camera capture
+
+Opening the camera explicitly requests video-only permission and optional high-accuracy GPS.
+The UI explains that supplier ID, device UTC capture time, coordinates and accuracy become a
+visible image footer and are stored with the photo only after upload. Denied, unavailable,
+invalid or older-than-30-second fixes are tagged as unknown. Existing uploaded images are
+not given current GPS. These device assertions do not verify presence, collection or safety.
+No coordinate, image or permission data is logged. Camera tracks and GPS watches stop on
+close, capture completion, component removal, hidden page or camera disconnection. Late camera
+permission grants after cancellation are immediately released. The tagged JPEG uses the same
+private photo access and retention as other evidence; tags are not separate operational fields.

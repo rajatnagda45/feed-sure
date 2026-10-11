@@ -7,6 +7,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import "./styles.css";
 import "./design.css";
 import "./product.css";
+import "./readiness.css";
 import "./accounts.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(

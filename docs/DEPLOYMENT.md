@@ -25,21 +25,59 @@ npm ci
 npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
 ```
 
-Open `http://localhost:5173/plant`, privately read the dispatcher token and kitchen links from `.tmp/local-demo-access.json`, and choose 12 October 2026. These credentials are disposable secrets. Bootstrap links are scoped; the dispatched trip issues separate driver access. Keep access files out of recordings and Git.
+Open `http://localhost:5173/admin` for dispatch (`/plant` remains compatible) and `http://localhost:5173/owner` for CBG intake. Privately read `adminToken`, `plantOwnerToken` and kitchen links from `.tmp/local-demo-access.json`, and choose 12 October 2026. The runner generates distinct staff credentials. The owner sees a trip after admin dispatch and can record net received weight; driver pickups and kitchen receipts share its gate status. These credentials are disposable secrets. Bootstrap links are scoped; the dispatched trip issues separate driver access. Keep access files out of recordings and Git.
 
-The runner binds loopback, seeds ten fictional kitchens and executes real handlers, transactions, planner and reconciliation with in-process Moto. Routing uses labelled fallback estimates. The in-progress photo repair adds local byte storage and explicit mock screening fixtures. Operational data and credentials are recreated when the runner starts; database state disappears on shutdown. Photo bytes are files under the selected private photo directory. This mode does not establish live AWS use. Photo/map runtime checks remain pending the final owner handoffs.
+For deployment, configure a distinct secret with SAM parameter `PlantOwnerToken` (NoEcho), which supplies backend `PLANT_OWNER_TOKEN`. It defaults to disabled access. The ordinary local shim reads `PLANT_OWNER_TOKEN` from its process environment. Never use the admin token as the owner token or put either in frontend build variables. Redeploy the SAM API/Lambda changes and publish the rebuilt frontend together to enable `/intake` and its CORS header.
+
+The runner binds loopback, seeds ten fictional kitchens and executes real handlers, transactions, planner and reconciliation with in-process Moto. Routing uses labelled fallback estimates. Photos use private local byte storage and explicit mock screening fixtures unrelated to the image. Operational data and credentials are recreated when the runner starts; database state disappears on shutdown. Photo bytes persist under the selected private photo directory. Browser upload, retrieval, replacement and removal are verified locally; this mode does not establish live AWS use.
 
 ## Preserve an existing demo
 
-Do not stop or reseed the active API/frontend on 8787/5173. A separate port alone is insufficient: the earlier runner always wrote the default access manifest. The photo repair now exposes `--manifest`, `--photo-dir` and `--photo-fixture`. After the repair owners freeze editing, use an unused port pair and a separate private path:
+Do not stop or reseed the active API/frontend on 8787/5173. Use an unused port pair, a separate manifest and a separate photo directory:
 
 ```powershell
 python scripts/local_demo.py --date 2026-10-12 --port 8793 --frontend-port 5193 --manifest .tmp/repair-integration-access.json --photo-dir .tmp/repair-integration-photos --photo-fixture clean
 ```
 
-From `frontend/`, set `VITE_API_BASE_URL=http://localhost:8793` and start Vite with port 5193 and `--strictPort`. Do not open the default demo access file for this run. This command has been checked against the runner's argument definitions; final live startup/photo verification is pending. Independent in-process HTTP regression remains available in [TESTING.md](TESTING.md) and writes no access manifest.
+From `frontend/`, set `VITE_API_BASE_URL=http://localhost:8793` and start Vite with port 5193 and `--strictPort`. Do not open the default demo access file for this run. These isolated startup options and live photo workflows have been exercised. Follow [TESTING.md](TESTING.md) for fresh-fixture client and HTTP checks.
 
-Use matching API base URL, frontend port and allowed origin. Always use Vite `--strictPort`; do not silently fall onto another origin. Do not set `FEEDSURE_LOCAL_INTEGRATION=1` until the opt-in client tests support the same private manifest. No current demo credentials should be copied or overwritten for tests.
+Use matching API base URL, frontend port and allowed origin. Always use Vite `--strictPort`; do not silently fall onto another origin. Set `FEEDSURE_LOCAL_ACCESS_FILE` to the separate manifest when enabling the opt-in tests. Never copy or overwrite current demo credentials for tests. The home page explains each role: kitchen and driver links remain private, and the dispatcher enters the credential from this runtime manifest. Share neither the manifest nor access links publicly.
+
+## Optional NVIDIA image analysis
+
+The v3 photo screen can use NVIDIA's hosted
+[Nemotron Nano 12B v2 VL](https://docs.api.nvidia.com/nim/reference/nvidia-nemotron-nano-12b-v2-vl).
+The adapter follows NVIDIA's [chat completions API](https://docs.api.nvidia.com/nim/reference/nvidia-nemotron-nano-12b-v2-vl-infer)
+and uses the existing visible-item observation prompt and validation. It adds no Python dependencies.
+The key stays on the backend; photos are sent to NVIDIA when the user requests analysis.
+
+For the ordinary local shim or Lambda, set `PHOTO_ANALYSIS_PROVIDER=nvidia`,
+`NVIDIA_API_KEY` to your private key, and `MOCK_BEDROCK=false`. The defaults are
+`NVIDIA_MODEL_ID=nvidia/nemotron-nano-12b-v2-vl`,
+`NVIDIA_API_URL=https://integrate.api.nvidia.com/v1/chat/completions`,
+`NVIDIA_MAX_TOKENS=600`, and `NVIDIA_TIMEOUT_SECONDS=5`.
+Keep the timeout at five seconds or less to leave room for one retry inside the Lambda budget.
+`MOCK_BEDROCK=true` still overrides both providers with fixtures.
+Missing keys, failed requests or invalid observations leave the photo `NOT_CHECKED` and
+readiness saved. Existing unresolved hazards still require human resolution.
+
+To use NVIDIA with a **new disposable Moto demo**, first set `NVIDIA_API_KEY` in the server
+process environment, then run the command below with unused ports and a separate manifest:
+
+```powershell
+python scripts/local_demo.py --photo-provider nvidia --port 8795 --frontend-port 5195 --manifest .tmp/nvidia-demo-access.json --photo-dir .tmp/nvidia-demo-photos
+```
+
+Use `VITE_API_BASE_URL=http://localhost:8795` and frontend port 5195 with `--strictPort`.
+The usual photo upload and **Analyze photo** control invoke NVIDIA. This option makes real
+NVIDIA requests; the collection data and AWS storage remain synthetic/local.
+The runner's default `--photo-provider mock` remains offline.
+
+SAM exposes matching parameters `PhotoAnalysisProvider`, `NvidiaApiKey` (NoEcho),
+`NvidiaModelId`, `NvidiaApiUrl`, `NvidiaMaxTokens` and `NvidiaTimeoutSeconds`.
+Supply the private key through secure deployment configuration, never a checked-in file,
+frontend variable, access manifest or recording. Mocked HTTP tests verify request bytes,
+persisted observations and timeout handling; no live NVIDIA model call has been verified.
 
 ## Cloud preparation: not a deployment claim
 
@@ -52,3 +90,7 @@ Run `sam validate` and `sam build` when SAM CLI is installed. A build or templat
 ## Recording mode
 
 Follow [DEMO-SCRIPT.md](DEMO-SCRIPT.md). Keep synthetic-data labels visible and read actual route results. Identify the basemap provider separately from route-matrix source; straight connections are schematic. Use a phone for camera proof, or explicitly label desktop image selection. Live AWS proof, a signed-out repository/video check and final submission are separate remaining tasks in [SUBMISSION.md](SUBMISSION.md).
+
+## Optional Supabase setup
+
+Follow [SUPABASE.md](SUPABASE.md) for the private bucket migration, user assignments, paired frontend/server variables and SAM provider parameters. This preserves the existing AWS domain backend. Supabase credentials and live service verification are deployment prerequisites.

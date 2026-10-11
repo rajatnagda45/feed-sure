@@ -1,91 +1,87 @@
 # Testing and evidence
 
-## Registration and account PR — 11 October 2026
+Updated 11 October 2026. Final integration uses disposable synthetic records, real HTTP/domain handlers, Moto and private local photo bytes. Mock observations are configured fixtures unrelated to the selected image. See [browser evidence and limitations](INTEGRATION-VERIFICATION.md).
 
-The isolated registration branch passes 298 backend tests, including real local HTTP account
-lifecycle and owner gate/intake checks against Moto DynamoDB. Frontend: 60 passed, 3 skipped;
-production build passed. Ruff passed for changed Python files. Browser checks verified seeded
-Admin login, account navigation, CBG account filtering and registration layouts at wide and
-narrow panel sizes. Account endpoints remain loopback-only; no hosted login was deployed.
+## Waste supplier terminology follow-up
 
-See [ACCOUNTS.md](ACCOUNTS.md) for registration, persistence and lifecycle boundaries.
+The supplier naming change passed 280 backend tests, 62 frontend tests (3 opt-in skipped), the two focused role-access/landing tests, and the production build. Existing private `/g/:id` links and `/kitchen-access` remain valid; navigation now uses `/supplier-access`. API IDs, payload fields and permissions are unchanged. No new browser walkthrough was performed.
 
-Updated 11 October 2026. This document separates repeatable automated checks from earlier browser observations and pending repair integration.
+## Separate plant owner interface
 
-## Session C: verified independent checks
+Main includes a distinct owner desk at `/owner` and admin desk at `/admin`. This branch preserves those merged changes. The combined suites below were rerun after rebasing. Owner credentials, intake-only access, actor attribution and revisioned gate writes have automated coverage; actual owner login and gate correction were also exercised in the browser.
 
-| Check | Actual result | Scope |
-|---|---|---|
-| `python -m pytest -q --durations=20 -o faulthandler_timeout=30 -p no:cacheprovider` | 225 passed, 21.94 s, Python 3.13.9 | Existing 192 tests plus 32 independent planner cases and one HTTP correction regression; before final map/photo integration |
-| Focused real-handler correction test | 1 passed, 3.65 s | Dispatch, pickup, gate, correction, replay/conflict, frozen stops and own receipt |
-| Focused planner/fairness regression | 32 passed, 0.18 s | Directed route arithmetic, shared eligibility/constraints and deterministic order independence |
-| `npm run test` in `frontend/` | 22 passed, 3 opt-in skipped | Current unit/client logic; no new live browser claim |
-| `npm run build` in `frontend/` | Passed | TypeScript + production bundle; existing >500 kB bundle advisory |
-| `python scripts/eval_routes.py --json-output .tmp/repair-qa-route-results.json --report-output .tmp/repair-qa-route-results.md` | All 18 scenarios evaluated | Synthetic fixture matrices; no AWS calls |
-| Focused Ruff checks | Passed | New Session C test files only |
+## Actual results
 
-The reported backend stall was investigated rather than treated as a product deadlock. In the
-restricted Windows sandbox, Starlette TestClient startup blocked in asyncio's fallback socketpair
-before an application request; the earlier faulthandler trace ended at `socket.accept` in
-`_fallback_socketpair`. Outside that restriction, the suspected integration test completed in
-3.65 seconds and the entire suite completed in 21.94 seconds. The slowest full-suite test took
-2.23 seconds, so there was no test-level hang or 30-second faulthandler trigger. The rerun used
-synthetic credentials and in-process Moto. No active demo was restarted or reseeded.
+| Check | Result |
+| --- | --- |
+| `python -m pytest -q -o faulthandler_timeout=30 -p no:cacheprovider` | 280 passed in 29.67 s on the isolated PR snapshot |
+| Frontend `npm.cmd run test` | 62 passed; 3 opt-in tests skipped |
+| Opt-in client workflow below | 3 passed in 5.29 s on a fresh isolated API |
+| `scripts/verify_repair_integration.py`, clean and malformed fixtures | Both PASS; clean repeated on the isolated PR snapshot |
+| Independent `tests/integration/photo_live_smoke.py` | 13 checks passed, with exact PNG/JPEG retrieval |
+| `npm.cmd run build` | Passed; existing MapLibre bundle-size advisory |
 
-The independent planner tests check both routes against input arithmetic without importing the production scheduler: directed travel and depot return, service/waiting, eligibility, capacity reservation, deterministic output, generator-order independence and mandatory commitments. All 32 fixed seeds are retained; these are regression cases, not a new performance benchmark.
-
-The independent HTTP test uses actual FastAPI/domain handlers, the production planner and reconciliation with in-process Moto. It seeds private disposable data, dispatches, records pickup and gate, corrects a pickup from 100 kg SCALE to 60 kg ESTIMATE, verifies exact retry/conflict responses, then reads driver and kitchen records. Picked kg remains 60, gap +40, REVIEW/provisional; frozen stops remain unchanged and another kitchen receives 401. It writes no demo-access manifest.
+The restricted Windows environment stalled during asyncio fallback socketpair startup before application requests. Those runs were interrupted and are not passing results. The permitted environment completed the suites; one existing Starlette/httpx deprecation warning remains.
 
 ## Repeatable commands
 
-From repository root:
+From the repository root:
 
 ```powershell
-python -m pytest -q
-python -m pytest -q --durations=20 -o faulthandler_timeout=30 -p no:cacheprovider
-python -m pytest tests/unit/test_repair_qa_planner.py tests/integration/test_repair_qa.py -q
-ruff check tests/unit/test_repair_qa_planner.py tests/integration/test_repair_qa.py
-python scripts/eval_routes.py --json-output .tmp/repair-qa-route-results.json --report-output .tmp/repair-qa-route-results.md
+python -m pytest -q -o faulthandler_timeout=30 -p no:cacheprovider
+python scripts/eval_routes.py
 ```
 
 From `frontend/`:
 
 ```powershell
+npm ci
 npm run test
 npm run build
 ```
 
-The three tests in `frontend/integration/local-workflow.test.ts` are opt-in and were **not rerun in
-the independent phase of Session C**. Do not enable them against the user's active demo or replace
-its manifest. Final integration must use an isolated API/frontend port pair, a separate private
-manifest, and a fresh disposable data set. See [DEPLOYMENT.md](DEPLOYMENT.md).
-
-The opt-in harness now requires `FEEDSURE_LOCAL_ACCESS_FILE` and rejects the active manifest,
-default API port and mismatched API URL. For a fresh isolated API on 8793, from `frontend/`:
+For live client tests, start a **fresh** isolated API from the repository root, using unused ports. Keep the active 8787/5173 demo and its manifest untouched:
 
 ```powershell
-$env:FEEDSURE_LOCAL_INTEGRATION = "1"
-$env:FEEDSURE_LOCAL_ACCESS_FILE = "../.tmp/repair-integration-access.json"
-$env:VITE_API_BASE_URL = "http://localhost:8793"
+python scripts/local_demo.py --date 2026-10-12 --port 8793 --frontend-port 5193 --manifest .tmp/client-test-access.json --photo-dir .tmp/client-test-photos --photo-fixture clean
+```
+
+From `frontend/` in another shell:
+
+```powershell
+$env:FEEDSURE_LOCAL_INTEGRATION = '1'
+$env:FEEDSURE_LOCAL_ACCESS_FILE = '../.tmp/client-test-access.json'
+$env:VITE_API_BASE_URL = 'http://localhost:8793'
 npm run test -- integration/local-workflow.test.ts
 Remove-Item Env:FEEDSURE_LOCAL_INTEGRATION, Env:FEEDSURE_LOCAL_ACCESS_FILE
 ```
 
-These live commands remain pending the repair freeze. After the harness-only change, the default
-suite passed 29 tests with 3 opt-in tests skipped; this is a moving-tree check, not final integration.
-The prepared `scripts/verify_repair_integration.py` adds independent HTTP/photo-byte verification;
-its unexecuted scenarios and required separate fixtures are recorded in the integration handoff.
+The client suite mutates records and dispatches a trip. Start another fresh process with a separate manifest for each independent smoke workflow; do not reuse the same date's active dispatched trip:
 
-## Evaluation and fairness
+```powershell
+python scripts/local_demo.py --date 2026-10-12 --port 8794 --frontend-port 5194 --manifest .tmp/clean-access.json --photo-dir .tmp/clean-photos --photo-fixture clean
+python scripts/verify_repair_integration.py --manifest .tmp/clean-access.json --output .tmp/clean-result.json
+```
 
-Primary and nearest-first use the same readiness inputs, hazard/material eligibility, mandatory insertion, matrix, capacity, windows, shift including return and target stopping. The primary applies feasibility-preserving 2-opt; the baseline selects nearest feasible optional stops. Both are heuristics.
+The smoke command runs in another shell while the API is running. Repeat with another free port, manifest and photo directory and `--photo-fixture malformed`, adding `--expect-failed-analysis` to the verifier. Access files and photo bytes remain private and ignored.
 
-Saved results remain: 18 scenarios, 16 ties, one equal-quantity distance improvement, one capacity trade-off; primary/baseline miss targets in 10/9 scenarios. In the trade-off, primary expects 176 kg with a 64 kg gap, while baseline expects 240 kg and meets target. A tie compares expected kg and distance only. Expected kg is not recorded collection; scenario matrices and quantities are synthetic. No realised-outcome replay, model-accuracy evaluation or field improvement is established.
+## Browser verification
 
-## Earlier evidence and remaining gates
+Actual browser checks covered scoped role entry, invalid external links, saved readiness and receipts after refresh, authenticated dispatcher photo evidence, OSM attribution and numbered saved stops, private driver-link copying, 100 kg pickup corrected to 90 kg without duplication, and updated kitchen records. At 390 px and 320 px the inspected pages had no horizontal page overflow. Refreshing records retained an unsaved 222 kg edit; saving persisted it while the dispatched stop remained frozen.
 
-Earlier P0 integration notes reported a browser walkthrough of kitchen readiness/cancellation, stale dispatch, replanning, private driver access, partial/full pickups, refresh, gate intake and own-kitchen records. That was prior evidence; Session C's current HTTP tests do not repeat those browser interactions. The 11 October localhost audit observed a working draft with 5 stops, expected 720 kg, reserved 990 kg and a 480 kg target gap, with equal 7.5 km comparison routes.
+The independent photo walkthrough covered select/preview/cancel/replacement, invalid-byte rejection, upload/analysis/removal/reload and exact byte equality. Screenshots and limits are in [INTEGRATION-VERIFICATION.md](INTEGRATION-VERIFICATION.md). Desktop file selection does not prove physical camera behavior.
 
-Final map/photo checks remain pending until both repair owners declare READY and freeze editing. Required final evidence includes real selected-byte upload/retrieval, preview/resize/retry, scoped evidence access, persistent screening state and failure/hazard precedence, maps at desktop and phone width, and tile/WebGL failure fallback. Desktop file selection cannot prove a phone camera works. Moto/injected observations cannot prove Bedrock accuracy, S3 deployment or Amazon Location operation.
+Map scene/lifecycle tests cover attribution, stop order, depot return, camera retention across polling, tile/WebGL failure fallback, cleanup and explicit retry. Actual OSM rendering was observed; forced tile/WebGL failure is not a browser claim.
 
-Physical-phone camera/GPS prompts, deployed AWS end-to-end, SAM build and the recorded submission video remain unverified in this QA session. Do not use the legacy two-photo ACCEPT/HOLD screening evaluation as v3 visible-item accuracy evidence.
+## Evaluation and remaining evidence
+
+Supabase account verification adds `tests/unit/test_supabase_accounts.py` (real handlers/Moto,
+mocked Auth/PostgREST), frontend registration transport tests, and `tests/sql` for the shipped
+Postgres registry migration/RPC with PGlite and fixture Auth schemas. Run `npm ci` and `npm test`
+in `tests/sql`. These cover pending approval, privilege isolation, revision checks, last-Admin
+protection, lifecycle revocation, and receipt handling. Hosted Auth/storage and multi-connection
+race performance require separate live checks. See [ACCOUNTS.md](ACCOUNTS.md) for setup and recovery.
+
+Primary and nearest-first use identical readiness, eligibility, mandatory stops, matrices and feasibility constraints. Published synthetic results remain 18 scenarios: 16 ties, one equal-quantity distance improvement and one trade-off where nearest-first collected more expected kg. Expected kg is not recorded collection. No field savings or screening accuracy are established.
+
+Live AWS/S3/Bedrock/Amazon Location, SAM build/deployment, physical phone camera and GPS, production precise-location cleanup, licence selection and the recorded submission video remain separate tasks.

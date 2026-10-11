@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import base64
 import hashlib
+import io
+import json
 from dataclasses import replace
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
@@ -284,6 +286,70 @@ def test_hazard_survives_failed_real_model_and_photo_removal(photo_http, monkeyp
     fresh = http.get(f"/generators/{GID}/readiness?date={DAY}", headers=auth(http)).json()
     assert fresh["unresolvedHazard"]["action"] == "ENTER"
     assert fresh["unresolvedHazard"]["source"] == "mock"
+
+
+def test_nvidia_photo_analysis_persists_hazard_and_survives_timeout(photo_http, monkeypatch):
+    http = photo_http
+    record, _ = attached(http)
+    http.state.config = replace(
+        http.state.config,
+        photo_analysis_provider="nvidia",
+        mock_bedrock=False,
+        nvidia_api_key="private-test-key",
+    )
+    calls = []
+    observation = {
+        "items": [{"type": "glass", "count": 1, "confidence": 0.9}],
+        "hazard": True,
+        "image_quality": "ok",
+        "confidence": 0.9,
+        "notes": "Possible visible glass.",
+    }
+
+    def nvidia_response(request, timeout):
+        calls.append(request)
+        payload = json.loads(request.data)
+        uri = payload["messages"][1]["content"][0]["image_url"]["url"]
+        assert base64.b64decode(uri.split(",")[1]) == png()
+        result = io.BytesIO(
+            json.dumps(
+                {
+                    "choices": [
+                        {"finish_reason": "stop", "message": {"content": json.dumps(observation)}}
+                    ]
+                }
+            ).encode()
+        )
+        result.status = 200
+        return result
+
+    monkeypatch.setattr("feedsure.screening.nvidia_client.urlopen", nvidia_response)
+    screened = mutation(http, record, "screen", key="nvidia-success")
+    assert screened.status_code == 200, screened.text
+    assert mutation(http, record, "screen", key="nvidia-success").json() == screened.json()
+    record = screened.json()["submission"]
+    assert len(calls) == 1
+    assert record["photoStatus"] == "REVIEW_HAZARD"
+    assert record["analysis"]["mode"] == "nvidia"
+    assert record["analysis"]["observations"] == observation
+    assert record["status"] == "READY" and record["confirmedKg"] == 100
+    refreshed = http.get(f"/generators/{GID}/readiness?date={DAY}", headers=auth(http)).json()
+    assert refreshed["submission"]["analysis"] == record["analysis"]
+    assert refreshed["unresolvedHazard"]["source"] == "nvidia"
+
+    def unavailable(request, timeout):
+        calls.append(request)
+        raise TimeoutError("private-test-key must never reach a user")
+
+    monkeypatch.setattr("feedsure.screening.nvidia_client.urlopen", unavailable)
+    failed = mutation(http, record, "screen", key="nvidia-timeout")
+    assert failed.status_code == 200 and len(calls) == 3
+    record = failed.json()["submission"]
+    assert record["analysis"]["mode"] == "nvidia" and record["analysis"]["state"] == "FAILED"
+    assert record["photoStatus"] == "NOT_CHECKED" and record["status"] == "READY"
+    assert "private-test-key" not in failed.text
+    refreshed = http.get(f"/generators/{GID}/readiness?date={DAY}", headers=auth(http)).json()
+    assert refreshed["unresolvedHazard"]["action"] == "ENTER"
 
 
 def test_no_photo_ready_and_not_ready_never_call_storage_or_model(photo_http, monkeypatch):

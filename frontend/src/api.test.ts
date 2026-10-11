@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import readyRequest from "../../tests/contracts/ready-request.json";
 import readyResponse from "../../tests/contracts/ready-response.json";
 import driverResponse from "../../tests/contracts/driver-response.json";
-import { apiRequest, savePickup, saveReadiness } from "./api";
+import { apiRequest, getPlantIntake, savePlantGate, savePickup, saveReadiness } from "./api";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -56,4 +56,21 @@ describe("READY v3 API boundary", () => {
       details: { currentRevision: 3 },
     });
   });
+});
+
+
+it("keeps owner credentials separate for intake reads and idempotent gate writes", async () => {
+  const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(new Response("{}", { status: 200 })));
+  vi.stubGlobal("fetch", fetchMock);
+  await getPlantIntake("2026-10-11", "owner-secret");
+  const request = { planKey: "2026-10-11#trip", netKg: 0, weightSource: "SCALE" as const, reference: null, expectedRevision: 0 };
+  await savePlantGate(request, "owner-secret", "owner-event");
+  expect(fetchMock.mock.calls[0][0]).toContain("/intake?date=2026-10-11");
+  for (const [, init] of fetchMock.mock.calls) {
+    const headers = new Headers(init.headers);
+    expect(headers.get("X-Plant-Token")).toBe("owner-secret");
+    expect(headers.has("X-Admin-Token")).toBe(false);
+  }
+  expect(new Headers(fetchMock.mock.calls[1][1].headers).get("Idempotency-Key")).toBe("owner-event");
+  expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toEqual(request);
 });

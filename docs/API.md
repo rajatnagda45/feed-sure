@@ -1,9 +1,23 @@
 # API — FeedSure CBG
 
-Local login, registration, account lifecycle and owner intake contracts are in
+Supabase registration, account lifecycle and owner intake contracts are in
 [ACCOUNTS.md](ACCOUNTS.md). `/auth/*` is enabled only by the loopback demo, never by SAM.
 
 ## Shipped v3 API
+
+### Mapped demo venue references
+
+Seeded demo profiles optionally include `locationSource`: OSM element type/ID/URL, node versus
+feature-center coordinate kind, attribution, license links and retrieval date. The kitchen page
+links to the mapped venue and credits OpenStreetMap contributors. Names have a `(demo)` suffix;
+`simulated:true` still describes collection records, not verification of business participation.
+Existing profiles without this field remain supported. See [data sources](../data/README.md).
+
+### Separate plant owner access
+
+`GET /intake?date=YYYY-MM-DD` requires `X-Plant-Token: <PLANT_OWNER_TOKEN>` and returns `{schemaVersion:3,collectionDate,database,trips}`. Each trip contains `planKey`, `collectionDate`, `dispatchedAt`, `returnAt`, `simulated`, pickup summaries (`generatorId,name,outcome,kg,weightSource,recordedAt`), the current `gate`, and recomputed `reconciliation`. Only dispatched v3 trips for that date appear; drafts, driver credentials, kitchen readiness inputs and precise pickup GPS are omitted.
+
+`POST /gate-logs` accepts `X-Plant-Token` with the existing gate request, revision and `Idempotency-Key`. Owner writes record actor `{type:"PLANT_OWNER",id:"plant-owner"}`. Existing admin gate access remains compatible, while the admin UI directs intake recording to `/owner`. Invalid owner headers fail closed, even if an admin header is also supplied. The owner credential grants no kitchen, planner, dispatcher or driver access. Gate updates remain visible in the admin dashboard, driver trip and own-kitchen receipt.
 
 Use [V3-CONTRACT.md](V3-CONTRACT.md) for the active payloads, headers, route table, revisions and
 JSON examples. Generator credentials use `X-Generator-Token`; driver access uses `X-Driver-Token`;
@@ -37,7 +51,10 @@ returns 409. A model is attempted at most twice; malformed/failed analysis persi
 `GET /submissions/{encodedSubmissionId}/evidence` returns an authenticated, no-store
 `{url,transport}` response: local validated bytes as a data URL, or a short-lived private S3 GET.
 Cross-kitchen reads/mutations are rejected. Presigned GET links remain bearer access until expiry.
-Analysis explicitly reports `mode:mock|aws`; mock fixtures do not describe the selected photo.
+Analysis explicitly reports `mode:mock|aws|nvidia`; mock fixtures do not describe the selected photo.
+`PHOTO_ANALYSIS_PROVIDER=nvidia` selects NVIDIA for this optional v3 screen endpoint.
+The observation schema, one retry, `NOT_CHECKED` failure state and human hazard resolution
+are shared with Bedrock. Hazard records use `source:nvidia` for NVIDIA observations.
 Neither analysis failure nor removal resolves a hazard or changes readiness quantities.
 
 The following v1 descriptions are preserved as historical reference and are not active contracts.
@@ -210,3 +227,7 @@ per-manifest directory. Same-key identical-byte retries are accepted; altered by
 Upload tickets expire after the configured five-minute default. Retrieval rejects expired photo
 retention; local file cleanup is access-triggered, not a background sweeper. DynamoDB in the
 runner remains disposable in-process Moto; byte files persist until retention cleanup/deletion.
+
+## Supabase bearer authentication
+
+With `AUTH_PROVIDER=supabase`, all operational routes require `Authorization: Bearer <session JWT>`. With account management enabled, roles and assignments come from the private Supabase account registry; otherwise they come from Auth-verified app_metadata. Invalid/missing login returns 401, incorrect role/scope returns 403, and upstream failures return 502. `GET /auth/session` returns `{ "account": { "id": "user-id", "role": "GENERATOR", "generatorId": "hotel-a" } }`; drivers use `planKey` instead. Upload/evidence responses may include `transport: "supabase"`; signed upload URLs accept a raw image PUT without application credentials. See [Supabase configuration](SUPABASE.md).

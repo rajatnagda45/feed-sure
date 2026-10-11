@@ -1,3 +1,5 @@
+import { supabase } from "../supabase";
+import { useAccount } from "../auth";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -94,7 +96,8 @@ export function IntakeTripPanel({ trip, token, refresh, onSaving }: {
 }
 
 export function PlantOwnerPage() {
-  const [token, setToken] = useState(() => sessionStorage.getItem("feedsure:plant-owner") ?? "");
+  const { account } = useAccount();
+  const [token, setToken] = useState(() => account ? "supabase-account" : sessionStorage.getItem("feedsure:plant-owner") ?? "");
   const [credential, setCredential] = useState("");
   const [date, setDate] = useState(() => sessionStorage.getItem("feedsure:demo-date") ?? serviceDateInIndia());
   const [data, setData] = useState<IntakeResponse | null>(null);
@@ -124,6 +127,7 @@ export function PlantOwnerPage() {
     setToken(value); setCredential("");
   }
   function lock() {
+    if (account) { void supabase?.auth.signOut({ scope: "local" }); return; }
     sessionStorage.removeItem("feedsure:plant-owner");
     setToken(""); setData(null); setError(null); setNotice(null);
   }
@@ -138,8 +142,8 @@ export function PlantOwnerPage() {
     <form className="token-panel" onSubmit={unlock}>
       <Link className="brand" to="/"><span className="brand-mark">F</span><span>FeedSure CBG</span></Link>
       <h1>Plant owner access</h1>
-      <Link className="button button-secondary button-full" to="/login?role=owner">Sign in with ID and password</Link>
       <p>Review delivered waste and record net intake using your plant owner credential.</p>
+      <p>Ask the plant operator for your current plant owner credential. Dispatcher and driver credentials do not open this desk.</p>
       <label className="field"><span>Plant owner token</span><input required type="password" autoComplete="off" value={credential} onChange={(event) => setCredential(event.currentTarget.value)} /></label>
       <button className="button button-primary button-full" type="submit">Open plant intake</button>
       <Link className="text-button" to="/admin">Admin / dispatcher access</Link>

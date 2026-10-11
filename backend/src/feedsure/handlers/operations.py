@@ -47,6 +47,7 @@ PROFILE_FIELDS = {
     "defaultLang",
     "supportedMaterial",
     "simulated",
+    "locationSource",
 }
 
 
@@ -67,6 +68,33 @@ class Service:
         self.now = (now or datetime.now(UTC)).astimezone(UTC)
         self.planner, self.reconciler = planner, reconciler
         self.photo_store = photo_store
+        self._account: dict | None = None
+
+    def account(self) -> dict | None:
+        """Use Supabase exclusively when configured, or for an explicit bearer request."""
+        if self.config.auth_provider not in {"tokens", "supabase"}:
+            raise ApiError(503, "DEPENDENCY_NOT_READY", "Unknown AUTH_PROVIDER.")
+        if self.config.auth_provider == "supabase" or header(self.event, "authorization"):
+            if self._account is None:
+                from feedsure.common.supabase import authenticate
+
+                self._account = authenticate(self.event, self.config)
+                if self._account.get("registration"):
+                    from feedsure.common.accounts import Accounts
+
+                    Accounts(self.config, self).enroll(self._account["registration"])
+            return self._account
+        return None
+
+    def account_actor(self, role: str, scope: str | None = None) -> dict | None:
+        """Enforce roles and assignments from verified server-controlled metadata."""
+        account = self.account()
+        if account is None:
+            return None
+        field = "generatorId" if role == "GENERATOR" else "planKey"
+        if account["role"] != role or (scope is not None and account.get(field) != scope):
+            raise ApiError(403, "FORBIDDEN", "This account cannot access that workflow.")
+        return {"type": role, "id": account["id"]}
 
     @property
     def db(self) -> DynamoDB:
@@ -77,6 +105,9 @@ class Service:
 
     def admin(self) -> dict[str, str]:
         """Authenticate the configured dispatcher without accepting client identities."""
+        actor = self.account_actor("ADMIN")
+        if actor:
+            return actor
         token = header(self.event, "x-admin-token")
         expected = self.config.admin_token
         if (
@@ -89,6 +120,9 @@ class Service:
 
     def plant_owner(self) -> dict[str, str]:
         """Authenticate the single plant's owner with a distinct intake-only credential."""
+        actor = self.account_actor("PLANT_OWNER")
+        if actor:
+            return actor
         token = header(self.event, "x-plant-token")
         expected = self.config.plant_owner_token
         if (
@@ -147,10 +181,18 @@ class Service:
         }
 
     def generator(self, generator_id: str, *, allow_admin: bool = False) -> tuple[dict, dict]:
-        """Authenticate one organic waste generator or an attributable dispatcher operation."""
+        """Authenticate one kitchen or an attributable dispatcher operation."""
         if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,62}", generator_id):
             invalid("generatorId must be a valid slug.")
-        actor = self.admin() if allow_admin and header(self.event, "x-admin-token") else None
+        account = self.account()
+        if account:
+            actor = (
+                self.account_actor("ADMIN")
+                if allow_admin and account["role"] == "ADMIN"
+                else self.account_actor("GENERATOR", generator_id)
+            )
+        else:
+            actor = self.admin() if allow_admin and header(self.event, "x-admin-token") else None
         supplied = header(self.event, "x-generator-token")
         if actor is None and not supplied:
             raise ApiError(401, "UNAUTHORIZED", "Generator token is required.")
@@ -164,7 +206,7 @@ class Service:
         return record, actor
 
     def profile(self, record: dict[str, Any]) -> dict[str, Any]:
-        """Strip private and legacy screening-probability fields from generator profiles."""
+        """Strip private and legacy screening-probability fields from kitchen profiles."""
         result = {k: v for k, v in record.items() if k in PROFILE_FIELDS}
         result.setdefault("name", str(record["generatorId"]))
         result.setdefault("type", "unknown")
@@ -543,7 +585,7 @@ class Service:
                 {
                     "code": "INPUTS_CHANGED",
                     "inputRevision": current,
-                    "message": "Organic waste generator or hazard state changed; review.",
+                    "message": "Supplier readiness or hazard state changed; review.",
                 }
             ]
         )
@@ -558,6 +600,13 @@ class Service:
 
     def driver(self, plan: dict) -> dict:
         """Validate token generation, expiry and dispatched trip scope."""
+        actor = self.account_actor("DRIVER", plan["planKey"])
+        if actor:
+            if plan["state"] != "DISPATCHED" or self.now.timestamp() >= plan.get(
+                "driverExpiresEpoch", 0
+            ):
+                raise ApiError(401, "UNAUTHORIZED", "Assigned trip is invalid or expired.")
+            return actor
         token_generation_valid = (
             (
                 len(self.config.driver_token_secret) >= 32
@@ -669,7 +718,7 @@ class Service:
             for g in plan["inputs"]["generators"]
             if g["generatorId"] in {s["generatorId"] for s in plan["plan"]["stops"]}
         ):
-            conflict("An included organic waste generator has an unresolved hazard.")
+            conflict("An included waste supplier has an unresolved hazard.")
         expiry = int((self.now + timedelta(hours=self.config.driver_token_hours)).timestamp())
         stored = {
             **plan,
@@ -791,7 +840,7 @@ class Service:
         gid = request.get("generatorId")
         stop = next((s for s in plan["plan"]["stops"] if s["generatorId"] == gid), None)
         if not stop:
-            raise ApiError(401, "UNAUTHORIZED", "Kitchen is not assigned to this trip.")
+            raise ApiError(401, "UNAUTHORIZED", "Waste supplier is not assigned to this trip.")
         scope = "PICKUP#" + plan["planKey"] + "#" + gid
         key, replay = self.replay(scope, request)
         if replay is not None:
@@ -891,8 +940,14 @@ class Service:
         return action
 
     def gate(self, request: dict) -> dict:
-        """Save net intake and correction history; never allocate truck mass to generators."""
-        actor = self.plant_owner() if header(self.event, "x-plant-token") else self.admin()
+        """Save net intake and correction history; never allocate truck mass to kitchens."""
+        account = self.account()
+        actor = (
+            self.plant_owner()
+            if (account and account["role"] == "PLANT_OWNER")
+            or (not account and header(self.event, "x-plant-token"))
+            else self.admin()
+        )
         fields(
             request,
             {
@@ -992,6 +1047,15 @@ class Service:
         query = self.event.get("queryStringParameters") or {}
         from feedsure.handlers.photos import Photos
 
+        if path.startswith("/auth/account"):
+            from feedsure.common.accounts import Accounts
+
+            return Accounts(self.config, self).route(self.event, path, method)
+        if path == "/auth/session" and method == "GET":
+            account = self.account()
+            if account is None:
+                raise ApiError(401, "UNAUTHORIZED", "Sign in with your Supabase account.")
+            return {"account": account}
         if path == "/intake" and method == "GET":
             return self.intake(query.get("date"))
         if path == "/uploads" and method == "POST":

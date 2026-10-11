@@ -1,9 +1,10 @@
+import { supabase } from "../supabase";
+import { useAccount } from "../auth";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import {
   ApiError,
-  GateRequest,
   OperationGenerator,
   OperationsSnapshot,
   PlanDetailsResponse,
@@ -17,7 +18,6 @@ import {
   getOperations,
   getPlanDetails,
   recordHazardReview,
-  saveGate,
   saveReadiness,
 } from "../api";
 import { RouteMap } from "../components/RouteMap";
@@ -29,7 +29,6 @@ import {
   formatServiceDate,
   formatPercent,
   planMapPoints,
-  parseNetGateKg,
   reconciliationLabel,
   serviceDateInIndia,
 } from "../workflow";
@@ -84,9 +83,10 @@ function displayError(error: unknown): string {
 }
 
 export function PlantPage() {
-  const [adminToken, setAdminToken] = useState(() => sessionStorage.getItem("feedsure:admin") ?? "");
+  const { account } = useAccount();
+  const [adminToken, setAdminToken] = useState(() => account ? "supabase-account" : sessionStorage.getItem("feedsure:admin") ?? "");
   const [tokenDraft, setTokenDraft] = useState("");
-  const [date, setDate] = useState(serviceDateInIndia());
+  const [date, setDate] = useState(() => sessionStorage.getItem("feedsure:demo-date") ?? serviceDateInIndia());
   const [snapshot, setSnapshot] = useState<OperationsSnapshot | null>(null);
   const [plan, setPlan] = useState<PlanEnvelope | null>(null);
   const [details, setDetails] = useState<PlanDetailsResponse | null>(null);
@@ -102,12 +102,9 @@ export function PlantPage() {
   const [phone, setPhone] = useState<PhoneForm | null>(null);
   const [hazardReasons, setHazardReasons] = useState<Record<string, string>>({});
   const [driverAccess, setDriverAccess] = useState<{ token: string; expiresAt: string; planKey: string } | null>(null);
-  const [gate, setGate] = useState({ netKg: "", source: "SCALE" as WeightSource, reference: "", correctionReason: "" });
-  const [gateSaving, setGateSaving] = useState(false);
   const [supplyFilter, setSupplyFilter] = useState("all");
   const [driverLinkVisible, setDriverLinkVisible] = useState(false);
   const dispatchAttempt = useRef<{ signature: string; key: string } | null>(null);
-  const gateAttempt = useRef<{ signature: string; key: string } | null>(null);
   const phoneEditor = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -168,11 +165,11 @@ export function PlantPage() {
   const nextStep = !activePlan ? "Review the confirmations and build a draft route."
     : activePlan.state === "DISPATCHED" ? pendingOutcomes.length
       ? `Hand off the frozen trip. ${pendingOutcomes.length} stop outcomes are still pending.`
-      : execution?.gate ? "Review the pickup and net intake reconciliation." : "All stop outcomes are recorded. Record net plant intake."
-    : staleDraft ? "Kitchen inputs changed. Re-plan before dispatch."
+      : execution?.gate ? "Review the pickup and net intake reconciliation." : "All stop outcomes are recorded. Ask the plant owner to record net intake."
+    : staleDraft ? "Waste supplier inputs changed. Re-plan before dispatch."
     : !controlsMatchPlan ? "Planning controls changed. Re-plan to save these choices."
     : activePlan.mandatoryConflicts.length ? "Resolve mandatory stop conflicts before dispatch."
-    : !activePlan.plan.stops.length ? "No stops fit this draft. Review kitchen confirmations and constraints."
+    : !activePlan.plan.stops.length ? "No stops fit this draft. Review waste supplier confirmations and constraints."
     : activePlan.status !== "FEASIBLE" ? "This draft is not feasible. Review the shortfall and constraints before re-planning."
     : "Review addresses, windows and exclusions, then dispatch this version.";
   const currentDriverAccess = driverAccess?.planKey === activePlan?.planKey ? driverAccess : null;
@@ -189,6 +186,7 @@ export function PlantPage() {
   };
 
   const clearToken = () => {
+    if (account) { void supabase?.auth.signOut({ scope: "local" }); return; }
     sessionStorage.removeItem("feedsure:admin");
     setAdminToken("");
     setSnapshot(null);
@@ -253,7 +251,7 @@ export function PlantPage() {
       setDriverLinkVisible(false);
       setMessage(activePlan.state === "DISPATCHED"
         ? "Private driver access retrieved for the frozen trip."
-        : "Trip dispatched and frozen. Kitchen edits now appear as alerts.");
+        : "Trip dispatched and frozen. Waste supplier edits now appear as alerts.");
       setRefreshKey((value) => value + 1);
     } catch (reason) {
       if (reason instanceof ApiError && reason.code === "CONFLICT") {
@@ -321,56 +319,10 @@ export function PlantPage() {
     try {
       await recordHazardReview(generator.generatorId, adminToken, { collectionDate: date, action, reason });
       setHazardReasons((current) => ({ ...current, [generator.generatorId]: "" }));
-      setMessage(action === "RESOLVE" ? "Hazard resolved. Re-plan with the new input revision." : "Hazard recorded. The kitchen is held from planning.");
+      setMessage(action === "RESOLVE" ? "Hazard resolved. Re-plan with the new input revision." : "Hazard recorded. The waste supplier is held from planning.");
       setRefreshKey((value) => value + 1);
     } catch (reasonValue) {
       setError(displayError(reasonValue));
-    }
-  };
-
-  const saveGateLog = async (event: FormEvent) => {
-    event.preventDefault();
-    if (!activePlan || !adminToken) return;
-    const netKg = parseNetGateKg(gate.netKg);
-    if (netKg === null) {
-      setError("Enter a valid net received weight of zero or more.");
-      return;
-    }
-    const existing = execution?.gate;
-    if (existing && !gate.correctionReason.trim()) {
-      setError("A correction reason is required to replace a saved gate record.");
-      return;
-    }
-    const request: GateRequest = {
-      planKey: activePlan.planKey,
-      netKg,
-      weightSource: gate.source,
-      reference: gate.reference.trim() || null,
-      expectedRevision: existing?.revision ?? 0,
-      ...(existing ? { correctionReason: gate.correctionReason.trim() } : {}),
-    };
-    const signature = JSON.stringify(request);
-    if (!gateAttempt.current || gateAttempt.current.signature !== signature) {
-      gateAttempt.current = { signature, key: createIdempotencyKey("gate") };
-    }
-    setGateSaving(true);
-    setError(null);
-    try {
-      await saveGate(request, adminToken, gateAttempt.current.key);
-      gateAttempt.current = null;
-      setGate((current) => ({ ...current, correctionReason: "" }));
-      setMessage("Net received weight saved. Received does not mean processed.");
-      setRefreshKey((value) => value + 1);
-    } catch (reason) {
-      if (reason instanceof ApiError && reason.code === "CONFLICT") {
-        gateAttempt.current = null;
-        setError("The gate revision changed. Current server values are being refreshed; review them before saving the correction again.");
-        setRefreshKey((value) => value + 1);
-      } else {
-        setError(displayError(reason) + " Retrying unchanged values uses the same gate event ID.");
-      }
-    } finally {
-      setGateSaving(false);
     }
   };
 
@@ -400,7 +352,7 @@ export function PlantPage() {
       </header>
 
       <section className="operations-toolbar">
-        <label className="field compact"><span>Planning date · India time</span><input type="date" disabled={planning || dispatching || gateSaving} value={date} onChange={(event) => { const value = event.currentTarget.value; if (!value) return; setDate(value); setControlsTouched(false); setMandatoryIds([]); setSnapshot(null); setPlan(null); setDetails(null); setDriverAccess(null); setDriverLinkVisible(false); setPhone(null); setGate({ netKg: "", source: "SCALE", reference: "", correctionReason: "" }); setMessage(null); }} /></label>
+        <label className="field compact"><span>Planning date · India time</span><input type="date" disabled={planning || dispatching} value={date} onChange={(event) => { const value = event.currentTarget.value; if (!value) return; setDate(value); setControlsTouched(false); setMandatoryIds([]); setSnapshot(null); setPlan(null); setDetails(null); setDriverAccess(null); setDriverLinkVisible(false); setPhone(null); setMessage(null); }} /></label>
         <button className="button button-secondary" type="button" onClick={() => setRefreshKey((value) => value + 1)} disabled={loading}>Refresh data</button>
         {snapshot && <div className="mode-line"><span>Database {snapshot.serviceMode.database}</span><span>Matrix {activePlan?.matrixSource ?? snapshot.serviceMode.matrix}</span><span>Screening {snapshot.serviceMode.screening}</span></div>}
       </section>
@@ -422,7 +374,7 @@ export function PlantPage() {
 
           <section className="operations-brief" aria-label="Collection brief">
             <div><h1>{formatServiceDate(date)}</h1><p>{nextStep}</p></div>
-            <nav aria-label="Operations sections"><a href="#route-review">Route</a><a href="#supply-actions">Kitchen actions</a>{activePlan?.state === "DISPATCHED" && <a href="#gate-record">Plant intake</a>}</nav>
+            <nav aria-label="Operations sections"><a href="#route-review">Route</a><a href="#supply-actions">Waste supplier actions</a>{activePlan?.state === "DISPATCHED" && <a href="#gate-record">Plant intake</a>}</nav>
             <p className="brief-detail">{formatKg(confirmedSupplyKg(snapshot.generators, true))} confirmed without hazard holds in the accepted stream. Confirmed quantity is not expected collection. Input revision {snapshot.inputRevision}.</p>
           </section>
 
@@ -488,7 +440,7 @@ export function PlantPage() {
           )}
 
           <section className="supply-panel" id="supply-actions">
-            <div className="section-heading"><div><p className="context-line">Authoritative date snapshot</p><h2>Kitchens and next actions</h2></div><label className="field compact"><span>Show kitchens</span><select value={supplyFilter} onChange={(event) => setSupplyFilter(event.currentTarget.value)}><option value="all">All kitchens</option><option value="action">Need attention</option><option value="route">On this route</option></select></label></div>
+            <div className="section-heading"><div><p className="context-line">Authoritative date snapshot</p><h2>Waste suppliers and next actions</h2></div><label className="field compact"><span>Show waste suppliers</span><select value={supplyFilter} onChange={(event) => setSupplyFilter(event.currentTarget.value)}><option value="all">All waste suppliers</option><option value="action">Need attention</option><option value="route">On this route</option></select></label></div>
             <p className="muted">Mark a promised pickup mandatory before building the draft. A mandatory stop that cannot fit blocks dispatch.</p>
             <div className="supply-list">
               {snapshot.generators.filter((generator) => supplyFilter === "all" || (supplyFilter === "route"
@@ -548,15 +500,7 @@ export function PlantPage() {
                 {execution.reconciliation.pendingStopIds.length > 0 && <p>Pending outcomes: {execution.reconciliation.pendingStopIds.join(", ")}</p>}
                 {execution.reconciliation.gpsFlags.some((flag) => flag.status !== "IN_RANGE") && <p>GPS evidence flags: {execution.reconciliation.gpsFlags.map((flag) => `${flag.generatorId} ${flag.status}`).join(", ")}. These are review cues, not fraud findings.</p>}
               </div>
-              <form className="gate-form" onSubmit={(event) => void saveGateLog(event)}>
-                <h3>Record net plant intake</h3>
-                <label className="field"><span>Net received kg</span><input type="number" min="0" step="0.1" value={gate.netKg} onChange={(event) => { const value = event.currentTarget.value; setGate((current) => ({ ...current, netKg: value })); gateAttempt.current = null; }} /></label>
-                <label className="field"><span>Weight source</span><select value={gate.source} onChange={(event) => { const value = event.currentTarget.value as WeightSource; setGate((current) => ({ ...current, source: value })); gateAttempt.current = null; }}><option value="SCALE">Scale</option><option value="ESTIMATE">Estimate</option></select></label>
-                <label className="field"><span>Weighbridge reference (optional)</span><input value={gate.reference} onChange={(event) => { const value = event.currentTarget.value; setGate((current) => ({ ...current, reference: value })); gateAttempt.current = null; }} /></label>
-                {execution.gate && <label className="field"><span>Correction reason</span><input value={gate.correctionReason} onChange={(event) => { const value = event.currentTarget.value; setGate((current) => ({ ...current, correctionReason: value })); gateAttempt.current = null; }} /></label>}
-                <button className="button button-primary button-full" type="submit" disabled={gateSaving}>{gateSaving ? "Saving gate record…" : execution.gate ? "Save gate correction" : "Save gate record"}</button>
-                <small>Received weight is not a claim that the load was processed.</small>
-              </form>
+              <div><h3>Plant owner intake</h3><p>The plant owner records received weight in the separate intake desk.</p><Link className="button button-secondary" to="/owner">Open plant owner desk</Link></div>
             </section>
           )}
         </>

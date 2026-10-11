@@ -1,0 +1,210 @@
+{
+  "attribution": "© OpenStreetMap contributors",
+  "license": "ODbL-1.0",
+  "licenseUrl": "https://opendatacommons.org/licenses/odbl/1-0/",
+  "copyrightUrl": "https://www.openstreetmap.org/copyright",
+  "retrievedOn": "2026-10-11",
+  "source": "https://overpass-api.de/api/interpreter",
+  "sourceSnapshots": [
+    "2026-10-11T12:25:02Z",
+    "2026-10-11T12:25:02Z"
+  ],
+  "pilotArea": "Harohalli, Karnataka, India",
+  "note": "Mapped venue references only. No supplier enrolment, waste quantities, pickup entrance or business operation is verified. Collection records remain synthetic.",
+  "generators": [
+    {
+      "generatorId": "demo-kitchen-01",
+      "name": "Jayaram Breakfast Point",
+      "type": "cafe",
+      "lat": 12.6778162,
+      "lng": 77.4746671,
+      "address": "Harohalli pilot area; mapped point 12.6778162, 77.4746671",
+      "locationSource": {
+        "provider": "OpenStreetMap",
+        "elementType": "node",
+        "elementId": 1304825515,
+        "url": "https://www.openstreetmap.org/node/1304825515",
+        "coordinateKind": "node",
+        "tags": {
+          "amenity": "cafe",
+          "name": "Jayaram Breakfast Point"
+        }
+      }
+    },
+    {
+      "generatorId": "demo-kitchen-02",
+      "name": "Mandarathi Vaibhava",
+      "type": "restaurant",
+      "lat": 12.7563599,
+      "lng": 77.4854899,
+      "address": "Harohalli pilot area; mapped point 12.7563599, 77.4854899",
+      "locationSource": {
+        "provider": "OpenStreetMap",
+        "elementType": "node",
+        "elementId": 10647819582,
+        "url": "https://www.openstreetmap.org/node/10647819582",
+        "coordinateKind": "node",
+        "tags": {
+          "amenity": "restaurant",
+          "name": "Mandarathi Vaibhava"
+        }
+      }
+    },
+    {
+      "generatorId": "demo-kitchen-03",
+      "name": "Mandarathi Gardens",
+      "type": "restaurant",
+      "lat": 12.6227353,
+      "lng": 77.4315434,
+      "address": "Harohalli pilot area; mapped point 12.6227353, 77.4315434",
+      "locationSource": {
+        "provider": "OpenStreetMap",
+        "elementType": "node",
+        "elementId": 11513230796,
+        "url": "https://www.openstreetmap.org/node/11513230796",
+        "coordinateKind": "node",
+        "tags": {
+          "amenity": "restaurant",
+          "name": "Mandarathi Gardens"
+        }
+      }
+    },
+    {
+      "generatorId": "demo-kitchen-04",
+      "name": "Red Spice",
+      "type": "restaurant",
+      "lat": 12.6225054,
+      "lng": 77.4315749,
+      "address": "Harohalli pilot area; mapped point 12.6225054, 77.4315749",
+      "locationSource": {
+        "provider": "OpenStreetMap",
+        "elementType": "node",
+        "elementId": 11999072013,
+        "url": "https://www.openstreetmap.org/node/11999072013",
+        "coordinateKind": "node",
+        "tags": {
+          "amenity": "restaurant",
+          "name": "Red Spice"
+        }
+      }
+    },
+    {
+      "generatorId": "demo-kitchen-05",
+      "name": "Campus Mess",
+      "type": "canteen",
+      "lat": 12.6408946,
+      "lng": 77.4408622,
+      "address": "Harohalli pilot area; mapped point 12.6408946, 77.4408622",
+      "locationSource": {
+        "provider": "OpenStreetMap",
+        "elementType": "node",
+        "elementId": 6357489343,
+        "url": "https://www.openstreetmap.org/node/6357489343",
+        "coordinateKind": "node",
+        "tags": {
+          "amenity": "restaurant",
+          "name": "Campus Mess"
+        }
+      }
+    },
+    {
+      "generatorId": "demo-kitchen-06",
+      "name": "S Residency Boys Hostel",
+      "type": "hostel_mess",
+      "lat": 12.6583227,
+      "lng": 77.4479832,
+      "address": "Harohalli pilot area; mapped point 12.6583227, 77.4479832",
+      "locationSource": {
+        "provider": "OpenStreetMap",
+        "elementType": "node",
+        "elementId": 13316004022,
+        "url": "https://www.openstreetmap.org/node/13316004022",
+        "coordinateKind": "node",
+        "tags": {
+          "building": "yes",
+          "name": "S Residency Boys Hostel"
+        }
+      }
+    },
+    {
+      "generatorId": "demo-kitchen-07",
+      "name": "Nursing Girls Hostel",
+      "type": "hostel_mess",
+      "lat": 12.6584271,
+      "lng": 77.4494652,
+      "address": "Harohalli pilot area; mapped point 12.6584271, 77.4494652",
+      "locationSource": {
+        "provider": "OpenStreetMap",
+        "elementType": "node",
+        "elementId": 13316004018,
+        "url": "https://www.openstreetmap.org/node/13316004018",
+        "coordinateKind": "node",
+        "tags": {
+          "building": "yes",
+          "name": "Nursing Girls Hostel"
+        }
+      }
+    },
+    {
+      "generatorId": "demo-kitchen-08",
+      "name": "Karakoram Hostel",
+      "type": "hostel_mess",
+      "lat": 12.6406066,
+      "lng": 77.4415259,
+      "address": "Harohalli pilot area; mapped point 12.6406066, 77.4415259",
+      "locationSource": {
+        "provider": "OpenStreetMap",
+        "elementType": "relation",
+        "elementId": 16048270,
+        "url": "https://www.openstreetmap.org/relation/16048270",
+        "coordinateKind": "feature_center",
+        "tags": {
+          "alt_name": "Hostel Block 2",
+          "building": "residential",
+          "description": "Senior Boys Hostel",
+          "name": "Karakoram Hostel"
+        }
+      }
+    },
+    {
+      "generatorId": "demo-kitchen-09",
+      "name": "Purvanchal Hostel",
+      "type": "hostel_mess",
+      "lat": 12.641092,
+      "lng": 77.4415273,
+      "address": "Harohalli pilot area; mapped point 12.641092, 77.4415273",
+      "locationSource": {
+        "provider": "OpenStreetMap",
+        "elementType": "relation",
+        "elementId": 16048271,
+        "url": "https://www.openstreetmap.org/relation/16048271",
+        "coordinateKind": "feature_center",
+        "tags": {
+          "alt_name": "Hostel Block 1",
+          "building": "residential",
+          "description": "Senior Girls Hostel",
+          "name": "Purvanchal Hostel"
+        }
+      }
+    },
+    {
+      "generatorId": "demo-kitchen-10",
+      "name": "Krishna Sagar",
+      "type": "restaurant",
+      "lat": 12.8004681,
+      "lng": 77.5083839,
+      "address": "Harohalli pilot area; mapped point 12.8004681, 77.5083839",
+      "locationSource": {
+        "provider": "OpenStreetMap",
+        "elementType": "node",
+        "elementId": 4636471347,
+        "url": "https://www.openstreetmap.org/node/4636471347",
+        "coordinateKind": "node",
+        "tags": {
+          "amenity": "restaurant",
+          "name": "Krishna Sagar"
+        }
+      }
+    }
+  ]
+}

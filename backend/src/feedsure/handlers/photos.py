@@ -19,7 +19,7 @@ import boto3
 from botocore.config import Config as BotoConfig
 
 from feedsure.common.v3 import ApiError, fields, invalid, revision, stamp
-from feedsure.screening.bedrock_client import invoke_screening
+from feedsure.screening.client import analysis_mode, invoke_screening
 from feedsure.screening.mock import load_fixture
 from feedsure.screening.prompt import build_photo_prompt
 from feedsure.screening.validate import validate_photo_observations
@@ -259,11 +259,21 @@ class Photos:
             config=BotoConfig(connect_timeout=1, read_timeout=3, retries={"max_attempts": 0}),
         )
 
+    def supabase(self) -> Any:
+        """Select cloud transport independently from disposable local photo injection."""
+        if self.s.config.photo_storage_provider not in {"s3", "supabase"}:
+            raise ApiError(503, "DEPENDENCY_NOT_READY", "Unknown PHOTO_STORAGE_PROVIDER.")
+        if self.s.config.photo_storage_provider == "supabase":
+            from feedsure.common.supabase import Storage
+
+            return Storage(self.s.config)
+        return None
+
     def key(self, value: Any, gid: str) -> str:
         if not isinstance(value, str) or not re.fullmatch(
             rf"submissions/{re.escape(gid)}/[a-f0-9]{{32}}\.(jpg|png)", value
         ):
-            invalid("Provide an issued own-kitchen photo key.")
+            invalid("Provide a photo key issued for your supplier account.")
         return value
 
     def uploads(self, request: dict) -> dict:
@@ -277,7 +287,16 @@ class Photos:
             invalid("Choose JPEG or PNG.")
         extension = "jpg" if content_type == "image/jpeg" else "png"
         key = f"submissions/{gid}/{secrets.token_hex(16)}.{extension}"
-        if self.s.photo_store:
+        storage = self.supabase()
+        if storage:
+            upload = {
+                "slot": "top",
+                "key": key,
+                "url": storage.signed(key, upload=True),
+                "fields": {},
+                "transport": "supabase",
+            }
+        elif self.s.photo_store:
             self.s.photo_store.issue(key, content_type, self.s)
             upload = {
                 "slot": "top",
@@ -305,6 +324,11 @@ class Photos:
         return {"uploads": [upload]}
 
     def load(self, key: str) -> tuple[bytes, str]:
+        storage = self.supabase()
+        if storage:
+            data, content_type = storage.get(key)
+            validate_image(data, content_type, self.s.config)
+            return data, content_type
         if self.s.photo_store:
             return self.s.photo_store.get(key, self.s)
         try:
@@ -343,6 +367,12 @@ class Photos:
             raise ApiError(404, "NOT_FOUND", "No evidence attached.")
         data, content_type = self.load(record["photoKeys"][0])
         self.verify_evidence(record, data)
+        storage = self.supabase()
+        if storage:
+            return {
+                "url": storage.signed(record["photoKeys"][0], upload=False),
+                "transport": "supabase",
+            }
         if self.s.photo_store:
             return {
                 "url": f"data:{content_type};base64," + base64.b64encode(data).decode(),
@@ -391,17 +421,21 @@ class Photos:
             if photo is not None:
                 data, content_type = self.load(self.key(photo, gid))
                 sha256 = hashlib.sha256(data).hexdigest()
-                if not self.s.photo_store:
+                storage = self.supabase()
+                if storage or not self.s.photo_store:
                     # Signed upload forms can overwrite their key until expiry. Freeze a
                     # separate private copy whose key has never been issued for upload.
                     extension = "jpg" if content_type == "image/jpeg" else "png"
                     photo = f"submissions/{gid}/{secrets.token_hex(16)}.{extension}"
-                    self.s3().put_object(
-                        Bucket=self.s.config.photos_bucket,
-                        Key=photo,
-                        Body=data,
-                        ContentType=content_type,
-                    )
+                    if storage:
+                        storage.put(photo, data, content_type)
+                    else:
+                        self.s3().put_object(
+                            Bucket=self.s.config.photos_bucket,
+                            Key=photo,
+                            Body=data,
+                            ContentType=content_type,
+                        )
             updated.update(
                 photoKeys=[photo] if photo else [],
                 photoSha256=sha256,
@@ -454,7 +488,7 @@ class Photos:
                             "actor": actor,
                             "recordedAt": stamp(self.s.now),
                             "simulated": old["simulated"],
-                            "source": "mock" if self.s.config.mock_bedrock else "aws",
+                            "source": analysis_mode(self.s.config),
                             "submissionId": old["submissionId"],
                         }
                 else:
@@ -471,7 +505,7 @@ class Photos:
                 photoStatus=status,
                 analysis={
                     "state": "FAILED" if observation is None else "COMPLETE",
-                    "mode": "mock" if self.s.config.mock_bedrock else "aws",
+                    "mode": analysis_mode(self.s.config),
                     "observations": observation,
                     "recordedAt": stamp(self.s.now),
                     "limit": "Visible surface only; no safety or whole-load certification.",

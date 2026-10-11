@@ -3,6 +3,31 @@ Transform: AWS::Serverless-2016-10-31
 Description: FeedSure CBG v3 operational backend
 
 Parameters:
+  AuthProvider:
+    Type: String
+    Default: tokens
+    AllowedValues: [tokens, supabase]
+  PhotoStorageProvider:
+    Type: String
+    Default: s3
+    AllowedValues: [s3, supabase]
+  SupabaseAccountManagement:
+    Type: String
+    Default: "false"
+    AllowedValues: ["true", "false"]
+  SupabaseUrl:
+    Type: String
+    Default: ""
+  SupabasePublishableKey:
+    Type: String
+    Default: ""
+  SupabaseServiceRoleKey:
+    Type: String
+    Default: ""
+    NoEcho: true
+  SupabasePhotosBucket:
+    Type: String
+    Default: feedsure-photos
   Stage:
     Type: String
     Default: dev
@@ -52,6 +77,30 @@ Parameters:
   PhotoMinConfidence:
     Type: Number
     Default: 0.6
+  PhotoAnalysisProvider:
+    Type: String
+    Default: bedrock
+    AllowedValues: [bedrock, nvidia]
+  NvidiaApiKey:
+    Type: String
+    Default: ""
+    NoEcho: true
+  NvidiaModelId:
+    Type: String
+    Default: nvidia/nemotron-nano-12b-v2-vl
+  NvidiaApiUrl:
+    Type: String
+    Default: https://integrate.api.nvidia.com/v1/chat/completions
+  NvidiaMaxTokens:
+    Type: Number
+    Default: 600
+    MinValue: 1
+    MaxValue: 8192
+  NvidiaTimeoutSeconds:
+    Type: Number
+    Default: 5
+    MinValue: 1
+    MaxValue: 5
   AdminToken:
     Type: String
     Default: CHANGE_ME
@@ -226,8 +275,21 @@ Globals:
         BEDROCK_MAX_TOKENS: !Ref BedrockMaxTokens
         MIN_CONFIDENCE: !Ref PhotoMinConfidence
         BEDROCK_MODEL_ID: !Ref BedrockModelId
+        PHOTO_ANALYSIS_PROVIDER: !Ref PhotoAnalysisProvider
+        NVIDIA_API_KEY: !Ref NvidiaApiKey
+        NVIDIA_MODEL_ID: !Ref NvidiaModelId
+        NVIDIA_API_URL: !Ref NvidiaApiUrl
+        NVIDIA_MAX_TOKENS: !Ref NvidiaMaxTokens
+        NVIDIA_TIMEOUT_SECONDS: !Ref NvidiaTimeoutSeconds
         MOCK_BEDROCK: !Ref MockBedrock
         MOCK_BEDROCK_FIXTURE: !Ref MockBedrockFixture
+        AUTH_PROVIDER: !Ref AuthProvider
+        PHOTO_STORAGE_PROVIDER: !Ref PhotoStorageProvider
+        SUPABASE_ACCOUNT_MANAGEMENT: !Ref SupabaseAccountManagement
+        SUPABASE_URL: !Ref SupabaseUrl
+        SUPABASE_PUBLISHABLE_KEY: !Ref SupabasePublishableKey
+        SUPABASE_SERVICE_ROLE_KEY: !Ref SupabaseServiceRoleKey
+        SUPABASE_PHOTOS_BUCKET: !Ref SupabasePhotosBucket
         ADMIN_TOKEN: !Ref AdminToken
         PLANT_OWNER_TOKEN: !Ref PlantOwnerToken
         ALLOWED_ORIGIN: !Ref AllowedOrigin
@@ -255,6 +317,7 @@ Resources:
           - !Ref AllowedOrigin
         AllowHeaders:
           - content-type
+          - authorization
           - x-admin-token
           - x-plant-token
           - x-generator-token
@@ -328,6 +391,42 @@ Resources:
               Action: geo-routes:CalculateRouteMatrix
               Resource: "*"
       Events:
+        Account0:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Method: GET
+            Path: /auth/account
+        Account1:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Method: POST
+            Path: /auth/account
+        Account2:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Method: GET
+            Path: /auth/accounts
+        Account3:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Method: POST
+            Path: /auth/accounts
+        Account4:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Method: POST
+            Path: /auth/accounts/{accountId}
+        AuthSession:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /auth/session
+            Method: GET
         Route0:
           Type: HttpApi
           Properties:

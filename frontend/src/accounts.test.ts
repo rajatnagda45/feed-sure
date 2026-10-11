@@ -1,15 +1,16 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { accountRequest, clearAccountAccess } from "./accounts";
+vi.mock("./supabase", () => ({ accessToken: vi.fn().mockResolvedValue("supabase-session") }));
 
 afterEach(() => vi.unstubAllGlobals());
 
-it("sends an account session without granting dispatcher credentials", async () => {
-  vi.stubGlobal("sessionStorage", { getItem: () => "la_session" });
+it("sends the SDK bearer without granting legacy dispatcher credentials", async () => {
   const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ accounts: [] }), { status: 200 }));
   vi.stubGlobal("fetch", fetch);
   await accountRequest("/auth/accounts");
   const headers = new Headers(fetch.mock.calls[0][1].headers);
-  expect(headers.get("X-Account-Token")).toBe("la_session");
+  expect(headers.get("Authorization")).toBe("Bearer supabase-session");
+  expect(headers.has("X-Account-Token")).toBe(false);
   expect(headers.has("X-Admin-Token")).toBe(false);
 });
 

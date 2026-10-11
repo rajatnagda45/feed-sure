@@ -13,7 +13,7 @@ Windows `start`/`end` are same-day HH:MM, start < end; no overnight windows. Mis
 fields are normalised to null or the explicit defaults below. Unknown fields are rejected on
 mutations; errors are `{error:{code,message}}`, never raw provider errors or secrets.
 
-Headers: `X-Admin-Token`, `X-Generator-Token`, `X-Driver-Token`. Generator tokens are scoped to
+Headers: `X-Admin-Token`, `X-Plant-Token`, `X-Generator-Token`, `X-Driver-Token`. Generator tokens are scoped to
 one generator, driver tokens to one dispatched plan; admin endpoints reject placeholder/missing
 admin configuration. `Idempotency-Key` (1–128 safe ASCII chars) is required on dispatch, pickup
 and gate writes. Bootstrap links may use `?t=`, but API endpoints require headers. UI removes
@@ -42,6 +42,7 @@ admin secrets or raw driver tokens. 400 INVALID_INPUT, 401 UNAUTHORIZED, 404 NOT
 | GET /generators | admin | `{generators:[profile]}` |
 | GET /generators/{generatorId} | generator | `{generator:profile}` |
 | GET /operations?date=... | admin | authoritative planning snapshot described below |
+| GET /intake?date=... | plant owner | `{schemaVersion:3,collectionDate,database,trips}`; dispatched trips with pickup summaries, current gate and reconciliation; excludes readiness inputs and precise GPS |
 | GET /submissions?date=... | admin | `{submissions:[latest readiness records],inputRevision}` |
 | POST /submissions | generator or admin | readiness request -> `{submission:record,inputRevision}` |
 | POST /submissions/{submissionId}/screen | same generator or admin | `{expectedPhotoRevision}` + Idempotency-Key -> `{submission:record,inputRevision}`; optional P1 |
@@ -56,7 +57,7 @@ admin secrets or raw driver tokens. 400 INVALID_INPUT, 401 UNAUTHORIZED, 404 NOT
 | POST /plans/{planKey}/dispatch | admin | `{expectedVersion,expectedInputRevision}` -> dispatch example |
 | GET /plans/{planKey}/driver | driver | `{plan:driver-safe envelope,pickups,gate,reconciliation,alerts}` |
 | POST /pickups | driver | pickup request -> `{pickup:record,reconciliation}` |
-| POST /gate-logs | admin | gate request -> `{gate:record,reconciliation}` |
+| POST /gate-logs | plant owner or admin | gate request -> `{gate:record,reconciliation}` |
 | GET /generators/{generatorId}/receipts?month=YYYY-MM | generator | `{generatorId,records:[{pickup,planKey,collectionDate,gateStatus,gateRecorded,provisional}],schemaVersion:3}` |
 
 Profile fields: generatorId, name, type, address (string), lat/lng, pickupWindow,
@@ -187,7 +188,7 @@ distance >150m => OUT_OF_RANGE, no blocking. Default configurable GPS retention 
 Gate fields: planKey, netKg (>=0), weightSource SCALE|ESTIMATE, reference|null,
 expectedRevision, correctionReason on correction. Optional grossKg/tareKg both required,
 finite >=0, gross>=tare, net must equal gross-tare. Record adds revision, recordedAt,
-actor ADMIN, schemaVersion, simulated; reconciliation always recomputed on reads/corrections.
+actor ADMIN or PLANT_OWNER, schemaVersion, simulated; reconciliation always recomputed on reads/corrections.
 Gate while any stop pending is accepted and returns INCOMPLETE, not fabricated completion.
 
 For dispatch/pickups/gate, same scoped key and canonical payload returns original saved mutation

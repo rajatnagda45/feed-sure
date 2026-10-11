@@ -10,3 +10,9 @@
 .optional-photo .photo-result { padding: .9rem; background: #eef4ef; border-radius: 8px; overflow-wrap: anywhere; }
 .optional-photo .photo-result small { display: block; line-height: 1.5; }
 .optional-photo .photo-hazard { display: block; color: #8c351f; }
+.optional-photo .browser-camera { padding: .75rem; background: #eef4ef; border-radius: 10px; }
+.optional-photo .browser-camera video { display: block; width: 100%; max-height: 360px; object-fit: contain; background: #10261b; border-radius: 8px; }
+.optional-photo .browser-camera p { overflow-wrap: anywhere; }
+.optional-photo .photo-upload-fallback { margin: .75rem 0; }
+.optional-photo .photo-upload-fallback summary { cursor: pointer; padding: .65rem 0; min-height: 44px; }
+.optional-photo .photo-upload-fallback button { min-height: 44px; }

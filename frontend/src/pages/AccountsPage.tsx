@@ -1,10 +1,10 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ApiError } from "../api";
+import { supabase } from "../supabase";
 import { Account, accountLabels, accountRequest, clearAccountAccess } from "../accounts";
 
 function message(reason: unknown) {
-  return reason instanceof ApiError ? reason.message : "Could not connect. Check the connection and retry.";
+  return reason instanceof Error ? reason.message : "Could not connect. Check the connection and retry.";
 }
 
 function AccountEditor({ account, refresh }: { account: Account; refresh: (message: string) => void }) {
@@ -17,7 +17,7 @@ function AccountEditor({ account, refresh }: { account: Account; refresh: (messa
   async function action(name: string, extra = {}) {
     setBusy(true); setError(null); setNotice(null);
     try {
-      await accountRequest<Account>(`/auth/accounts/${encodeURIComponent(account.loginId)}`, {
+      await accountRequest<Account>(`/auth/accounts/${encodeURIComponent(account.id)}`, {
         action: name, expectedRevision: account.revision, ...extra,
       });
       setPassword(""); setConfirmation("");
@@ -119,6 +119,8 @@ export function MyAccountPage() {
       await accountRequest("/auth/account", { action, expectedRevision: account.revision, currentPassword,
         ...(action === "password" ? { password } : {}),
       });
+      const result = await supabase?.auth.signOut({ scope: "local" });
+      if (result?.error) throw new Error("Account updated. Sign-out failed; retry Sign out before signing in again.");
       clearAccountAccess(); navigate("/login", { replace: true });
     } catch (reason) { setError(message(reason)); }
     finally { setBusy(false); }
@@ -143,27 +145,4 @@ export function MyAccountPage() {
     {!account && <Link to="/login">Sign in to manage your account</Link>}
     <Link className="text-button" to="/">Back to FeedSure</Link>
   </section></main>;
-}
-
-export function AccountNavigation() {
-  const navigate = useNavigate();
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  if (!sessionStorage.getItem("feedsure:account")) return null;
-  async function logout() {
-    setBusy(true);
-    try {
-      await accountRequest("/auth/logout", {}); clearAccountAccess(); navigate("/login", { replace: true });
-    } catch (reason) {
-      if (reason instanceof ApiError && reason.status === 401) {
-        clearAccountAccess(); navigate("/login", { replace: true });
-      } else { setError(message(reason)); }
-    } finally { setBusy(false); }
-  }
-  return <nav className="account-navigation" aria-label="Account navigation">
-    <span>{sessionStorage.getItem("feedsure:login-id")}</span><Link to="/account">My account</Link>
-    {sessionStorage.getItem("feedsure:account-role") === "admin" && <Link to="/accounts">Manage accounts</Link>}
-    <button className="text-button" disabled={busy} type="button" onClick={() => void logout()}>Sign out</button>
-    {error && <span role="alert">{error}</span>}
-  </nav>;
 }
