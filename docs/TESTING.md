@@ -2,6 +2,12 @@
 
 Updated 11 October 2026. This document separates repeatable automated checks from earlier browser observations and pending repair integration.
 
+## Separate plant owner interface
+
+The isolated owner-role change passed `python -m pytest -q` (280 backend tests), `npm run test` (62 passed, 3 opt-in skipped) and `npm run build`. Ruff and `git diff --check` passed. Real local HTTP tests cover distinct credentials, rejected planner/dispatch/kitchen/driver access, dispatched-trip visibility, gate actor attribution, replay/conflicts, stale corrections, and shared admin/kitchen reconciliation. Frontend checks cover owner auth headers, isolated session storage and missing/corrected gate rendering.
+
+The local owner demo starts on an isolated port pair. Browser tools could not connect to this host's loopback preview, so these checks do not establish an interactive browser walkthrough or deployed AWS behavior. `PlantOwnerToken` must be configured and the backend/frontend changes deployed together before cloud owner access works.
+
 ## Session C: verified independent checks
 
 | Check | Actual result | Scope |

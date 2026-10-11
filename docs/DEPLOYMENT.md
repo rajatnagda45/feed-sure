@@ -25,7 +25,9 @@ npm ci
 npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
 ```
 
-Open `http://localhost:5173/plant`, privately read the dispatcher token and kitchen links from `.tmp/local-demo-access.json`, and choose 12 October 2026. These credentials are disposable secrets. Bootstrap links are scoped; the dispatched trip issues separate driver access. Keep access files out of recordings and Git.
+Open `http://localhost:5173/admin` for dispatch (`/plant` remains compatible) and `http://localhost:5173/owner` for CBG intake. Privately read `adminToken`, `plantOwnerToken` and kitchen links from `.tmp/local-demo-access.json`, and choose 12 October 2026. The runner generates distinct staff credentials. The owner sees a trip after admin dispatch and can record net received weight; driver pickups and kitchen receipts share its gate status. These credentials are disposable secrets. Bootstrap links are scoped; the dispatched trip issues separate driver access. Keep access files out of recordings and Git.
+
+For deployment, configure a distinct secret with SAM parameter `PlantOwnerToken` (NoEcho), which supplies backend `PLANT_OWNER_TOKEN`. It defaults to disabled access. The ordinary local shim reads `PLANT_OWNER_TOKEN` from its process environment. Never use the admin token as the owner token or put either in frontend build variables. Redeploy the SAM API/Lambda changes and publish the rebuilt frontend together to enable `/intake` and its CORS header.
 
 The runner binds loopback, seeds ten fictional kitchens and executes real handlers, transactions, planner and reconciliation with in-process Moto. Routing uses labelled fallback estimates. The in-progress photo repair adds local byte storage and explicit mock screening fixtures. Operational data and credentials are recreated when the runner starts; database state disappears on shutdown. Photo bytes are files under the selected private photo directory. This mode does not establish live AWS use. Photo/map runtime checks remain pending the final owner handoffs.
 

@@ -94,6 +94,7 @@ class Config:
     photo_max_dimension: int = 8192
     photo_max_pixels: int = 16_000_000
     photo_max_decoded_bytes: int = 40_000_000
+    plant_owner_token: str = ""
 
 
 def get_config() -> Config:
@@ -119,6 +120,7 @@ def get_config() -> Config:
         ),
         bedrock_max_tokens=_integer("BEDROCK_MAX_TOKENS", 600),
         admin_token=_string("ADMIN_TOKEN", "CHANGE_ME"),
+        plant_owner_token=_string("PLANT_OWNER_TOKEN", ""),
         allowed_origin=_string("ALLOWED_ORIGIN", "http://localhost:5173"),
         hold_threshold_pct=_number("HOLD_THRESHOLD_PCT", 5),
         inspect_min_pct=_number("INSPECT_MIN_PCT", 1),
