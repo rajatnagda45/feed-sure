@@ -31,6 +31,11 @@ export function LocationPicker({ address, initialPoint, onChange, allowPinArea =
   }, [address, pin]);
   useEffect(() => () => { ++sequence.current; }, []);
   useEffect(() => {
+    if (!point) {
+      marker.current?.remove(); map.current?.remove();
+      marker.current = null; map.current = null;
+      return;
+    }
     if (!point || !container.current || map.current) return;
     const provider = selectBasemap(import.meta.env.VITE_LOCATION_API_KEY ?? "", import.meta.env.VITE_AWS_REGION ?? "ap-south-1",
       ["localhost", "127.0.0.1"].includes(window.location.hostname));
