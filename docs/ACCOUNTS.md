@@ -23,11 +23,12 @@ DynamoDB retains collection, dispatch and intake data; the private Supabase imag
    `supabase/migrations/202610110002_accounts.sql`, then
    `supabase/migrations/202610110003_admin_creation_role.sql`, then
    `supabase/migrations/20261011150000_user_flows.sql`, then
-   `supabase/migrations/20261011160000_self_service_registration.sql` in the SQL editor.
-   The final migration automatically activates complete pending generator/plant registrations
-   and future signups. It preserves existing roles, profiles, scopes and suspended/deleted accounts.
-   Incomplete profiles and managed Admin/driver accounts still require setup. Review imported
-   trusted Admin assignments first.
+   `supabase/migrations/20261011170000_profile_completion.sql`, then
+   `supabase/migrations/20261011180000_self_service_registration.sql` in the SQL editor.
+   The final migration activates complete pending generator/plant profiles and activates future
+   accounts when their own complete profile is saved. It preserves existing roles, scopes,
+   suspended/deleted accounts and the profile workflow. Incomplete profiles still need completion;
+   managed Admin/driver accounts require privileged setup. Review imported Admin assignments first.
    The third migration handles the Admin API's delayed trusted role metadata and repairs
    untouched pending Admin creations. It does not activate accounts or rewrite reviewed roles.
 3. Create your first email/password user in Supabase Authentication. In the trusted SQL editor,
@@ -100,18 +101,22 @@ it after relying on its revocation controls.
 
 ## Screens and permissions
 
-- `/register`: generators, CBG operations and plant owners create active accounts. Generators supply
-  a PIN code/address or optional live GPS and confirm their pickup entrance on a movable map pin;
-  coordinates are saved automatically. Plant teams supply capacity. The Auth insert trigger validates
-  required details and activates complete registrations. Browser metadata cannot grant Admin/driver access.
-- `/login`: sign in with email/password immediately after registration. No email verification or
-  Admin approval is required in password mode. The SDK persists and refreshes sessions.
-- `/accounts`: only active **Admin accounts** create, approve, edit contact details, reset,
-  suspend/reactivate and delete accounts. `/accounts/new` can create another Admin. Admin-created
-  users have confirmed email status; share their temporary password privately. Complete generator/plant
-  creation is active; Admin and driver creation remains pending until explicitly activated.
-- `/account`: view your profile, change password or delete your login with current-password
-  verification. No separate local ID/password registry or account session token is used.
+- `/register`: generators, CBG operations and plant owners create their login.
+  Address is optional; pickup confirmation happens in My profile. Plant teams supply capacity.
+  Complete registrations activate immediately; incomplete registrations activate when their own
+  profile is completed. Browser metadata cannot grant Admin or driver access.
+- `/login`: sign in with email/password without email verification in password mode.
+  Users with incomplete details can open My profile and save them to activate access automatically.
+  No Admin approval is required for generator or plant access. The SDK persists and refreshes sessions.
+- `/accounts`: active **Admin accounts** create, edit, reset, suspend/reactivate and delete accounts.
+  `/accounts/new` can create another Admin. Admin-created users have confirmed email status;
+  share temporary passwords privately. Admin and driver accounts retain privileged activation.
+- `/account` (My profile): pending and active users edit their own organisation, contact and address.
+  Generators confirm their pickup entrance using PIN/address search or optional live GPS.
+  Partial details can be saved; complete generator/plant profiles activate access automatically.
+  Plant users can update capacity. Profile saves do not require re-entering a password;
+  password changes and deletion still do. Login email changes require the Admin.
+  No separate local ID/password registry or account session token is used.
 
 CBG operations has dispatcher permissions but cannot manage accounts. Owners have the existing
 intake desk and gate logging, without planning/dispatch. Self-service CBG/owner registration grants
@@ -123,6 +128,12 @@ An active generator's first authenticated request enrolls its immutable `registe
 scope in DynamoDB with 06:00-09:00 pickup defaults. Registered location, type, name
 and address corrections synchronize to future planning snapshots. Draft plans reject changed
 profile revisions at dispatch; previously dispatched plans retain their captured details.
+An incomplete pickup profile cannot operate. Saving complete profile details activates access automatically;
+no Admin approval is required for generators or plant teams. Active users must reconfirm the entrance when changing address.
+The profile is persisted in `public.feedsure_accounts` in Supabase; active generator details synchronize
+to DynamoDB/Moto for operational use. Collection submissions, trips, pickups and gate records remain in
+the operational database, not in the account registry. Profile editing preserves roles,
+email identity, generator scope or driver assignment. Conflicting revisions require reloading the profile.
 
 ## Optional email delivery later
 
@@ -186,8 +197,9 @@ Signup/login/refresh/sign-out use the official JS SDK rather than local `/auth/l
 | GET `/auth/session` | Active | Verified role, `accountRole`, generator/trip scope |
 | GET `/auth/account` | Signed-in pending/active | Own reviewed profile |
 | POST `/auth/account` | Active + current password | `action,expectedRevision,currentPassword,password?`; password/delete |
+| POST `/auth/account` | Signed-in pending/active | `action:"update",expectedRevision,organisation?,contact?,address?,profile?,capacityKg?`; own profile only |
 | GET `/auth/accounts` | Active Admin | `{accounts:[...]}` excluding deleted tombstones |
-| POST `/auth/accounts` | Active Admin | `email,password,role,organisation,contact,address`; generator `lat,lng,type`, plant `capacityKg` |
+| POST `/auth/accounts` | Active Admin | `email,password,role,organisation,contact,address?`; generator `type` with optional paired `lat,lng`, plant `capacityKg` |
 | POST `/auth/accounts/{accountId}` | Active Admin | UUID target; `action,expectedRevision`; activate/suspend/delete/update/password |
 
 Run `python -m pytest -q`; in `frontend`, run `npm test` and `npm run build`. SQL checks:
@@ -208,6 +220,6 @@ instead of claiming immediate access. This code never alters hosted Auth setting
 existing Auth users through SQL. Old unconfirmed users may need operator correction in Supabase.
 Missing account SQL returns 503 and prevents a misleading success message. If the API returns 404,
 check that ports 5179/8797 are running this PR checkout, rather than the older login-only checkout.
-For live testing: disable Confirm email, register a generator, open its dashboard immediately, save
+For live testing: disable Confirm email, register a generator, complete My profile, open its dashboard, save
 readiness and a JPEG/PNG, then refresh to retrieve it. Suspend/reactivate/reset and retry the old
 session. Verify CBG operators and owners cannot manage accounts and failure recovery works.

@@ -36,6 +36,7 @@ before(async () => {
     [{ feedsure_account_role: "admin" }, uid(20)]);
   await db.exec(await readFile(new URL("../../supabase/migrations/202610110003_admin_creation_role.sql", import.meta.url), "utf8"));
   await db.exec(await readFile(new URL("../../supabase/migrations/20261011150000_user_flows.sql", import.meta.url), "utf8"));
+  await db.exec(await readFile(new URL("../../supabase/migrations/20261011170000_profile_completion.sql", import.meta.url), "utf8"));
 });
 after(async () => { await db.close(); });
 
@@ -195,10 +196,39 @@ test("reviewed location corrections validate and advance the account revision", 
 test("workflow migration can replay after manual dashboard application without resetting accounts", async () => {
   const before = await rpc(43, "identity");
   await db.exec(await readFile(new URL("../../supabase/migrations/20261011150000_user_flows.sql", import.meta.url), "utf8"));
+  await db.exec(await readFile(new URL("../../supabase/migrations/20261011170000_profile_completion.sql", import.meta.url), "utf8"));
   assert.deepEqual(await rpc(43, "identity"), before);
   const privileges = await db.query(`select
     has_function_privilege('anon','public.feedsure_accounts_api(uuid,uuid,text,uuid,integer,jsonb,uuid)','execute') as anon,
     has_function_privilege('authenticated','public.feedsure_accounts_api(uuid,uuid,text,uuid,integer,jsonb,uuid)','execute') as browser,
     has_function_privilege('service_role','public.feedsure_accounts_api(uuid,uuid,text,uuid,integer,jsonb,uuid)','execute') as backend`);
   assert.deepEqual(privileges.rows[0], {anon: false, browser: false, backend: true});
+});
+
+test("pending users save and confirm their own profile without gaining operational access", async () => {
+  await user(50, {feedsure_registration: {...registration, address: "", profile: {type: "hotel"}}});
+  const draft = await rpc(50, "identity");
+  assert.equal(draft.profile.lat, null);
+  const saved = await rpc(50, "self_update", 50, 1, {address: "Confirmed entrance", profile: registration.profile});
+  assert.equal(saved.status, "PENDING"); assert.equal(saved.revision, 2);
+  assert.deepEqual(saved.profile, registration.profile);
+  assert.equal((await rpc(50, "list")).status, 403);
+  assert.equal((await rpc(50, "self_update", 50, 1, {contact:"Stale"})).status, 409);
+  assert.equal((await rpc(50, "self_update", 43, 2, {contact:"Other user"})).status, 403);
+  assert.equal((await rpc(50, "self_update", 50, 2, {role:"admin"})).status, 400);
+  assert.equal((await rpc(50, "self_update", 50, 2, {status:"ACTIVE"})).status, 400);
+  assert.equal((await rpc(50, "self_update", 50, 2, {generator_id:"other"})).status, 400);
+  assert.equal((await rpc(50, "self_update", 50, 2, {profile:{lat:999,lng:0,type:"hotel"}})).status, 400);
+  const moved = await rpc(50, "self_update", 50, 2, {address:"Different pending entrance"});
+  assert.equal(moved.profile.lat, undefined);
+});
+
+test("active owners preserve approval, sessions and scope and must reconfirm changed addresses", async () => {
+  await user(51, {feedsure_registration:registration}, {feedsure_role:"GENERATOR",generator_id:"self-profile"});
+  assert.equal((await rpc(51,"self_update",51,1,{address:"Moved"})).status,400);
+  const result=await rpc(51,"self_update",51,1,{address:"Moved",profile:registration.profile});
+  assert.equal(result.status,"ACTIVE"); assert.equal(result.generator_id,"self-profile");
+  assert.equal((await rpc(51,"identity")).revision,2);
+  await rpc(1,"suspend",51,2);
+  assert.equal((await rpc(51,"self_update",51,3,{contact:"Blocked"})).status,401);
 });

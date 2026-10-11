@@ -85,10 +85,11 @@ delete accounts. Run all Supabase migrations in order and bootstrap an Admin bef
 testing, lifecycle behavior and the single pilot plant boundary. The default pilot mode uses
 email/password login without email verification, Admin approval or SMTP: turn Supabase
 **Confirm email OFF** and keep `VITE_AUTH_EMAIL_MODE=password`. Complete registrations become
-active automatically after applying `20261011160000_self_service_registration.sql`, including
+active automatically after applying `20261011180000_self_service_registration.sql`, including
 existing complete pending registrations. Admins handle forgotten passwords. Optional email confirmation
 and recovery require configured delivery and `VITE_AUTH_EMAIL_MODE=email`.
-Registration supports PIN/address lookup or live location with a confirmed pickup pin.
+My profile supports PIN/address lookup or live location with a confirmed pickup pin. Saving complete
+profile details activates generator and plant access automatically.
 Dispatchers assign approved driver accounts from the dispatched trip screen.
 
 Python 3.12+ and Node/npm are required. Install declared dependencies in a fresh checkout:

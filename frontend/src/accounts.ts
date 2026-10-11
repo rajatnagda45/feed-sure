@@ -12,7 +12,7 @@ export interface Account {
   loginId: string; role: AccountRole | "driver"; status: "PENDING" | "ACTIVE" | "SUSPENDED";
   revision: number; organisation: string; contact: string; address: string;
   generatorId?: string; planKey?: string; capacityKg?: number;
-  profile?: { lat: number; lng: number; type: string };
+  profile?: { lat?: number; lng?: number; type: string };
 }
 export function accountRequest<T>(path: string, body?: unknown): Promise<T> {
   return apiRequest<T>(path, {
@@ -44,7 +44,7 @@ export async function registerAccount(payload: Registration, admin = false): Pro
   const { data, error } = await supabase.auth.signUp({ email, password, options: {
     emailRedirectTo: authRedirect("/login"),
     data: { feedsure_registration: { ...details,
-      ...(payload.role === "kitchen" ? { profile: { lat, lng, type } } : {}),
+      ...(payload.role === "kitchen" ? { profile: { type, ...(lat !== undefined && lng !== undefined ? { lat, lng } : {}) } } : {}),
     } },
   } });
   if (error) throw new Error(authMessage(error));

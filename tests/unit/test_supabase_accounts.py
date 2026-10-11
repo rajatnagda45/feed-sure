@@ -89,6 +89,8 @@ def managed(http, monkeypatch):  # noqa: F811
                 result = http.actor
             elif data["p_action"] == "activate":
                 result = {**http.target, "status": "ACTIVE", "revision": 2}
+            elif data["p_action"] == "self_update":
+                result = {**http.actor, **data["p_changes"], "revision": http.actor["revision"] + 1}
             elif data["p_action"] == "sites":
                 result = {"accounts": []}
             elif data["p_action"] == "list":
@@ -151,6 +153,68 @@ def test_self_service_generator_enrolls_on_first_request_without_admin_activatio
     assert managed.get("/generators/hotel-a", headers=AUTH).status_code == 403
     assert managed.state.database.get("generators", {"generatorId": GID})
     assert not any(data.get("p_action") == "activate" for _, _, data, _ in managed.calls)
+
+
+def test_pending_user_can_complete_profile_without_password_or_approval(managed):
+    managed.actor = row(role="kitchen", status="PENDING")
+    managed.actor["profile"] = {"type": "hotel"}
+    response = managed.post(
+        "/auth/account",
+        headers=AUTH,
+        json={
+            "action": "update",
+            "expectedRevision": 1,
+            "address": "New entrance",
+            "profile": {"lat": 12.7, "lng": 77.5, "type": "hotel"},
+        },
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["status"] == "PENDING"
+    assert not any("grant_type=password" in call[0] for call in managed.calls)
+    assert managed.state.database.get("generators", {"generatorId": GID}) is None
+    assert managed.get("/auth/session", headers=AUTH).status_code == 403
+
+
+def test_active_self_profile_updates_domain_and_rejects_unconfirmed_address(managed):
+    managed.actor = row(role="kitchen")
+    data = {"action": "update", "expectedRevision": 1, "address": "New entrance"}
+    assert managed.post("/auth/account", headers=AUTH, json=data).status_code == 400
+    response = managed.post(
+        "/auth/account",
+        headers=AUTH,
+        json={
+            **data,
+            "organisation": "Updated hotel",
+            "profile": {"lat": 12.7, "lng": 77.5, "type": "canteen"},
+        },
+    )
+    assert response.status_code == 200, response.text
+    stored = managed.state.database.get("generators", {"generatorId": GID})
+    assert stored["address"] == "New entrance" and stored["lat"] == 12.7
+    assert stored["name"] == "Updated hotel" and stored["profileRevision"] == 2
+    assert (
+        managed.post("/auth/account", headers=AUTH, json={**data, "role": "admin"}).status_code
+        == 400
+    )
+
+
+def test_registration_can_defer_location_but_approval_cannot(managed):
+    from feedsure.common.accounts import Accounts
+
+    pending = Accounts.registration(
+        {
+            "role": "kitchen",
+            "organisation": "New site",
+            "contact": "Test contact",
+            "address": "",
+            "type": "hotel",
+        }
+    )
+    assert pending["profile"] == {"type": "hotel"}
+    managed.target["profile"] = pending["profile"]
+    response = mutate(managed, "activate")
+    assert response.status_code == 400
+    assert "confirm the entrance pin" in response.text
 
 
 def test_cbg_operations_cannot_manage_users_and_owner_has_separate_intake(managed):

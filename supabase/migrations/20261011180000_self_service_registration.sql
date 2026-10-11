@@ -1,4 +1,4 @@
--- Apply after user_flows.sql. Complete public registrations need no Admin approval.
+-- Apply after profile_completion.sql. Complete registrations need no Admin approval.
 -- Supabase Confirm email is a separate Auth setting; disable it for password-only signup.
 begin;
 create or replace function public.feedsure_self_service_ready(a public.feedsure_accounts)
@@ -68,9 +68,10 @@ update public.feedsure_accounts a set status = 'ACTIVE', revision = a.revision +
 from auth.users u
 where a.id = u.id and a.status = 'PENDING'
   and u.raw_user_meta_data->'feedsure_registration'->>'role' = a.role
-  and jsonb_typeof(u.raw_user_meta_data->'feedsure_registration'->'organisation') = 'string'
-  and jsonb_typeof(u.raw_user_meta_data->'feedsure_registration'->'contact') = 'string'
-  and jsonb_typeof(u.raw_user_meta_data->'feedsure_registration'->'address') = 'string'
+  and (a.revision > 1 or (
+    jsonb_typeof(u.raw_user_meta_data->'feedsure_registration'->'organisation') = 'string'
+    and jsonb_typeof(u.raw_user_meta_data->'feedsure_registration'->'contact') = 'string'
+    and jsonb_typeof(u.raw_user_meta_data->'feedsure_registration'->'address') = 'string'))
   and public.feedsure_self_service_ready(a);
 
 -- Version the existing workflow RPC once so this migration can be replayed safely.
@@ -87,12 +88,24 @@ create or replace function public.feedsure_accounts_api(
   p_revision integer default null, p_changes jsonb default '{}'::jsonb,
   p_ticket uuid default null
 ) returns jsonb language plpgsql security definer set search_path = '' as $$
+declare
+  result jsonb;
+  account public.feedsure_accounts;
 begin
   if p_action = 'registration' then
     return jsonb_build_object('ready', true, 'requiresApproval', false);
   end if;
-  return public.feedsure_accounts_workflow(
+  result := public.feedsure_accounts_workflow(
     p_actor,p_session,p_action,p_target,p_revision,p_changes,p_ticket);
+  if p_action = 'self_update' and not (result ? 'error') then
+    select * into account from public.feedsure_accounts where id = p_actor;
+    if account.status = 'PENDING' and public.feedsure_self_service_ready(account) then
+      update public.feedsure_accounts set status = 'ACTIVE' where id = p_actor
+        returning * into account;
+      return to_jsonb(account) - 'password_ticket' - 'revoked_at';
+    end if;
+  end if;
+  return result;
 end;
 $$;
 revoke all on function public.feedsure_self_service_ready(public.feedsure_accounts) from public, anon, authenticated;

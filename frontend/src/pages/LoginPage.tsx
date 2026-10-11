@@ -41,10 +41,10 @@ export function LoginPage() {
   return <AuthShell><section className="token-panel">
     <Link className="brand" to="/"><span className="brand-mark">F</span><span>FeedSure CBG</span></Link>
     <h1>Sign in</h1>
-    <p>Sign in with your email and password.</p>
-    {userId && !loading && <div role="status"><h2>{pending ? "Account setup needs attention" : "Account access needs attention"}</h2>
-      <p>{pending ? "Your account setup is incomplete. View your registration details or contact your operator, then check its status again." : "Retry the account check, or sign out below and sign in again. Contact your plant Admin if access was suspended."}</p>
-      <button className="button button-secondary" onClick={refresh}>Check account status</button><Link to="/account">View my registration</Link></div>}
+    <p>Sign in with your email to complete your profile or open your dashboard.</p>
+    {userId && !loading && <div role="status"><h2>{pending ? "Complete your profile" : "Account access needs attention"}</h2>
+      <p>{pending ? "Save your complete profile and pickup location to activate access automatically. No Admin approval is required." : "Retry the account check, or sign out below and sign in again. Contact your plant Admin if access was suspended."}</p>
+      <button className="button button-secondary" onClick={refresh}>Check account status</button><Link className="button button-primary" to="/account">Complete my profile</Link></div>}
     {!supabase ? <p role="status">{supabaseEnabled ? "Supabase configuration is incomplete." : "Account login is not configured for this installation. Use your private access link."}</p>
       : <form onSubmit={login}>
         <label className="field"><span>Email</span><input type="email" autoComplete="username" required
