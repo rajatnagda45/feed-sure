@@ -20,6 +20,24 @@ The date META activePlanKey also keeps the dispatched trip selected on dashboard
 when an API caller saves a later draft. No new table/index or key change was needed during
 integration. See [V3-CONTRACT.md](V3-CONTRACT.md) for item shapes and retention boundaries.
 
+### Optional photo evidence (11 October 2026)
+
+The existing Submissions and Operations keys remain unchanged. Photo mutations update only the
+current submission's optional evidence fields and its READY head, guarded by photo revision and
+the date META input revision in one transaction. Added fields: `photoRevision` (absent = 0),
+`photoUpdatedAt`, `photoSha256` (content fingerprint, not an authentication hash), and `analysis`
+(`state:COMPLETE|FAILED`, `mode:mock|aws`, validated observations or null, recordedAt and limit).
+Confirmed kg/status/window stay unchanged. Prior evidence/analysis is retained in no-TTL audit
+entries; PHOTO#submissionId and SCREEN#submissionId dedup scopes expire independently.
+
+Production attachment validates uploaded bytes and saves a separate private S3 snapshot whose key
+was never issued for upload. Later overwrite of the temporary upload cannot replace that evidence.
+Reads/analysis compare the saved SHA-256. S3 lifecycle uses `PHOTO_RETENTION_DAYS` (default 30).
+The local runner stores real binary files plus issued-type/expiry metadata under its separate
+manifest-derived photo directory. Local expiration is enforced and files removed on access, not
+by a scheduled sweeper. Local DynamoDB state is disposable on runner stop; disk files survive,
+but their submission association does not survive a fresh disposable database.
+
 The following v1 layouts and destructive seed instructions are historical, not the v3 run path.
 
 > **Version note:** This is a legacy v1 reference; some described features remain unimplemented.
@@ -123,3 +141,18 @@ Input: `data/pilot_zone.json` (plant name and coordinates, radius, generator mix
   ACCEPTed. Print `suggested TARGET_KG = round(U - 0.5 × usable(hostel-3))`. Then a HOLD on hostel-3
   creates a visible shortfall and its ACCEPT restores the target. Put the value in `.env` as `TARGET_KG`.
   (The seeded mix forecasts about 1,900 kg/day, so the default 2,000 kg truck is never the limit.)
+
+
+## Optional photo record additions (11 October 2026)
+
+No new table or key is introduced. Current v3 Submission and READY# head gain photoActor, photoRevision,
+photoUpdatedAt, photoSha256, photoKeys (0–1) and analysis {state,mode,observations,recordedAt,limit}.
+The photo mutation transaction writes the submission, READY head, META revision, retained audit
+and bounded dedup together. Hazard discovery adds the existing HAZARD# head in that transaction.
+Original readiness actor/time/status/kg/window remain intact; each photo mutation audit attributes
+the authenticated actor. A later readiness append makes the older submission immutable to photo
+mutations. Photo bytes live in private S3 or per-manifest private local files, never DynamoDB.
+Photo removal detaches the current link, retaining audit; it is not immediate physical erasure.
+S3 lifecycle expires objects after 30 days. Local expiry is checked and removes a requested
+expired file/metadata on access; idle local files need manual cleanup. Audit/head observations
+remain operational records and have no photo-retention TTL.

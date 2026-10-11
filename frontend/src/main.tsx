@@ -5,6 +5,8 @@ import { BrowserRouter } from "react-router-dom";
 import { App } from "./App";
 import "maplibre-gl/dist/maplibre-gl.css";
 import "./styles.css";
+import "./design.css";
+import "./product.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

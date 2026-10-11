@@ -482,6 +482,7 @@ class Photos:
             photoRevision=expected + 1,
             inputRevision=after["inputRevision"],
             photoUpdatedAt=stamp(self.s.now),
+            photoActor=actor,
         )
         response = {"submission": updated, "inputRevision": after["inputRevision"]}
         action = self.s.db.conditional_put(

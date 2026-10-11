@@ -1,0 +1,19 @@
+.hero-actions { gap: 12px; flex-wrap: wrap; }
+.demo-roles article { display: flex; flex-direction: column; align-items: flex-start; }
+.demo-roles .text-button { margin-top: 10px; }
+.photo-evidence { margin-top: 12px; }
+.photo-evidence > div { max-width: 640px; padding: 16px 0; }
+.photo-evidence figure { margin: 0 0 16px; }
+.photo-evidence img { display: block; width: 100%; max-height: 360px; object-fit: contain; background: var(--wash); }
+.photo-evidence figcaption { margin-top: 8px; font-size: .85rem; color: var(--muted); }
+.token-panel h1 { margin-top: 20px; }
+.token-panel, .field, .section-heading > * { min-width: 0; }
+.private-link-note a { text-underline-offset: 4px; }
+@media (max-width: 400px) {
+  .site-header, .mobile-header { gap: 8px; padding-inline: 14px; }
+  .brand { gap: 8px; font-size: .93rem; }
+  .data-tag { font-size: .7rem; }
+  .generator-step { padding-inline: 16px; }
+  .saved-readiness { padding: 16px; grid-template-columns: 1fr; }
+  .plant-shell .control-grid { grid-template-columns: minmax(0, 1fr); }
+}

@@ -6,6 +6,7 @@ import base64
 import hashlib
 from dataclasses import replace
 from datetime import UTC, date, datetime, timedelta
+from pathlib import Path
 from urllib.parse import quote
 
 import boto3
@@ -135,6 +136,32 @@ def test_actual_bytes_persist_refresh_and_retry(photo_http):
     fresh = http.get(f"/generators/{GID}/readiness?date={DAY}", headers=auth(http)).json()
     assert fresh["submission"] == record
     assert mutation(http, record, "photo", {"photoKey": None}, key="photo-test").status_code == 409
+
+
+def test_valid_jpeg_upload_attach_and_refresh_returns_identical_bytes(photo_http):
+    http = photo_http
+    data = (Path(__file__).parents[1] / "fixtures/photos/synthetic.jpg").read_bytes()
+    record = saved(http)
+    prepared = http.post(
+        "/uploads", headers=auth(http), json={"generatorId": GID, "contentType": "image/jpeg"}
+    )
+    assert prepared.status_code == 200
+    upload = prepared.json()["uploads"][0]
+    assert (
+        http.post(
+            upload["url"], headers={**auth(http), "Content-Type": "image/jpeg"}, content=data
+        ).status_code
+        == 204
+    )
+    response = mutation(http, record, "photo", {"photoKey": upload["key"]})
+    assert response.status_code == 200, response.text
+    refreshed = http.get(f"/generators/{GID}/readiness?date={DAY}", headers=auth(http)).json()[
+        "submission"
+    ]
+    assert refreshed == response.json()["submission"]
+    url = evidence(http, refreshed).json()["url"]
+    assert url.startswith("data:image/jpeg;base64,")
+    assert base64.b64decode(url.split(",", 1)[1]) == data
 
 
 def test_cross_kitchen_and_unauthenticated_upload_attach_view_screen(photo_http):

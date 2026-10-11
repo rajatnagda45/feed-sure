@@ -16,10 +16,26 @@ corrections and gate intake. Positive pickup checks the current hazard flag atom
 receipts query only their own index partition. API errors omit provider details, and reads omit
 credential hashes. Bodies are bounded to 16 KB and numeric inputs must be finite.
 
-SAM exposes the three auth headers plus Idempotency-Key in CORS. The operational function gets
-only required DynamoDB actions/table/index resources and route-matrix access; no Bedrock invocation
-is granted to the deferred P1 screen. Optional S3 uploads are private JPEG/PNG presigned POSTs,
-1,024–3,500,000 bytes, five-minute expiry. S3 photos expire after 30 days.
+SAM exposes the three auth headers plus Idempotency-Key in CORS. The optional photo implementation
+adds scoped S3 GetObject/PutObject and configured Bedrock model/profile invocation to the operational
+function. Optional uploads are private JPEG/PNG presigned POSTs, 1,024–3,500,000 bytes and
+five-minute expiry by default. S3 lifecycle retention defaults to 30 days.
+
+Photo issue, attachment, analysis, current-readiness and evidence routes authenticate the owning
+kitchen or dispatcher. A scoped prefix alone never authorizes another kitchen. Local binary
+uploads require explicit store injection, loopback peer, issued key, header authentication,
+type/structure/dimension checks and bounded streaming. That route is absent from SAM. Actual bytes
+are stored under a gitignored private local directory; it is not a public static directory.
+Browser validation checks signatures and decodes/resizes to JPEG. Server PNG checks include CRC,
+bounded inflate and scanline structure; JPEG checks are structural and bounded, not a complete
+entropy decoder. Production snapshots prevent replacement through a still-valid signed POST.
+
+Evidence GET is authenticated and no-store; cloud GET URLs are bearer credentials until their
+short expiry and must not be logged/shared. The local client never forwards kitchen tokens to S3
+or arbitrary upload-response addresses. Strict model observations reject verdicts, mass percentages
+and unknown schema fields. Image instructions are untrusted, retry is bounded, and failed analysis
+or evidence removal cannot clear an unresolved hazard. Mock fixtures are explicitly labelled and
+never selected from filenames. Local expired-file cleanup is lazy; no local sweeper is claimed.
 
 Production hardening remains: managed identity/token revocation, dedicated actor accounts, abuse
 monitoring, retention governance and a job to remove precise GPS fields after 30 days. Whole-record
@@ -85,3 +101,28 @@ This is a hackathon demo, but it is deployed on a public URL with a public repo.
 - [ ] The Location API key is restricted to referrers and maps actions
 - [ ] A wrong admin token returns 401; a wrong generator token returns 401
 - [ ] An upload larger than 3.5 MB is rejected
+
+
+## Active v3 photo security (supersedes legacy guidance above)
+
+Kitchen/admin header authentication applies to issuing, linking, analyzing and retrieving a
+photo; driver tokens confer no photo access. Keys must match the owning kitchen's issued-key
+shape. Cross-kitchen reads/writes are 401. Private S3 presigned forms constrain exact key/type,
+size and expiry. Attached production bytes are copied to a new unissued private key and hashed;
+retrieval/analysis reject altered evidence. Evidence GET requires authentication and returns only
+a short-lived URL (production) or authenticated data URL (local), with no-store/no-referrer.
+Never log photos, raw model output, tokens or signed URLs. Local upload URLs are validated before
+forwarding a token and can only address the configured API origin. Local binary upload is absent
+from SAM, disabled without explicit private-store injection, and loopback-only in the runner.
+
+V3 model output uses an exact observation schema; extra verdict/instruction/percentage fields,
+unknown types, non-finite/range violations and malformed output fail safely. Notes render as
+plain text. Hazards require human resolution and survive failed/clean later calls or detachment.
+Mock mode labels fixture results and never infers from filenames. Production IAM retains a private
+bucket and TLS; model invocation scopes to configured foundation model/profile, including global
+inference profile destinations. Actual regional permissions and model access need AWS verification.
+
+Photos and precise GPS can contain personal data; the earlier no-personal-data claim is obsolete.
+UI asks users to photograph waste only, avoiding faces/IDs. Local byte files require private folder
+permissions and idle-file cleanup; access-triggered expiry does not establish a background sweeper.
+S3 has 30-day object lifecycle; operational audit records are retained separately.

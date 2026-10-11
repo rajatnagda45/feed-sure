@@ -30,14 +30,21 @@ def run(manifest_path: Path) -> dict:
     checks: dict[str, bool] = {}
 
     def call(
-        path: str, method: str = "GET", payload=None, *, auth=token, key=None, binary=False
+        path: str,
+        method: str = "GET",
+        payload=None,
+        *,
+        auth=token,
+        key=None,
+        binary=False,
+        content_type="image/png",
     ) -> tuple[int, dict]:
         headers = {"X-Generator-Token": auth} if auth else {}
         if key:
             headers["Idempotency-Key"] = key
         body = payload if binary else json.dumps(payload).encode() if payload is not None else None
         if body is not None:
-            headers["Content-Type"] = "image/png" if binary else "application/json"
+            headers["Content-Type"] = content_type if binary else "application/json"
         try:
             with urlopen(
                 Request(base + path, data=body, headers=headers, method=method), timeout=30
@@ -109,6 +116,24 @@ def run(manifest_path: Path) -> dict:
     )
     assert status == 200 and call(path + "/evidence")[0] == 404
     checks["photo_removal"] = True
+    data = (Path(__file__).parents[1] / "fixtures/photos/synthetic.jpg").read_bytes()
+    status, prepared = call("/uploads", "POST", {"generatorId": gid, "contentType": "image/jpeg"})
+    assert status == 200
+    jpeg = prepared["uploads"][0]
+    assert call(jpeg["url"], "POST", data, binary=True, content_type="image/jpeg")[0] == 204
+    revision += 1
+    status, linked = call(
+        path + "/photo",
+        "POST",
+        {"photoKey": jpeg["key"], "expectedPhotoRevision": revision},
+        key="live-jpeg",
+    )
+    assert status == 200
+    fresh = call(f"/generators/{gid}/readiness?date={day}")[1]["submission"]
+    assert fresh == linked["submission"]
+    _, jpeg_evidence = call(path + "/evidence")
+    assert base64.b64decode(jpeg_evidence["url"].split(",", 1)[1]) == data
+    checks["jpeg_upload_and_refresh_bytes_match"] = True
     status, not_ready = call(
         "/submissions", "POST", {"generatorId": gid, "collectionDate": day, "status": "NOT_READY"}
     )
@@ -118,6 +143,7 @@ def run(manifest_path: Path) -> dict:
         "checks": checks,
         "passed": len(checks),
         "bytes": len(actual),
+        "jpegBytes": len(data),
         "sha256": hashlib.sha256(actual).hexdigest(),
         "analysisState": analysis["state"],
         "photoStatus": screened["submission"]["photoStatus"],

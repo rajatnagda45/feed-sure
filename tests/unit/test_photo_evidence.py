@@ -175,6 +175,19 @@ def test_actual_bytes_retry_link_refresh_and_cross_kitchen_isolation(http):
     assert base64.b64decode(evidence.json()["url"].split(",")[1]) == png()
     assert http.get(path(saved, "evidence"), headers=auth("hotel-b")).status_code == 401
     assert http.get(path(saved, "evidence"), headers=ADMIN).status_code == 200
+    admin_remove = http.post(
+        path(saved, "photo"),
+        headers={**ADMIN, "Idempotency-Key": "admin-remove"},
+        json={"photoKey": None, "expectedPhotoRevision": saved["photoRevision"]},
+    )
+    assert admin_remove.status_code == 200
+    admin_record = admin_remove.json()["submission"]
+    assert admin_record["actor"]["type"] == "GENERATOR"
+    assert admin_record["photoActor"] == {"type": "ADMIN", "id": "dispatcher"}
+    # Restore with a new mutation before the analysis/refresh checks below.
+    restored = attach(http, admin_record, prepared["key"], event_key="restore")
+    assert restored.status_code == 200
+    saved = restored.json()["submission"]
     assert (
         http.post(
             path(saved, "screen"),

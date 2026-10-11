@@ -44,7 +44,11 @@ admin secrets or raw driver tokens. 400 INVALID_INPUT, 401 UNAUTHORIZED, 404 NOT
 | GET /operations?date=... | admin | authoritative planning snapshot described below |
 | GET /submissions?date=... | admin | `{submissions:[latest readiness records],inputRevision}` |
 | POST /submissions | generator or admin | readiness request -> `{submission:record,inputRevision}` |
-| POST /submissions/{submissionId}/screen | same generator or admin | `{}` -> `{submission:record,inputRevision}`; optional P1 |
+| POST /submissions/{submissionId}/screen | same generator or admin | `{expectedPhotoRevision}` + Idempotency-Key -> `{submission:record,inputRevision}`; optional P1 |
+| POST /uploads | generator or admin | `{generatorId,contentType:"image/jpeg"|"image/png"}` -> `{uploads:[{slot:"top",key,url,fields,transport:"local"|"s3"}]}` |
+| POST /submissions/{submissionId}/photo | same generator or admin | `{photoKey:string|null,expectedPhotoRevision}` + Idempotency-Key -> `{submission:record,inputRevision}` |
+| GET /submissions/{submissionId}/evidence | same generator or admin | `{url,transport:"local"|"s3"}`; authenticated no-store response |
+| GET /generators/{generatorId}/readiness?date=... | same generator or admin | `{submission:record|null,unresolvedHazard:record|null}` |
 | POST /generators/{generatorId}/hazard-reviews | admin | `{collectionDate,action:ENTER|RESOLVE,reason}` -> `{hazard:record,inputRevision}` |
 | POST /plans | admin | `{collectionDate,targetKg?,truckCapacityKg?,capacityBuffer?,shiftStart?,shiftEnd?,serviceMin?,maxRadiusKm?,mandatoryIds?:[]}` -> saved plan envelope |
 | GET /plans/{date} | admin | `{plan:null}` if none; active dispatched trip for the date, otherwise latest draft as `{plan:envelope}` |
@@ -77,6 +81,34 @@ atomically for EVERY readiness edit and hazard enter/resolve, scoped by collecti
 No stale eventually-consistent index may define dispatch inputs.
 The operations matrix mode is the configured provider (`fallback` in mock-location mode); a saved
 plan records the actual matrix source, including a Location-service failure fallback.
+
+### Authorized optional-photo addendum — 11 October 2026 repair Session B
+
+Contract remains READY v3.0; this user-authorized additive repair implements the previously
+unavailable screen route and adds the photo routes above. Existing readiness/planner enums and
+fields are preserved. Photo mutations require integer `expectedPhotoRevision >= 0` (absent stored
+revision means 0), a scoped Idempotency-Key and the current owned readiness submission. Same
+key/canonical payload returns the original response; changed payload/stale revision/new readiness
+returns 409. Unknown mutation fields are rejected; attachment must include photoKey, null to remove.
+
+Added submission fields: photoRevision, photoUpdatedAt, photoSha256 (nonsecret content fingerprint),
+analysis null or `{state:"COMPLETE"|"FAILED",mode:"mock"|"aws",observations:null|object,
+recordedAt,limit}`. Observation keys are exactly `items,hazard,image_quality,confidence,notes`;
+items are `{type,count,confidence}` using existing allowed visible-item types in screening/prompt.py.
+Counts are integers 1–1000, confidence finite 0–1; image_quality is
+`ok|too_dark|blurry|not_waste`. No verdict, chemistry, mass percentage or usable-kg prediction.
+Hazards outrank poor quality; poor/low-confidence images or visible items produce ADVICE; clean
+surface observations produce NO_ISSUE_OBSERVED. Failed/malformed analysis after one retry produces
+NOT_CHECKED. An existing unresolved hazard is independently retained until an admin RESOLVE.
+Mock observations are configured fixtures, explicitly labelled, independent of filename/bytes.
+
+Attachment/removal/screen atomically advance date inputRevision and photoRevision, audit prior
+values, and update the authoritative READY head. They never change readiness quantity/status/window
+or frozen plan inputs/stops. S3 attachment validates and freezes separate private bytes; evidence
+reads and screening verify the saved fingerprint. The loopback-only local binary route
+`POST /local-photos/{issuedKey}` is an explicit runner transport, never a deployed SAM endpoint.
+Default bounds: upload 1024–3500000 bytes, 8192px per dimension, 16000000 pixels, 40000000 decoded
+PNG bytes, expiry 300s, retention 30 days; photo-specific settings come from Config/.env.example.
 
 ## Session 2: pure interfaces (required exports)
 
@@ -189,3 +221,46 @@ Local transport uses moto or configured local DynamoDB with the same domain hand
 transactions, not canned responses. Missing Session 2 exports return 503 DEPENDENCY_NOT_READY
 for affected calculations; never invoke legacy planner silently. Tests can inject a pure fixture
 callback to exercise persistence only, explicitly labelled; not a runtime fallback.
+
+
+## Optional photo evidence — shipped 11 October 2026
+
+Readiness saves before optional photo work. The active v3 endpoints below supersede legacy
+paired-photo/verdict examples in this document. JSON uses camelCase and header authentication.
+
+| Endpoint | Auth | Contract |
+|---|---|---|
+| POST /uploads | owning kitchen or admin | `{generatorId,contentType:image/jpeg|image/png}` -> one `{uploads:[{key,url,fields,transport:local|s3}]}` |
+| POST /submissions/{id}/photo | owning kitchen or admin | `{photoKey:string|null,expectedPhotoRevision:0..}` plus Idempotency-Key -> `{submission,inputRevision}`; null detaches |
+| POST /submissions/{id}/screen | owning kitchen or admin | `{expectedPhotoRevision}` plus Idempotency-Key -> `{submission,inputRevision}` |
+| GET /submissions/{id}/evidence | owning kitchen or admin | `{url,transport}`; local authenticated data URL or short-lived private S3 GET URL |
+| GET /generators/{id}/readiness?date=YYYY-MM-DD | owning kitchen or admin | `{submission:record|null,unresolvedHazard:record|null}` for refresh |
+
+Encode the entire submission ID in paths. Photo revision defaults to 0 on older v3 records.
+Exact scoped key/payload retries replay the saved response; changed payload, stale photo revision,
+concurrent service-date edit or a newer readiness confirmation returns 409. Every attachment,
+removal and analysis increments inputRevision atomically and leaves readiness/kg/window untouched.
+Draft dispatch therefore becomes stale; dispatched snapshots never change.
+
+PNG/JPEG source input is limited to 20 MB in the browser, resized to at most 1280 px and encoded
+as JPEG. The upload/evidence server enforces configured byte bounds (default 1024–3500000),
+image structure/content type and decoded/dimension bounds. A photo must exist before linking,
+including in mock mode. Production attachment copies validated bytes to a new private unissued
+key and saves SHA256 so a still-valid upload form cannot silently replace attached evidence.
+
+Analysis returns only visible items, image quality, confidence, possible hazards and limitations;
+no mass contamination percentage, safety decision, usable kg or chemistry/yield inference.
+Malformed/provider failure retries once then persists NOT_CHECKED with analysis.state=FAILED.
+Valid hazards outrank poor image and create a sticky date/kitchen hazard. Detach/replacement,
+later failure, clean observations or another readiness record cannot resolve it; only the admin
+human hazard-review endpoint can. Poor image/low confidence/non-hazard items produce ADVICE.
+Mock analysis is explicitly labelled and uses only the configured fixture (auto maps to clean),
+never filenames or a claim about the selected image.
+
+Local `/local-photos/{key}` is a raw POST using the same owning-kitchen/admin header and issued
+key/type, enabled only when the loopback runner injects a LocalPhotoStore. It is not a SAM route.
+The runner binds 127.0.0.1, bounds streamed bytes and persists actual image files in a private
+per-manifest directory. Same-key identical-byte retries are accepted; altered bytes are rejected.
+Upload tickets expire after the configured five-minute default. Retrieval rejects expired photo
+retention; local file cleanup is access-triggered, not a background sweeper. DynamoDB in the
+runner remains disposable in-process Moto; byte files persist until retention cleanup/deletion.

@@ -15,7 +15,7 @@ import { t } from "../i18n";
 import { OptionalPhoto } from "../components/OptionalPhoto";
 import { getKitchenReadiness } from "../photoApi";
 import { consumeBootstrapToken } from "../session";
-import { ReadinessDraft, monthForDate, readinessRequest, serviceDateInIndia } from "../workflow";
+import { ReadinessDraft, formatServiceDate, monthForDate, readinessRequest, serviceDateInIndia } from "../workflow";
 
 function errorMessage(error: unknown): string {
   if (error instanceof ApiError) {
@@ -35,6 +35,10 @@ export function GeneratorPage() {
   const [receipts, setReceipts] = useState<GeneratorReceipt[]>([]);
   const [loading, setLoading] = useState(Boolean(token));
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [readinessError, setReadinessError] = useState<string | null>(null);
+  const [recordsError, setRecordsError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [readinessLoading, setReadinessLoading] = useState(false);
   const [language, setLanguage] = useState<Lang>("en");
   const [draft, setDraft] = useState<ReadinessDraft>({
     generatorId: id,
@@ -58,14 +62,18 @@ export function GeneratorPage() {
     if (!token || !id) return;
     const controller = new AbortController();
     const generation = saveGeneration.current;
+    setReadinessLoading(true);
+    setReadinessError(null);
     setSaved(null);
     getKitchenReadiness(id, draft.collectionDate, token, controller.signal).then((result) => {
       if (controller.signal.aborted || generation !== saveGeneration.current) return;
       setSaved(result.submission);
       setEditing(!result.submission);
-    }).catch(() => {});
+    }).catch(() => {
+      if (!controller.signal.aborted) setReadinessError("Could not retrieve the saved confirmation. Retry before entering another confirmation.");
+    }).finally(() => { if (!controller.signal.aborted) setReadinessLoading(false); });
     return () => controller.abort();
-  }, [id, token, draft.collectionDate]);
+  }, [id, token, draft.collectionDate, refreshKey]);
 
   useEffect(() => {
     if (!token || !id) {
@@ -75,11 +83,9 @@ export function GeneratorPage() {
     const controller = new AbortController();
     setLoading(true);
     setLoadError(null);
-    Promise.all([
-      getGenerator(id, token, controller.signal),
-      getGeneratorReceipts(id, token, monthForDate(draft.collectionDate), controller.signal),
-    ]).then(([generatorResponse, receiptResponse]) => {
+    getGenerator(id, token, controller.signal).then((generatorResponse) => {
       const generator = generatorResponse.generator;
+      if (controller.signal.aborted) return;
       setProfile(generator);
       setLanguage(generator.defaultLang);
       setDraft((current) => ({
@@ -88,7 +94,6 @@ export function GeneratorPage() {
         windowStart: generator.pickupWindow.start,
         windowEnd: generator.pickupWindow.end,
       }));
-      setReceipts(receiptResponse.records);
     }).catch((error) => {
       if (!controller.signal.aborted) setLoadError(errorMessage(error));
     }).finally(() => {
@@ -96,6 +101,16 @@ export function GeneratorPage() {
     });
     return () => controller.abort();
   }, [id, token]);
+
+  useEffect(() => {
+    if (!token || !id) return;
+    const controller = new AbortController();
+    setRecordsError(null);
+    getGeneratorReceipts(id, token, monthForDate(draft.collectionDate), controller.signal)
+      .then((response) => { if (!controller.signal.aborted) setReceipts(response.records); })
+      .catch(() => { if (!controller.signal.aborted) setRecordsError("Collection records could not be refreshed. Retry to see the latest trip status."); });
+    return () => controller.abort();
+  }, [id, token, draft.collectionDate, refreshKey]);
 
   const copy = t(language);
   const updateDraft = <K extends keyof ReadinessDraft>(key: K, value: ReadinessDraft[K]) => {
@@ -157,18 +172,18 @@ export function GeneratorPage() {
 
       <section className="generator-step" aria-busy={loading}>
         {loading && <p className="loading-line">Loading kitchen details…</p>}
-        {loadError && <p className="inline-error" role="alert">{loadError}</p>}
+        {loadError && <><p className="inline-error" role="alert">{loadError}</p><button className="button button-secondary" type="button" onClick={() => window.location.reload()}>Retry kitchen access</button></>}
 
         {!loading && profile && (
           <>
             <p className="context-line">{profile.name}</p>
             <h1>{copy.readyQuestion}</h1>
             <p className="service-note">
-              For {draft.collectionDate} in India time. Generator quantities are
+              Collection: <strong>{formatServiceDate(draft.collectionDate)}</strong> in India time. Kitchen quantities are
               {profile.simulated ? " simulated for this demo." : " supplied by this kitchen."}
             </p>
 
-            {saved && !editing ? (
+            {readinessLoading ? <p role="status">Checking saved readiness…</p> : readinessError ? <div><p className="inline-error" role="alert">{readinessError}</p><button className="button button-secondary" type="button" onClick={() => setRefreshKey((key) => key + 1)}>Retry saved readiness</button></div> : saved && !editing ? (
               <section className="saved-readiness" aria-live="polite">
                 <span className="complete-mark" aria-hidden="true">✓</span>
                 <div>
@@ -302,7 +317,9 @@ export function GeneratorPage() {
                   <h2 id="records-title">{copy.records}</h2>
                 </div>
                 <span className="data-tag">{profile.simulated ? "Simulated data" : "Operational record"}</span>
+                <button className="text-button" type="button" disabled={saving} onClick={() => setRefreshKey((key) => key + 1)}>Refresh records</button>
               </div>
+              {recordsError && <p className="inline-error" role="alert">{recordsError}</p>}
               {receipts.length === 0 ? (
                 <p className="empty-state">{copy.noRecords}</p>
               ) : (

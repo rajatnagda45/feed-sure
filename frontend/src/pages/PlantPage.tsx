@@ -21,6 +21,7 @@ import {
   saveReadiness,
 } from "../api";
 import { RouteMap } from "../components/RouteMap";
+import { PhotoEvidence } from "../components/PhotoEvidence";
 import {
   exclusionAction,
   confirmedSupplyKg,
@@ -77,6 +78,7 @@ function controlsFrom(defaults: PlannerParams): PlanControls {
 }
 
 function displayError(error: unknown): string {
+  if (error instanceof ApiError && error.status === 401) return "This dispatcher credential is invalid or expired. Lock this desk and ask the operator for a current credential.";
   if (error instanceof ApiError) return `${error.message} (${error.code})`;
   return "The request failed. Check the API connection and try again.";
 }
@@ -504,6 +506,7 @@ export function PlantPage() {
                     </div>
                     {(excluded || hazardous || generator.readinessStatus !== "READY") && <p className="next-action">{hazardous ? "HAZARD_REVIEW" : excluded?.reason ?? generator.readinessStatus} · {exclusionAction(hazardous ? "HAZARD_REVIEW" : excluded?.reason ?? generator.readinessStatus)}</p>}
                     {hazardous && <p className="hazard-detail">Unresolved hazard: {generator.unresolvedHazards.map((hazard) => hazard.reason).join("; ")}</p>}
+                    {generator.readiness && <PhotoEvidence key={generator.readiness.submissionId} submission={generator.readiness} adminToken={adminToken} />}
                     <div className="row-actions">
                       <button className="text-button" type="button" onClick={() => setPhone({ generatorId: generator.generatorId, status: "READY", kg: generator.readiness?.confirmedKg ? String(generator.readiness.confirmedKg) : "", source: generator.readiness?.weightSource ?? "ESTIMATE", start: generator.readiness?.window?.start ?? generator.pickupWindow.start, end: generator.readiness?.window?.end ?? generator.pickupWindow.end, confirmedBy: "", reason: "" })}>Record phone confirmation</button>
                       <input aria-label={`Hazard reason for ${generator.name}`} placeholder={hazardous ? "Resolution reason" : "Hazard reason"} value={hazardReasons[generator.generatorId] ?? ""} onChange={(event) => { const value = event.currentTarget.value; setHazardReasons((current) => ({ ...current, [generator.generatorId]: value })); }} />
