@@ -38,6 +38,8 @@ export function GeneratorPage() {
   const [readinessError, setReadinessError] = useState<string | null>(null);
   const [recordsError, setRecordsError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [recordsRefreshKey, setRecordsRefreshKey] = useState(0);
+  const [recordsLoading, setRecordsLoading] = useState(false);
   const [readinessLoading, setReadinessLoading] = useState(false);
   const [language, setLanguage] = useState<Lang>("en");
   const [draft, setDraft] = useState<ReadinessDraft>({
@@ -106,11 +108,13 @@ export function GeneratorPage() {
     if (!token || !id) return;
     const controller = new AbortController();
     setRecordsError(null);
+    setRecordsLoading(true);
     getGeneratorReceipts(id, token, monthForDate(draft.collectionDate), controller.signal)
       .then((response) => { if (!controller.signal.aborted) setReceipts(response.records); })
-      .catch(() => { if (!controller.signal.aborted) setRecordsError("Collection records could not be refreshed. Retry to see the latest trip status."); });
+      .catch(() => { if (!controller.signal.aborted) setRecordsError("Collection records could not be refreshed. Retry to see the latest trip status."); })
+      .finally(() => { if (!controller.signal.aborted) setRecordsLoading(false); });
     return () => controller.abort();
-  }, [id, token, draft.collectionDate, refreshKey]);
+  }, [id, token, draft.collectionDate, recordsRefreshKey]);
 
   const copy = t(language);
   const updateDraft = <K extends keyof ReadinessDraft>(key: K, value: ReadinessDraft[K]) => {
@@ -160,6 +164,7 @@ export function GeneratorPage() {
         <button
           className="language-switch"
           type="button"
+          disabled={saving}
           onClick={() => {
             const next = language === "en" ? "hi" : "en";
             setLanguage(next);
@@ -193,6 +198,7 @@ export function GeneratorPage() {
                       ? `${saved.confirmedKg} kg · ${saved.window?.start}–${saved.window?.end}`
                       : copy.notReady}
                   </p>
+                  {saved.weightSource && <p>Weight source: {saved.weightSource === "SCALE" ? "Scale reading" : "Kitchen estimate"}. Saved {new Date(saved.recordedAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })} (India time).</p>}
                   {saved.late && <p>Saved after the normal cutoff; the dispatcher can still review it.</p>}
                   <p className="muted">
                     If a trip is already dispatched, this update creates a dispatcher alert and does
@@ -211,6 +217,8 @@ export function GeneratorPage() {
               </section>
             ) : (
               <form className="readiness-form" onSubmit={submit} noValidate>
+                <fieldset className="readiness-fields" disabled={saving}>
+                <legend className="visually-hidden">Readiness for this collection date</legend>
                 <label className="field">
                   <span>{copy.date}</span>
                   <input
@@ -303,6 +311,7 @@ export function GeneratorPage() {
                 <button className="button button-primary button-full" type="submit" disabled={saving}>
                   {saving ? copy.saving : saveError ? copy.retry : copy.save}
                 </button>
+                </fieldset>
               </form>
             )}
 
@@ -317,10 +326,11 @@ export function GeneratorPage() {
                   <h2 id="records-title">{copy.records}</h2>
                 </div>
                 <span className="data-tag">{profile.simulated ? "Simulated data" : "Operational record"}</span>
-                <button className="text-button" type="button" disabled={saving} onClick={() => setRefreshKey((key) => key + 1)}>Refresh records</button>
+                <button className="text-button" type="button" disabled={saving || recordsLoading} onClick={() => setRecordsRefreshKey((key) => key + 1)}>{recordsLoading ? "Refreshing records…" : "Refresh records"}</button>
               </div>
               {recordsError && <p className="inline-error" role="alert">{recordsError}</p>}
-              {receipts.length === 0 ? (
+              {recordsLoading && <p role="status">Loading collection records…</p>}
+              {!recordsLoading && !recordsError && receipts.length === 0 ? (
                 <p className="empty-state">{copy.noRecords}</p>
               ) : (
                 <div className="record-list">

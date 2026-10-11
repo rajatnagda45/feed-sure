@@ -12,7 +12,7 @@ Separate interfaces share the same collection records: hotels/hostels/canteens u
 
 All demo kitchens, quantities and scenario matrices are **synthetic**. Defaults of 0.8 readiness probability, 10% capacity buffer and a 1,200 kg target are prototype assumptions. Expected collection, reserved truck load, recorded pickups and net received kg are separate quantities.
 
-The optional photo and map repairs are undergoing independent integration verification; their current release status is in [TESTING.md](docs/TESTING.md). AWS deployment, live Bedrock analysis and physical phone-camera operation have not been established by this QA run.
+Optional photo upload, retrieval, replacement, analysis and removal have been verified through real local handlers and an actual browser. Kitchens, dispatchers and drivers have distinct entry actions; dispatchers can review private photo evidence before recording a hazard decision. See [integration evidence](docs/INTEGRATION-VERIFICATION.md). AWS deployment, live Bedrock analysis and physical phone-camera operation remain unverified.
 
 ## Run and verify
 
@@ -30,12 +30,11 @@ npm run build
 
 For private kitchen links and the disposable local API/frontend, follow [DEPLOYMENT.md](docs/DEPLOYMENT.md). Preserve any running demo and its private access manifest. Never publish tokens or `.tmp/` files.
 
-QA on 11 October 2026: **225 backend tests passed in 21.94 seconds** on Python 3.13.9; the independent real-handler correction test passed in 3.65 seconds and the 32 directed planner cases passed in 0.18 seconds. Frontend/map/photo results are provisional until the two repair handoffs freeze and the final integration run completes. The 18 fixed route scenarios reproduced the saved reports: 16 ties, one shorter primary route at equal expected kg, and one trade-off where nearest-first collected more expected kg. No field savings or screening accuracy are claimed.
+QA on 11 October 2026: **280 backend tests**, **62 frontend tests**, all **3 opt-in live API-client tests**, clean and malformed-analysis HTTP workflows, and the production build passed. The final isolated backend run took 29.67 seconds. Actual browser checks covered role access, persisted photos, dispatcher evidence, driver corrections and narrow layouts. The 18 fixed route scenarios retain their published results: 16 ties, one shorter primary route at equal expected kg, and one trade-off where nearest-first collected more expected kg. No field savings or screening accuracy are claimed.
 
 Three evidence levels are kept separate throughout the repository: pure fixture/unit results,
 real HTTP handlers backed by disposable local Moto storage, and deployed AWS/browser-device evidence.
-Only the first two have been established by Session C so far; a responsive or mock screen alone is
-not treated as an integrated workflow.
+Local browser evidence is recorded separately from automated checks; neither establishes deployed AWS or physical-device behavior.
 
 ## AWS and boundaries
 

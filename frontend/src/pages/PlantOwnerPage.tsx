@@ -138,8 +138,8 @@ export function PlantOwnerPage() {
     <form className="token-panel" onSubmit={unlock}>
       <Link className="brand" to="/"><span className="brand-mark">F</span><span>FeedSure CBG</span></Link>
       <h1>Plant owner access</h1>
-      <Link className="button button-secondary button-full" to="/login?role=owner">Sign in with ID and password</Link>
       <p>Review delivered waste and record net intake using your plant owner credential.</p>
+      <p>Ask the plant operator for your current plant owner credential. Dispatcher and driver credentials do not open this desk.</p>
       <label className="field"><span>Plant owner token</span><input required type="password" autoComplete="off" value={credential} onChange={(event) => setCredential(event.currentTarget.value)} /></label>
       <button className="button button-primary button-full" type="submit">Open plant intake</button>
       <Link className="text-button" to="/admin">Admin / dispatcher access</Link>
