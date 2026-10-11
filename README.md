@@ -102,8 +102,8 @@ Working honestly is part of this project. Photos help with visible items only â€
 Built for Environmental Hacks 2026 (Track 3: Waste & Energy) by:
 
 - **Rajat Nagda** â€” [@rajatnagda45](https://github.com/rajatnagda45)
-- **Ashwini Kumar**
-- **Rajarshi Dutta**
+- **Ashwini Kumar** - [@ashwini-361](https://github.com/ashwini-361)
+- **Rajarshi Dutta** - [@rajarshidattapy](https://github.com/rajarshidattapy)
 
 ## Documentation
 
