@@ -68,7 +68,7 @@ foreach ($entry in $settings.GetEnumerator()) {
 # Sync only public frontend settings. Never copy the server role key to Vite.
 $frontendEnvironment = Join-Path $projectRoot 'frontend/.env.supabase.local'
 $publicSettings = [ordered]@{
-    VITE_AUTH_EMAIL_MODE = $(if ($settings['VITE_AUTH_EMAIL_MODE'] -eq 'email') { 'email' } else { 'admin' })
+    VITE_AUTH_EMAIL_MODE = $(if ($settings['VITE_AUTH_EMAIL_MODE'] -eq 'email') { 'email' } else { 'password' })
     VITE_API_BASE_URL = "http://localhost:$ApiPort"
     VITE_SUPABASE_URL = $settings['SUPABASE_URL'].TrimEnd('/')
     VITE_SUPABASE_PUBLISHABLE_KEY = $settings['SUPABASE_PUBLISHABLE_KEY']

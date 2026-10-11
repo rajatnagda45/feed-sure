@@ -26,10 +26,10 @@ export function authMessage(issue: unknown): string {
   if (code === "over_request_rate_limit")
     return "Too many requests. Wait a moment before trying again.";
   if (code === "over_email_send_rate_limit")
-    return emailDeliveryEnabled ? "Verification emails are temporarily limited. Check your inbox and spam folder, then try again later." : "Email sending is temporarily limited. This pilot uses Admin approval: ask the operator to turn off Confirm email in Supabase, or have an Admin create your account.";
+    return emailDeliveryEnabled ? "Verification emails are temporarily limited. Check your inbox and spam folder, then try again later." : "Email sending is temporarily limited. Ask the operator to turn off Confirm email in Supabase for this password-only installation.";
   if (code === "email_address_not_authorized")
     return emailDeliveryEnabled ? "Verification email cannot be sent to this address. Ask your operator to configure Supabase SMTP, or have an Admin create your account." : "This installation still requires email confirmation. Ask your operator to finish the no-email pilot setup, or have an Admin create your account.";
-  if (code === "email_not_confirmed") return emailDeliveryEnabled ? "Confirm your email before signing in. Use Resend confirmation if you need a new link." : "Confirm your email is still enabled for this account. Ask the plant Admin to complete the no-email pilot setup and verify your registration.";
+  if (code === "email_not_confirmed") return emailDeliveryEnabled ? "Confirm your email before signing in. Use Resend confirmation if you need a new link." : "Email confirmation is still enabled for this account. Ask your operator to turn off Confirm email and fix this account's Auth setup.";
   if (code === "invalid_credentials") return "Email or password is incorrect. Try again or use Forgot password.";
   if (code === "otp_expired") return "This email link has expired or was already used. Request a new link.";
   return issue instanceof Error ? issue.message : "The request could not be completed. Please try again.";

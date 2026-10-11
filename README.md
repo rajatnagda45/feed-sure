@@ -78,13 +78,15 @@ Optional supplier photos start from a live browser camera with a visible supplie
 
 ## Run and verify
 
-Supabase registration and account management: open `/register` to request generator or CBG
-team access, `/login` to sign in, and `/accounts` as an Admin to approve, edit, reset, suspend or
+Supabase registration and account management: open `/register` to create generator or CBG
+team access, `/login` to sign in, and `/accounts` as an Admin to edit, reset, suspend or
 delete accounts. Run all Supabase migrations in order and bootstrap an Admin before enabling
 `SUPABASE_ACCOUNT_MANAGEMENT=true`. See [ACCOUNTS.md](docs/ACCOUNTS.md) for environment setup,
 testing, lifecycle behavior and the single pilot plant boundary. The default pilot mode uses
-email/password login with Admin approval and no SMTP: turn Supabase **Confirm email OFF** and
-keep `VITE_AUTH_EMAIL_MODE=admin`. Admins handle forgotten passwords. Optional email confirmation
+email/password login without email verification, Admin approval or SMTP: turn Supabase
+**Confirm email OFF** and keep `VITE_AUTH_EMAIL_MODE=password`. Complete registrations become
+active automatically after applying `20261011160000_self_service_registration.sql`, including
+existing complete pending registrations. Admins handle forgotten passwords. Optional email confirmation
 and recovery require configured delivery and `VITE_AUTH_EMAIL_MODE=email`.
 Registration supports PIN/address lookup or live location with a confirmed pickup pin.
 Dispatchers assign approved driver accounts from the dispatched trip screen.

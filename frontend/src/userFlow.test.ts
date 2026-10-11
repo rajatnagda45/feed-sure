@@ -17,7 +17,7 @@ it("unassigned drivers have a waiting page without a fabricated trip", () => {
 it("explains rate limits, unconfirmed email and bad credentials", () => {
   expect(authMessage({ code: "over_email_send_rate_limit" })).toContain("temporarily limited");
   expect(authMessage({ code: "over_request_rate_limit" })).toBe("Too many requests. Wait a moment before trying again.");
-  expect(authMessage({ code: "email_not_confirmed" })).toContain("Confirm your email");
+  expect(authMessage({ code: "email_not_confirmed" })).toContain("turn off Confirm email");
   expect(authMessage({ code: "invalid_credentials" })).toContain("Forgot password");
 });
 it("aborts a stalled request and does not automatically retry it", async () => {

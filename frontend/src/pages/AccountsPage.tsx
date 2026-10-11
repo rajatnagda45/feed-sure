@@ -29,7 +29,7 @@ function AccountEditor({ account, refresh }: { account: Account; refresh: (messa
       setNotice(name === "password" ? "Password reset. Existing sessions have been signed out." : "Account updated.");
       refresh(name === "password" ? "Password reset. Existing sessions have been signed out."
         : name === "delete" ? "Account deleted. Collection and intake records were retained."
-        : name === "activate" ? "Account approved and active. The user can now sign in."
+        : name === "activate" ? "Account active. The user can now sign in."
         : name === "suspend" ? "Account suspended. All its sessions have been signed out." : "Account details saved.");
     } catch (reason) { setError(message(reason)); }
     finally { setBusy(false); }
@@ -40,9 +40,9 @@ function AccountEditor({ account, refresh }: { account: Account; refresh: (messa
     <p>{account.contact || "No contact details"} · {account.address || "No address supplied"}</p>
     {account.capacityKg && <p>Registered plant capacity: {account.capacityKg.toLocaleString("en-IN")} kg/day</p>}
     {account.profile && <p>Pickup coordinates: {account.profile.lat}, {account.profile.lng} · {account.profile.type.replaceAll("_", " ")}</p>}
-    {account.status === "PENDING" && account.role !== "kitchen" && <p className="notice">Check the plant details before approval. Activating this account gives access to the existing pilot plant.</p>}
+    {account.status === "PENDING" && <p className="notice">Complete the account details before activating this account.</p>}
     <div className="account-actions">
-      {account.status !== "ACTIVE" && <button type="button" className="button button-primary" disabled={busy} onClick={() => void action("activate")}>{account.status === "PENDING" ? "Approve account" : "Reactivate account"}</button>}
+      {account.status !== "ACTIVE" && <button type="button" className="button button-primary" disabled={busy} onClick={() => void action("activate")}>{account.status === "PENDING" ? "Activate account" : "Reactivate account"}</button>}
       {account.status === "ACTIVE" && <button type="button" className="button button-secondary" disabled={busy} onClick={() => void action("suspend")}>Suspend account</button>}
     </div>
     <details><summary>Edit account details</summary><form onSubmit={(event) => { event.preventDefault(); void action("update", { ...fields, ...(account.role === "kitchen" && profile ? { profile } : {}), ...(["cbg", "owner"].includes(account.role) ? { capacityKg: Number(capacity) } : {}) }); }}>
@@ -93,7 +93,7 @@ export function AccountsPage() {
       <Link className="button button-primary" to="/accounts/new">Create new login</Link></div>
     <div className="account-toolbar">
       <label className="field"><span>Search accounts</span><input type="search" value={search} onChange={(event) => setSearch(event.currentTarget.value)} /></label>
-      <label className="field"><span>Account status</span><select value={filter} onChange={(event) => setFilter(event.currentTarget.value)}><option value="ALL">All accounts</option><option value="PENDING">Pending approval</option><option value="ACTIVE">Active</option><option value="SUSPENDED">Suspended</option></select></label>
+      <label className="field"><span>Account status</span><select value={filter} onChange={(event) => setFilter(event.currentTarget.value)}><option value="ALL">All accounts</option><option value="PENDING">Setup incomplete</option><option value="ACTIVE">Active</option><option value="SUSPENDED">Suspended</option></select></label>
       <button className="button button-secondary" disabled={loading} type="button" onClick={() => setRevision((value) => value + 1)}>Refresh accounts</button>
     </div>
     {notice && <p className="notice success" role="status">{notice}</p>}
@@ -137,7 +137,7 @@ export function MyAccountPage() {
   return <main className="auth-shell"><section className="token-panel">
     <h1>My account</h1>
     {account && <><p><strong>{account.loginId}</strong> · {accountLabels[account.role]}</p><p>{account.organisation}</p>
-      {account.status === "PENDING" && <p role="status">Your registration is waiting for Admin approval. Account changes become available after approval.</p>}
+      {account.status === "PENDING" && <p role="status">{account.role === "admin" || account.role === "driver" ? "This managed account needs activation by an Admin." : "Your registration details are incomplete. Contact your operator to finish setup."}</p>}
       <form onSubmit={(event) => void save(event, "password")}><fieldset className="login-fields" disabled={busy || account.status !== "ACTIVE"}>
         <label className="field"><span>Current password</span><input type="password" required maxLength={256} autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.currentTarget.value)} /></label>
         <label className="field"><span>New password (at least 12 characters)</span><input type="password" required minLength={12} maxLength={256} autoComplete="new-password" value={password} onChange={(event) => setPassword(event.currentTarget.value)} /></label>

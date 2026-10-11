@@ -3,8 +3,8 @@ import { LocationPicker } from "../components/LocationPicker";
 import { emailDeliveryEnabled } from "../authEmail";
 import { FormEvent, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { ApiError, apiRequest } from "../api";
-import { AccountRole, accountLabels, registerAccount } from "../accounts";
+import { ApiError } from "../api";
+import { AccountRole, accountLabels, checkRegistrationSetup, registerAccount } from "../accounts";
 import { supabase } from "../supabase";
 
 export function RegistrationPage({ admin = false }: { admin?: boolean }) {
@@ -29,8 +29,7 @@ export function RegistrationPage({ admin = false }: { admin?: boolean }) {
       setSetupError("Supabase registration is not configured. Ask your operator."); setChecking(false);
       return;
     }
-    apiRequest<{ ready: boolean }>("/auth/registration", { anonymous: true }).then((result) => {
-      if (!result.ready) throw new Error("Account registration is not ready. Ask your operator.");
+    checkRegistrationSetup().then(() => {
       if (active) setReady(true);
     }).catch((reason) => {
       if (active) setSetupError(reason instanceof ApiError && reason.status === 404
@@ -67,11 +66,13 @@ export function RegistrationPage({ admin = false }: { admin?: boolean }) {
     <Link className="brand" to="/">FeedSure CBG</Link>
     <h1>{admin ? "Create an account" : "Create a new login"}</h1>
     {saved ? <div role="status"><h2>Registration saved</h2>
-      <p>{admin ? "The account is pending. Review its details and approve it from Manage accounts."
-        : emailDeliveryEnabled ? "Check your email to confirm your address, then wait for Admin approval. If already registered, sign in or use password recovery." : "Your request has been submitted. Ask the plant Admin to review and approve your access, then sign in. This pilot does not send account emails. If sign-in asks for confirmation, the operator must finish the approval-only setup."}</p>
-      <Link className="button button-primary" to={admin ? "/accounts" : `/login?role=${role === "kitchen" ? "generator" : role}`}>{admin ? "Review accounts" : "Go to sign in"}</Link>
+      <p>{admin ? (role === "admin" || role === "driver" ? "Activate this managed account from Manage accounts."
+        : "The account is active. Share its login details privately with the user.")
+        : emailDeliveryEnabled ? "Confirm your email, then sign in. No Admin approval is required."
+        : "Your account is ready. Open your dashboard with your email and password. No email verification or Admin approval is required."}</p>
+      <Link className="button button-primary" to={admin ? "/accounts" : `/login?role=${role === "kitchen" ? "generator" : role}`}>{admin ? "Manage accounts" : emailDeliveryEnabled ? "Go to sign in" : "Open my dashboard"}</Link>
     </div> : <form onSubmit={(event) => void submit(event)}>
-      <p>Register your organic waste site or CBG plant team. Your details go to an Admin for review.</p>
+      <p>Register your organic waste site or CBG plant team to access your dashboard.</p>
       {checking && <p role="status">Checking registration setup…</p>}
       {setupError && <div role="alert"><p className="inline-error">Registration unavailable: {setupError}</p>
         <button className="button button-secondary" type="button" onClick={() => setSetupAttempt((value) => value + 1)}>Try again</button>
@@ -91,11 +92,11 @@ export function RegistrationPage({ admin = false }: { admin?: boolean }) {
           </select></label>
           <LocationPicker address={fields.address} onChange={(point) => setFields((current) => ({ ...current, lat: point ? String(point.lat) : "", lng: point ? String(point.lng) : "" }))} />
         </> : (role === "cbg" || role === "owner") && <>{field("capacityKg", "Plant intake capacity (kg/day)", "number", { min: 0.01, max: 1000000000, step: "any" })}
-          <p className="muted">You are joining the existing pilot plant. This does not create a separate plant. Capacity is reviewed by the Admin and does not change route settings.</p></>}
+          <p className="muted">You are joining the existing pilot plant. This does not create a separate plant. Registered capacity does not change route settings.</p></>}
         {field("email", "Email address", "email", { autoComplete: "username", autoCapitalize: "none", spellCheck: false })}
         {field("password", "Password (at least 12 characters)", "password", { minLength: 12, autoComplete: "new-password" })}
         {field("confirm", "Confirm password", "password", { minLength: 12, autoComplete: "new-password" })}
-        <button className="button button-primary button-full" type="submit">{busy ? "Saving registration…" : "Request account registration"}</button>
+        <button className="button button-primary button-full" type="submit">{busy ? "Saving registration…" : "Create account"}</button>
       </fieldset>
       {error && <p className="inline-error" role="alert">{error}</p>}
     </form>}

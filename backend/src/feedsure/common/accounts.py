@@ -52,7 +52,12 @@ def public(row: dict) -> dict:
 def access(row: dict) -> dict:
     """Map the trusted registry to existing operational permissions."""
     if row["status"] != "ACTIVE":
-        raise ApiError(403, "ACCOUNT_PENDING", "Your registration is pending Admin approval.")
+        message = (
+            "This managed account needs activation by an Admin."
+            if row["role"] in {"admin", "driver"}
+            else "Your registration details are incomplete. Contact your operator to finish setup."
+        )
+        raise ApiError(403, "ACCOUNT_PENDING", message)
     role = ROLES.get(row["role"])
     result = {"id": row["id"], "role": role, "accountRole": row["role"]}
     if role == "GENERATOR":
@@ -114,14 +119,32 @@ class Accounts:
                 "Enable Supabase account management after its migration.",
             )
         try:
-            # A deployed registry rejects this deliberately empty identity with 401.
-            # Missing SQL, wrong keys and outages must stop signup before Auth creates a user.
-            self.rpc("identity")
+            policy = self.rpc("registration")
         except ApiError as error:
-            if error.status == 401:
-                return {"ready": True}
+            if error.status in {401, 403, 404, 503}:
+                raise ApiError(
+                    503, "DEPENDENCY_NOT_READY", "Apply the self-service registration migration."
+                ) from None
             raise
-        raise ApiError(502, "UPSTREAM_FAILED", "Account registry readiness could not be verified.")
+        if policy.get("ready") is not True or policy.get("requiresApproval") is not False:
+            raise ApiError(
+                503, "DEPENDENCY_NOT_READY", "Apply the self-service registration migration."
+            )
+        settings = json_request(
+            self.config, "/auth/v1/settings", key=self.config.supabase_publishable_key
+        )
+        providers = settings.get("external")
+        if (
+            settings.get("disable_signup") is not False
+            or not isinstance(providers, dict)
+            or providers.get("email") is not True
+        ):
+            raise ApiError(503, "DEPENDENCY_NOT_READY", "Enable email/password signup in Supabase.")
+        if not isinstance(settings.get("mailer_autoconfirm"), bool):
+            raise ApiError(
+                502, "UPSTREAM_FAILED", "Supabase signup settings could not be verified."
+            )
+        return {"ready": True, "emailConfirmationRequired": not settings["mailer_autoconfirm"]}
 
     def identity(self, event: dict, *, user: dict | None = None) -> dict:
         auth = header(event, "authorization")

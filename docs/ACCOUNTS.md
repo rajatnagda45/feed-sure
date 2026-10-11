@@ -9,10 +9,11 @@ DynamoDB retains collection, dispatch and intake data; the private Supabase imag
 1. Enable email/password signup and a minimum password length of 12. For this pilot's
    **no-email mode**, open Supabase Authentication > Sign In / Providers > Email, turn
    **Confirm email OFF**, and save. Keep email/password sign-in enabled. Set
-   `VITE_AUTH_EMAIL_MODE=admin` in the root `.env` used by the launcher (the default).
-   Set Auth Site URL to `http://localhost:5197` for testing. Restart Vite after changing its
+   `VITE_AUTH_EMAIL_MODE=password` in the root `.env` used by the launcher (the default).
+   Set Auth Site URL to `http://localhost:5179` for this local preview. Restart Vite after changing its
    environment. This uses the email as a login identifier without proving ownership of its
-   inbox; Admins must review registrations before granting access. Forgot password directs
+   inbox. Complete generator, CBG operations and owner registrations become active immediately,
+   without Admin approval. Forgot password directs
    the user to an Admin, who verifies their identity and resets the password in Manage accounts.
    No SMTP is needed for this flow. See [Supabase configuration](https://supabase.com/docs/guides/auth/general-configuration).
    Existing unconfirmed users may still require operator review/confirmation in Supabase;
@@ -21,9 +22,12 @@ DynamoDB retains collection, dispatch and intake data; the private Supabase imag
 2. Run `supabase/migrations/202610110001_private_photos.sql`, then
    `supabase/migrations/202610110002_accounts.sql`, then
    `supabase/migrations/202610110003_admin_creation_role.sql`, then
-   `supabase/migrations/20261011150000_user_flows.sql` once in the SQL editor. The second migration
-   imports existing **trusted app_metadata** assignments as active accounts; other users and
-   public signups remain pending. Review imported Admin assignments first.
+   `supabase/migrations/20261011150000_user_flows.sql`, then
+   `supabase/migrations/20261011160000_self_service_registration.sql` in the SQL editor.
+   The final migration automatically activates complete pending generator/plant registrations
+   and future signups. It preserves existing roles, profiles, scopes and suspended/deleted accounts.
+   Incomplete profiles and managed Admin/driver accounts still require setup. Review imported
+   trusted Admin assignments first.
    The third migration handles the Admin API's delayed trusted role metadata and repairs
    untouched pending Admin creations. It does not activate accounts or rewrite reviewed roles.
 3. Create your first email/password user in Supabase Authentication. In the trusted SQL editor,
@@ -69,9 +73,10 @@ DynamoDB retains collection, dispatch and intake data; the private Supabase imag
 
    ```powershell
    cd frontend
-   npm run dev -- --mode supabase --host localhost --port 5197 --strictPort
+   npm run dev -- --mode supabase --host localhost --port 5179 --strictPort
    ```
 
+Use `./scripts/start_supabase_demo.ps1 -FrontendPort 5179` for the command above.
 The launcher safely reads `.env`, starts the API on 8797 and writes only public settings to ignored
 `frontend/.env.supabase.local`. `-Check` validates local fields; it does not contact Supabase.
 After pulling changes that add frontend dependencies, stop Vite, run `npm ci` in `frontend`,
@@ -82,7 +87,7 @@ already running still requires restarting that process; a production build does 
 without a byte-order mark so Windows PowerShell cannot hide its first setting from Vite.
 The runner mocks AWS DynamoDB, routing and analysis. Auth, account persistence and private image
 storage use your **real Supabase project**. Use test users and synthetic details. Supabase profiles
-survive restart; Moto operational data resets. Approved registered generators are restored into
+survive restart; Moto operational data resets. Active registered generators are restored into
 Moto on their first authenticated request or the next dispatcher's planning snapshot. Imported
 generator assignments without reviewed profile details still require their DynamoDB records;
 the demo seeds `demo-kitchen-01` through `demo-kitchen-10`.
@@ -95,26 +100,27 @@ it after relying on its revocation controls.
 
 ## Screens and permissions
 
-- `/register`: generators, CBG operations and plant owners request access. Generators supply
+- `/register`: generators, CBG operations and plant owners create active accounts. Generators supply
   a PIN code/address or optional live GPS and confirm their pickup entrance on a movable map pin;
-  coordinates are saved automatically. Plant teams supply capacity. The Auth insert trigger captures pending
-  details. Browser metadata cannot grant Admin access or approve a registration.
-- `/login`: sign in with email/password. Pending users can check approval status and sign out;
-  operational dashboards remain unavailable until approval. The SDK persists and refreshes sessions.
+  coordinates are saved automatically. Plant teams supply capacity. The Auth insert trigger validates
+  required details and activates complete registrations. Browser metadata cannot grant Admin/driver access.
+- `/login`: sign in with email/password immediately after registration. No email verification or
+  Admin approval is required in password mode. The SDK persists and refreshes sessions.
 - `/accounts`: only active **Admin accounts** create, approve, edit contact details, reset,
   suspend/reactivate and delete accounts. `/accounts/new` can create another Admin. Admin-created
-  users have confirmed email status; share their temporary password privately. Creation is pending.
+  users have confirmed email status; share their temporary password privately. Complete generator/plant
+  creation is active; Admin and driver creation remains pending until explicitly activated.
 - `/account`: view your profile, change password or delete your login with current-password
   verification. No separate local ID/password registry or account session token is used.
 
 CBG operations has dispatcher permissions but cannot manage accounts. Owners have the existing
-intake desk and gate logging, without planning/dispatch. Plant approval grants access to the
-**single pilot plant**, not independent plants or tenant isolation. Only approve its actual team.
+intake desk and gate logging, without planning/dispatch. Self-service CBG/owner registration grants
+access to the **single pilot plant**, not independent plants or tenant isolation.
 Drivers retain explicit trip scope/expiry. Admins create and approve driver accounts; dispatchers
 assign an active driver from the dispatched plan screen. Unassigned drivers see a waiting page.
 The access-renewal action preserves pickup records and invalidates earlier token links.
-Generator approval enrolls its immutable `registered-<user UUID>` scope in DynamoDB with 06:00-09:00
-pickup defaults. Review location and collection suitability first. Reviewed location, type, name
+An active generator's first authenticated request enrolls its immutable `registered-<user UUID>`
+scope in DynamoDB with 06:00-09:00 pickup defaults. Registered location, type, name
 and address corrections synchronize to future planning snapshots. Draft plans reject changed
 profile revisions at dispatch; previously dispatched plans retain their captured details.
 
@@ -126,7 +132,8 @@ in Supabase Authentication > Email > SMTP settings. Follow the provider's domain
 instructions. Keep SMTP credentials in Supabase, never in frontend variables. Then enable
 Confirm email, set `VITE_AUTH_EMAIL_MODE=email`, allow the exact `/login` and `/reset-password`
 redirect URLs in Supabase URL Configuration, rebuild/restart the frontend, and test delivery,
-confirmation, recovery and expired links with test accounts. Admin approval still applies.
+confirmation, recovery and expired links with test accounts. Admin approval is not required for
+generator or plant registrations in either mode.
 Supabase's default sender is restricted and is not a production delivery service. See
 [official SMTP setup](https://supabase.com/docs/guides/auth/auth-smtp).
 
@@ -175,7 +182,7 @@ Signup/login/refresh/sign-out use the official JS SDK rather than local `/auth/l
 
 | Endpoint | Access | Contract |
 |---|---|---|
-| GET `/auth/registration` | Public | `{ready:true}` only when account mode and the private registry are available; no account data |
+| GET `/auth/registration` | Public | `{ready:true,emailConfirmationRequired:boolean}` after verifying the self-service migration and Auth signup settings; no account data |
 | GET `/auth/session` | Active | Verified role, `accountRole`, generator/trip scope |
 | GET `/auth/account` | Signed-in pending/active | Own reviewed profile |
 | POST `/auth/account` | Active + current password | `action,expectedRevision,currentPassword,password?`; password/delete |
@@ -195,8 +202,12 @@ The SQL suite executes the shipped migration/RPC in PostgreSQL WASM (PGlite), wi
 schemas. HTTP tests run real handlers and Moto with external Auth/PostgREST responses mocked.
 Neither establishes hosted Auth/Storage deployment or multi-connection race performance.
 The registration page checks setup before enabling its form and again before submitting to Auth.
+Password-only registration stops before creating a user if Confirm email remains enabled. If a
+configuration change races signup and no session is returned, the UI reports that setup issue
+instead of claiming immediate access. This code never alters hosted Auth settings or confirms
+existing Auth users through SQL. Old unconfirmed users may need operator correction in Supabase.
 Missing account SQL returns 503 and prevents a misleading success message. If the API returns 404,
-check that ports 5197/8797 are running this PR checkout, rather than the older login-only checkout.
-For live testing: register a generator, confirm email, approve as Admin, sign in afresh, save
+check that ports 5179/8797 are running this PR checkout, rather than the older login-only checkout.
+For live testing: disable Confirm email, register a generator, open its dashboard immediately, save
 readiness and a JPEG/PNG, then refresh to retrieve it. Suspend/reactivate/reset and retry the old
 session. Verify CBG operators and owners cannot manage accounts and failure recovery works.

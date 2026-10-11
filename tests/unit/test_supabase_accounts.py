@@ -53,6 +53,12 @@ def managed(http, monkeypatch):  # noqa: F811
     http.actor, http.target, http.calls = row(), row(TARGET, "kitchen", "PENDING"), []
     http.rpc_error, http.auth_failure, http.wrong_password_identity = None, False, False
     http.registry_missing = False
+    http.registration_policy = {"ready": True, "requiresApproval": False}
+    http.signup_settings = {
+        "disable_signup": False,
+        "external": {"email": True},
+        "mailer_autoconfirm": True,
+    }
 
     def open_request(req, timeout):
         path = req.full_url.split("https://project.supabase.co")[1]
@@ -63,11 +69,19 @@ def managed(http, monkeypatch):  # noqa: F811
                 raise HTTPError(req.full_url, 401, "unauthorized", {}, None)
             # Editable metadata must not grant an Admin role to any registry user.
             result = {"id": UID, "app_metadata": {}, "user_metadata": {"feedsure_role": "ADMIN"}}
+        elif path == "/auth/v1/settings":
+            key = http.state.config.supabase_publishable_key
+            assert req.get_header("Apikey") == key
+            expected = None if key.startswith("sb_publishable_") else "Bearer " + key
+            assert req.get_header("Authorization") == expected
+            result = http.signup_settings
         elif path == "/rest/v1/rpc/feedsure_accounts_api":
             assert req.get_header("Authorization") == "Bearer server-secret"
             if http.registry_missing:
                 raise HTTPError(req.full_url, 404, "missing", {}, None)
-            if data["p_actor"] is None and data["p_session"] is None:
+            if data["p_action"] == "registration":
+                result = http.registration_policy
+            elif data["p_actor"] is None and data["p_session"] is None:
                 result = {"status": 401, "error": "Account access ended."}
             elif http.rpc_error:
                 result = http.rpc_error
@@ -119,12 +133,24 @@ def mutate(managed, action, **extra):
     )
 
 
-def test_pending_signup_has_profile_but_no_operational_access(managed):
+def test_incomplete_signup_has_profile_but_no_operational_access(managed):
     managed.actor = row(role="kitchen", status="PENDING")
     assert managed.get("/auth/account", headers=AUTH).json()["status"] == "PENDING"
     assert managed.get("/auth/session", headers=AUTH).status_code == 403
     assert managed.get("/generators/" + GID, headers=AUTH).status_code == 403
     assert managed.get("/auth/accounts", headers=AUTH).status_code == 403
+    assert "incomplete" in managed.get("/auth/session", headers=AUTH).json()["error"]["message"]
+
+
+def test_self_service_generator_enrolls_on_first_request_without_admin_activation(managed):
+    managed.actor = row(role="kitchen")
+    session = managed.get("/auth/session", headers=AUTH)
+    assert session.status_code == 200
+    assert session.json()["account"]["generatorId"] == GID
+    assert managed.get("/generators/" + GID, headers=AUTH).status_code == 200
+    assert managed.get("/generators/hotel-a", headers=AUTH).status_code == 403
+    assert managed.state.database.get("generators", {"generatorId": GID})
+    assert not any(data.get("p_action") == "activate" for _, _, data, _ in managed.calls)
 
 
 def test_cbg_operations_cannot_manage_users_and_owner_has_separate_intake(managed):
@@ -308,11 +334,14 @@ def test_invalid_or_unverified_bearer_cannot_supply_session_identity(managed):
 
 def test_registration_readiness_is_public_and_does_not_create_or_disclose_accounts(managed):
     response = managed.get("/auth/registration")
-    assert response.status_code == 200 and response.json() == {"ready": True}
-    assert len(managed.calls) == 1
+    assert response.status_code == 200 and response.json() == {
+        "ready": True,
+        "emailConfirmationRequired": False,
+    }
+    assert len(managed.calls) == 2
     path, method, data, _ = managed.calls[0]
     assert path == "/rest/v1/rpc/feedsure_accounts_api" and method == "POST"
-    assert data == {"p_actor": None, "p_session": None, "p_action": "identity"}
+    assert data == {"p_actor": None, "p_session": None, "p_action": "registration"}
     assert response.headers["cache-control"] == "no-store"
 
 
@@ -326,3 +355,30 @@ def test_registration_stops_on_missing_migration_or_disabled_account_mode(manage
     managed.calls.clear()
     assert managed.get("/auth/registration").status_code == 503
     assert not managed.calls
+
+
+def test_registration_requires_self_service_migration_before_signup(managed):
+    managed.registration_policy = {"status": 401, "error": "Account access ended."}
+    response = managed.get("/auth/registration")
+    assert response.status_code == 503
+    assert "self-service registration migration" in response.json()["error"]["message"]
+    assert len(managed.calls) == 1
+
+
+def test_registration_reports_provider_email_confirmation_setting(managed):
+    managed.signup_settings["mailer_autoconfirm"] = False
+    assert managed.get("/auth/registration").json() == {
+        "ready": True,
+        "emailConfirmationRequired": True,
+    }
+    managed.signup_settings["disable_signup"] = True
+    assert managed.get("/auth/registration").status_code == 503
+
+
+def test_registration_settings_accept_opaque_publishable_keys_without_fake_jwt(managed):
+    managed.state.config = replace(
+        managed.state.config, supabase_publishable_key="sb_publishable_test"
+    )
+    assert managed.get("/auth/registration").status_code == 200
+    assert managed.calls[-1][0] == "/auth/v1/settings"
+    assert managed.calls[-1][3] is None

@@ -11,11 +11,14 @@ const payload = { role: "kitchen" as const, email: "supplier@example.test", pass
 
 beforeEach(() => {
   vi.resetAllMocks();
-  vi.mocked(apiRequest).mockResolvedValue({ ready: true });
-  vi.mocked(supabase!.auth.signUp).mockResolvedValue({ data: { user: null, session: null }, error: null });
+  vi.mocked(apiRequest).mockResolvedValue({ ready: true, emailConfirmationRequired: false });
+  const user = { id: "test-user", app_metadata: {}, user_metadata: {}, aud: "authenticated", created_at: "2026-10-11T00:00:00Z" };
+  vi.mocked(supabase!.auth.signUp).mockResolvedValue({ data: { user, session: {
+    access_token: "test-token", refresh_token: "test-refresh", expires_in: 3600, token_type: "bearer", user,
+  } }, error: null });
 });
 
-it("uses native signup with pending-request metadata and no embedded password or app role", async () => {
+it("uses native signup with registration metadata and no embedded password or app role", async () => {
   await registerAccount(payload);
   const request = vi.mocked(supabase!.auth.signUp).mock.calls[0][0];
   expect(request).toMatchObject({ email: payload.email, password: payload.password, options: {
@@ -24,6 +27,17 @@ it("uses native signup with pending-request metadata and no embedded password or
   expect(JSON.stringify(request.options?.data)).not.toContain(payload.password);
   expect(request.options?.data).not.toHaveProperty("app_metadata");
   expect(apiRequest).toHaveBeenCalledWith("/auth/registration", { anonymous: true });
+});
+
+it("stops before signup when Supabase still requires email verification", async () => {
+  vi.mocked(apiRequest).mockResolvedValue({ ready: true, emailConfirmationRequired: true });
+  await expect(registerAccount(payload)).rejects.toThrow("Turn off Confirm email");
+  expect(supabase!.auth.signUp).not.toHaveBeenCalled();
+});
+
+it("does not claim immediate access when signup produces no session", async () => {
+  vi.mocked(supabase!.auth.signUp).mockResolvedValue({ data: { user: null, session: null }, error: null });
+  await expect(registerAccount(payload)).rejects.toThrow("No sign-in session was created");
 });
 
 it("public signup cannot request Admin while trusted creation goes through the backend", async () => {

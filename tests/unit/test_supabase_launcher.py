@@ -36,7 +36,7 @@ def test_launcher_writes_bom_free_public_environment_without_starting_servers(tm
     raw = (project / "frontend/.env.supabase.local").read_bytes()
     assert not raw.startswith(b"\xef\xbb\xbf")
     assert raw.decode("utf-8").splitlines() == [
-        "VITE_AUTH_EMAIL_MODE=admin",
+        "VITE_AUTH_EMAIL_MODE=password",
         "VITE_API_BASE_URL=http://localhost:8797",
         "VITE_SUPABASE_URL=https://fixture.supabase.co",
         "VITE_SUPABASE_PUBLISHABLE_KEY=test-public-key",
