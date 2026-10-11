@@ -10,7 +10,12 @@ Readiness saves without photos or AI. Planning checks full-load capacity reserva
 
 Separate interfaces share the same collection records: hotels, hostels, PGs, canteens and organisations enter through `/supplier-access` and use `/g/:id`, admins use `/admin`, CBG plant owners use `/owner`, and drivers use `/driver/:planKey`. `/plant` remains a compatible admin URL. The owner desk lists dispatched trips, recorded pickups and net-intake discrepancies, with revisioned gate corrections. Its distinct `PLANT_OWNER_TOKEN` grants intake access, not planning, dispatch or waste supplier editing.
 
-All demo waste suppliers, quantities and scenario matrices are **synthetic**. Defaults of 0.8 readiness probability, 10% capacity buffer and a 1,200 kg target are prototype assumptions. Expected collection, reserved truck load, recorded pickups and net received kg are separate quantities.
+Demo collection records, quantities and scenario matrices are **synthetic**. The local seed uses
+OpenStreetMap venue names and coordinates around Harohalli as demo references; these businesses
+are not verified enrolled suppliers. See [mapped venue sources and attribution](data/README.md).
+Defaults of 0.8 readiness probability, 10% capacity buffer and a 1,200 kg target are prototype
+assumptions. Expected collection, reserved truck load, recorded pickups and net received kg are
+separate quantities.
 
 Optional photo upload, retrieval, replacement, analysis and removal have been verified through real local handlers and an actual browser. Kitchens, dispatchers and drivers have distinct entry actions; dispatchers can review private photo evidence before recording a hazard decision. See [integration evidence](docs/INTEGRATION-VERIFICATION.md). AWS deployment, live Bedrock analysis and physical phone-camera operation remain unverified.
 

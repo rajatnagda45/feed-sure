@@ -182,6 +182,13 @@ export function GeneratorPage() {
         {!loading && profile && (
           <>
             <p className="context-line">{profile.name}</p>
+            {profile.locationSource && (
+              <p className="service-note">
+                Demo venue reference · <a href={profile.locationSource.url} target="_blank" rel="noreferrer">Mapped location</a>
+                {" · "}<a href={profile.locationSource.copyrightUrl} target="_blank" rel="noreferrer">{profile.locationSource.attribution} · ODbL</a>.
+                {" "}Supplier participation and pickup entrance are unverified.
+              </p>
+            )}
             <h1>{copy.readyQuestion}</h1>
             <p className="service-note">
               Collection: <strong>{formatServiceDate(draft.collectionDate)}</strong> in India time. Reported quantities are

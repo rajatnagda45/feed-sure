@@ -24,6 +24,7 @@ from feedsure.common.db import DynamoDB
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_PILOT_FILE = PROJECT_ROOT / "data" / "pilot_zone.json"
+DEFAULT_DEMO_LOCATIONS = PROJECT_ROOT / "data" / "demo_kitchens_osm.json"
 DEFAULT_LOCAL_ENDPOINT = "http://localhost:5000"
 EARTH_RADIUS_KM = 6371.0
 
@@ -305,29 +306,65 @@ def ensure_v3_tables(config: Config, resource: Any) -> None:
             )
 
 
+def load_demo_locations(path: Path = DEFAULT_DEMO_LOCATIONS) -> list[dict[str, Any]]:
+    """Load attributed venue references without querying OSM during demo startup."""
+    catalog = json.loads(path.read_text(encoding="utf-8"))
+    locations = catalog["generators"]
+    expected_ids = {f"demo-kitchen-{index:02}" for index in range(1, 11)}
+    if len(locations) != 10 or {row["generatorId"] for row in locations} != expected_ids:
+        raise ValueError("Demo locations must keep the ten stable kitchen IDs.")
+    for row in locations:
+        if not isinstance(row["name"], str) or not row["name"].strip():
+            raise ValueError("Demo venue names must be nonempty.")
+        for field, limit in (("lat", 90), ("lng", 180)):
+            value = row[field]
+            if (
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or not math.isfinite(value)
+                or not -limit <= value <= limit
+            ):
+                raise ValueError("Demo venue coordinates must be finite latitude/longitude.")
+        source = row["locationSource"]
+        if source["elementType"] not in {"node", "way", "relation"} or source["url"] != (
+            f"https://www.openstreetmap.org/{source['elementType']}/{source['elementId']}"
+        ):
+            raise ValueError("Demo venue references must link to their OSM element.")
+        source.update(
+            attribution=catalog["attribution"],
+            license=catalog["license"],
+            licenseUrl=catalog["licenseUrl"],
+            copyrightUrl=catalog["copyrightUrl"],
+            retrievedOn=catalog["retrievedOn"],
+        )
+    return sorted(locations, key=lambda row: row["generatorId"])
+
+
 def seed_v3_database(config: Config, resource: Any, collection_date: date) -> dict[str, str]:
-    """Seed ten fictional kitchens locally, retaining existing tokens, edits and histories."""
+    """Seed synthetic collection records at mapped venues, retaining existing profiles."""
     if not config.aws_endpoint_url:
         raise ValueError("V3 synthetic seeding requires an explicit local endpoint.")
     from feedsure.handlers.operations import Service
 
+    locations = load_demo_locations()
     ensure_v3_tables(config, resource)
     database = DynamoDB(config, resource)
     tokens = {}
     day = collection_date.isoformat()
-    for index in range(10):
-        gid = f"demo-kitchen-{index + 1:02d}"
+    for index, location in enumerate(locations):
+        gid = location["generatorId"]
         if database.get("generators", {"generatorId": gid}, consistent_read=True):
             continue
         token = secrets.token_urlsafe(32)
         tokens[gid] = token
         generator = {
             "generatorId": gid,
-            "name": f"Fictional Kitchen {index + 1}",
-            "type": "hotel" if index % 2 else "hostel_mess",
-            "address": "Synthetic pilot kitchen",
-            "lat": config.plant_lat + index * 0.004,
-            "lng": config.plant_lng + 0.01,
+            "name": f"{location['name']} (demo)",
+            "type": location["type"],
+            "address": location["address"],
+            "lat": location["lat"],
+            "lng": location["lng"],
+            "locationSource": location["locationSource"],
             "pickupStart": "06:00",
             "pickupEnd": "09:00",
             "defaultLang": "en",

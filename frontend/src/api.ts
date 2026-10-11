@@ -192,6 +192,13 @@ export interface GeneratorProfile {
   defaultLang: Lang;
   supportedMaterial: boolean;
   simulated: boolean;
+  locationSource?: {
+    provider: string;
+    url: string;
+    coordinateKind: "node" | "feature_center";
+    attribution: string;
+    copyrightUrl: string;
+  };
 }
 
 export interface ReadinessRequest {
