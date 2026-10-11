@@ -38,5 +38,8 @@ export async function registerAccount(payload: Registration, admin = false): Pro
       ...(payload.role === "kitchen" ? { profile: { lat, lng, type } } : {}),
     } },
   } });
+  if (error?.code === "email_address_not_authorized") {
+    throw new Error("Verification email cannot be sent to this address. Ask your operator to configure Supabase SMTP, or have an Admin create your account.");
+  }
   if (error) throw error;
 }

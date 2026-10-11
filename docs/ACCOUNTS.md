@@ -10,10 +10,18 @@ DynamoDB retains collection, dispatch and intake data; the private Supabase imag
    password length of 12. Set Auth Site URL to `http://localhost:5197` for testing. Configure
    SMTP/rate limits and Supabase abuse controls for hosted use. Email confirmation and Admin
    approval are separate requirements.
+   Without custom SMTP, Supabase sends only to project team email addresses, so public signup
+   for other addresses fails. Configure [custom SMTP](https://supabase.com/docs/guides/auth/auth-smtp)
+   for self-registration. For a local test before SMTP is ready, an active Admin can create
+   a confirmed account from `/accounts/new`, then approve it in `/accounts`. This keeps
+   public email confirmation enabled; Admin provisioning does not send a verification email.
 2. Run `supabase/migrations/202610110001_private_photos.sql`, then
-   `supabase/migrations/202610110002_accounts.sql` once in the SQL editor. The second migration
+   `supabase/migrations/202610110002_accounts.sql`, then
+   `supabase/migrations/202610110003_admin_creation_role.sql` once in the SQL editor. The second migration
    imports existing **trusted app_metadata** assignments as active accounts; other users and
    public signups remain pending. Review imported Admin assignments first.
+   The third migration handles the Admin API's delayed trusted role metadata and repairs
+   untouched pending Admin creations. It does not activate accounts or rewrite reviewed roles.
 3. Create your first email/password user in Supabase Authentication. In the trusted SQL editor,
    replace the email below and bootstrap the first Admin:
 

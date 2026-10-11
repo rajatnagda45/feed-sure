@@ -2,6 +2,7 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { registerAccount } from "./accounts";
 import { supabase } from "./supabase";
 import { apiRequest } from "./api";
+import { AuthApiError } from "@supabase/supabase-js";
 
 vi.mock("./supabase", () => ({ supabase: { auth: { signUp: vi.fn() } } }));
 vi.mock("./api", () => ({ apiRequest: vi.fn() }));
@@ -43,4 +44,10 @@ it("stops before signup when the account migration or backend is unavailable", a
   vi.mocked(apiRequest).mockRejectedValue(new Error("Run the Supabase account migration."));
   await expect(registerAccount(payload)).rejects.toThrow("account migration");
   expect(supabase!.auth.signUp).not.toHaveBeenCalled();
+});
+
+it("explains the SMTP requirement when Supabase cannot send to a non-team address", async () => {
+  vi.mocked(supabase!.auth.signUp).mockResolvedValue({ data: { user: null, session: null },
+    error: new AuthApiError("Email address not authorized", 403, "email_address_not_authorized") });
+  await expect(registerAccount(payload)).rejects.toThrow("configure Supabase SMTP");
 });

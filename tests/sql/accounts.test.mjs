@@ -30,8 +30,54 @@ before(async () => {
   await user(1, {}, { feedsure_role: "ADMIN" });
   await user(2, {}, { feedsure_role: "GENERATOR", generator_id: "existing-hotel" });
   await db.exec(await readFile(new URL("../../supabase/migrations/202610110002_accounts.sql", import.meta.url), "utf8"));
+  // Reproduce the hosted Admin API's insert, then trusted metadata update order.
+  await user(20, { feedsure_registration: { ...registration, role: "admin" } });
+  await db.query("update auth.users set raw_app_meta_data=$1 where id=$2",
+    [{ feedsure_account_role: "admin" }, uid(20)]);
+  await db.exec(await readFile(new URL("../../supabase/migrations/202610110003_admin_creation_role.sql", import.meta.url), "utf8"));
 });
 after(async () => { await db.close(); });
+
+test("repairs untouched pending Admin API creations without activating them", async () => {
+  const account = await rpc(20, "identity");
+  assert.equal(account.role, "admin");
+  assert.equal(account.status, "PENDING");
+  assert.equal(account.revision, 2);
+  assert.equal(account.generator_id, null);
+  assert.equal((await rpc(20, "list")).status, 403);
+});
+
+test("captures delayed trusted Admin roles and ignores public metadata escalation", async () => {
+  await user(21, { feedsure_registration: { ...registration, role: "admin" } });
+  assert.equal((await rpc(21, "identity")).role, "kitchen");
+  await db.query("update auth.users set raw_user_meta_data=$1 where id=$2",
+    [{ feedsure_account_role: "admin", feedsure_registration: { ...registration, role: "admin" } }, uid(21)]);
+  assert.equal((await rpc(21, "identity")).role, "kitchen");
+  await db.query("update auth.users set raw_app_meta_data=$1 where id=$2",
+    [{ feedsure_account_role: "admin" }, uid(21)]);
+  const pending = await rpc(21, "identity");
+  assert.equal(pending.role, "admin");
+  assert.equal(pending.status, "PENDING");
+  assert.equal(pending.revision, 2);
+  assert.equal((await rpc(21, "list")).status, 403);
+  await db.exec("set role authenticated");
+  try {
+    await assert.rejects(db.query("select public.feedsure_complete_user_creation()"), /permission denied/);
+  } finally { await db.exec("reset role"); }
+});
+
+test("metadata updates cannot rewrite reviewed or activated assignments", async () => {
+  await user(22, { feedsure_registration: { ...registration, role: "owner", capacityKg: 1000 } });
+  await rpc(1, "update", 22, 1, { organisation: "Reviewed owner" });
+  await db.query("update auth.users set raw_user_meta_data=$1, raw_app_meta_data=$2 where id=$3",
+    [{ feedsure_registration: { ...registration, role: "admin" } }, { feedsure_account_role: "admin" }, uid(22)]);
+  assert.equal((await rpc(22, "identity")).role, "owner");
+  await rpc(1, "activate", 22, 2);
+  await db.query("update auth.users set raw_app_meta_data=$1 where id=$2",
+    [{ feedsure_account_role: "kitchen" }, uid(22)]);
+  await db.query("update auth.sessions set created_at=clock_timestamp() where id=$1", [sid(22)]);
+  assert.equal((await rpc(22, "identity")).role, "owner");
+});
 
 test("imports trusted assignments and ignores public Admin escalation", async () => {
   assert.equal((await rpc(1, "identity")).role, "admin");
