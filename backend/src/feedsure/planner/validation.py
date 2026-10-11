@@ -70,7 +70,7 @@ def validate_matrix(matrix: Any, point_ids: list[str]) -> None:
     if len(set(point_ids)) != len(point_ids) or not point_ids or point_ids[0] != "plant":
         raise ValueError("matrix requires plant first and unique pointIds")
     source = matrix.get("source")
-    if not isinstance(source, str) or source not in {"location", "fallback", "fixture"}:
+    if not isinstance(source, str) or source not in {"location", "fallback", "fixture", "osrm"}:
         raise ValueError("invalid matrix source")
     size = len(point_ids)
     for field in ("km", "min"):

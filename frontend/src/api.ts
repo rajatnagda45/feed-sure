@@ -270,7 +270,7 @@ export interface PlannerParams {
 export interface ServiceMode {
   database: "aws" | "local";
   screening: "not_used" | "aws" | "mock";
-  matrix: "location" | "fallback" | "fixture";
+  matrix: "location" | "fallback" | "fixture" | "osrm";
 }
 
 export interface OperationsSnapshot {
@@ -332,7 +332,15 @@ export type ExclusionReason =
   | "TARGET_REACHED"
   | "NOT_SELECTED_BY_HEURISTIC";
 
+export interface RoadRoute {
+  status: "ready" | "unavailable";
+  source: "osrm" | "location" | "fallback" | "fixture";
+  profile?: "driving" | "truck";
+  geometry: GeoJSON.MultiLineString | null;
+}
+
 export interface PlanEnvelope {
+  roadRoute?: RoadRoute;
   schemaVersion: 3;
   collectionDate: string;
   inputRevision: number;
@@ -343,7 +351,7 @@ export interface PlanEnvelope {
   excluded: { generatorId: string; reason: ExclusionReason }[];
   shortfall: { kg: number; reasons: ExclusionReason[] };
   mandatoryConflicts: { generatorId: string; reason: ExclusionReason }[];
-  matrixSource: "location" | "fallback" | "fixture";
+  matrixSource: "location" | "fallback" | "fixture" | "osrm";
   simulated: boolean;
   assumptions: { readinessPrior: number; volumeRatio: number; capacityBuffer: number };
   planKey: string;

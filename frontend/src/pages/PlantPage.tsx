@@ -395,7 +395,7 @@ export function PlantPage() {
           </section>
 
           <section className="operations-grid" id="route-review">
-            <div className="map-panel"><RouteMap points={points} /></div>
+            <div className="map-panel"><RouteMap points={points} roadRoute={activePlan?.roadRoute} /></div>
             <div className="plan-panel">
               <div className="section-heading"><div><p className="context-line">{activePlan?.state ?? "No draft"}</p><h2>Route review</h2></div>{activePlan && <span className={`status-badge status-${activePlan.status.toLowerCase()}`}>{activePlan.status.replaceAll("_", " ")}</span>}</div>
               {!activePlan ? <p className="empty-state">Build a plan from the current confirmations.</p> : (

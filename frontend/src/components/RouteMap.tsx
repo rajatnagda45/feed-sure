@@ -2,7 +2,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AttributionControl, GeoJSONSource, LngLatBounds, Map as MapLibreMap, Marker, NavigationControl, Popup, setWorkerUrl } from "maplibre-gl";
 import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import type { MapPoint } from "../workflow";
-import { mapPointLabel, mapRequest, mapSignature, routeCoordinates, selectBasemap, validMapPoints } from "./mapModel";
+import { mapPointLabel, mapRequest, mapSignature, selectBasemap, validMapPoints } from "./mapModel";
+import type { RoadRoute } from "../api";
+import { roadGeometry } from "./roadGeometry";
 import { createMapSession, type MapStatus } from "./mapSession";
 
 // MapLibre v6 needs an explicit bundled worker URL under Vite.
@@ -12,7 +14,7 @@ const loopback = typeof window !== "undefined" && ["localhost", "127.0.0.1", "[:
 const provider = selectBasemap(import.meta.env.VITE_LOCATION_API_KEY ?? "", import.meta.env.VITE_AWS_REGION ?? "ap-south-1",
   loopback && (import.meta.env.VITE_LOCAL_DEMO_BASEMAP ?? (import.meta.env.DEV ? "osm" : "off")) === "osm");
 
-interface RouteMapProps { points: MapPoint[] }
+interface RouteMapProps { points: MapPoint[]; roadRoute?: RoadRoute }
 
 function Schematic({ points }: RouteMapProps) {
   if (!points.length) return <div className="map-empty">The route list is available below.</div>;
@@ -24,13 +26,8 @@ function Schematic({ points }: RouteMapProps) {
     x: width ? 8 + ((lng - minLng) / width) * 84 : 50,
     y: height ? 92 - ((lat - minLat) / height) * 84 : 50,
   });
-  const polyline = routeCoordinates(points).map(([lng, lat]) => {
-    const { x, y } = position(lng, lat);
-    return `${x},${y}`;
-  }).join(" ");
   return <div className="schematic-wrap">
-    <svg className="schematic-map" viewBox="0 0 100 100" role="img" aria-label="Schematic route including return to plant; not road navigation">
-      {polyline && <polyline points={polyline} fill="none" stroke="currentColor" strokeWidth="1.2" strokeDasharray="2 1" />}
+    <svg className="schematic-map" viewBox="0 0 100 100" role="img" aria-label="Schematic stops including return to plant; not road navigation">
       {points.map((point) => {
         const { x, y } = position(point.lng, point.lat);
         return <g key={point.id} transform={`translate(${x} ${y})`}>
@@ -40,15 +37,19 @@ function Schematic({ points }: RouteMapProps) {
         </g>;
       })}
     </svg>
-    <p>Schematic positions. Straight connections include return to plant.</p>
+    <p>Stop positions only. Use the ordered list for the trip and return to plant.</p>
   </div>;
 }
 
-export function RouteMap({ points }: RouteMapProps) {
+export function RouteMap({ points, roadRoute }: RouteMapProps) {
   const scene = useMemo(() => validMapPoints(points), [points]);
   const signature = mapSignature(scene);
   const latest = useRef(scene);
   latest.current = scene;
+  const geometry = useMemo(() => roadGeometry(roadRoute), [roadRoute]);
+  const geometrySignature = JSON.stringify(geometry);
+  const latestGeometry = useRef(geometry);
+  latestGeometry.current = geometry;
   const container = useRef<HTMLDivElement>(null);
   const session = useRef<ReturnType<typeof createMapSession> | null>(null);
   const [status, setStatus] = useState<MapStatus>(provider ? "loading" : "failed");
@@ -87,16 +88,17 @@ export function RouteMap({ points }: RouteMapProps) {
           observer.observe(element);
           return {
             draw(current) {
-              const coordinates = routeCoordinates(current);
-              const data: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: coordinates.length ? [{
-                type: "Feature", properties: {}, geometry: { type: "LineString", coordinates },
+              const route = latestGeometry.current;
+              const data: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: route ? [{
+                type: "Feature", properties: {}, geometry: route,
               }] : [] };
               const source = instance.getSource("collection-route") as GeoJSONSource | undefined;
               if (source) source.setData(data);
               else {
                 instance.addSource("collection-route", { type: "geojson", data });
                 instance.addLayer({ id: "collection-route", type: "line", source: "collection-route",
-                  paint: { "line-color": "#285a91", "line-width": 3, "line-dasharray": [2, 1.5] } });
+                  layout: { "line-cap": "round", "line-join": "round" },
+                  paint: { "line-color": "#285a91", "line-width": 4 } });
               }
               markers.forEach((marker) => marker.remove());
               markers = [];
@@ -117,6 +119,7 @@ export function RouteMap({ points }: RouteMapProps) {
               const first = current[0];
               const bounds = current.reduce((bounds, point) => bounds.extend([point.lng, point.lat]),
                 new LngLatBounds([first.lng, first.lat], [first.lng, first.lat]));
+              latestGeometry.current?.coordinates.forEach(line => line.forEach(point => bounds.extend([point[0], point[1]])));
               instance.fitBounds(bounds, { padding: 56, maxZoom: 14, duration: 0 });
             },
             destroy,
@@ -131,7 +134,7 @@ export function RouteMap({ points }: RouteMapProps) {
     return () => { owned.destroy(); session.current = null; };
   }, [attempt]);
 
-  useEffect(() => { session.current?.update(latest.current); }, [signature]);
+  useEffect(() => { session.current?.update(latest.current, geometrySignature); }, [signature, geometrySignature]);
 
   const fitRoute = () => session.current?.fit();
 
@@ -152,9 +155,11 @@ export function RouteMap({ points }: RouteMapProps) {
       </div>}
     </div>
     <div className="map-legend" aria-label="Map legend">
-      <span><b className="legend-plant">P</b> Plant / return</span><span><b className="legend-stop">1</b> Ordered stop</span><span><b className="legend-excluded">×</b> Outside route</span><span><b className="legend-line" aria-hidden="true" /> Straight connection</span>
+      <span><b className="legend-plant">P</b> Plant / return</span><span><b className="legend-stop">1</b> Ordered stop</span><span><b className="legend-excluded">×</b> Outside route</span>{geometry && status === "ready" && <span><b className="legend-line" style={{ borderTopStyle: "solid" }} aria-hidden="true" /> Road route</span>}
     </div>
-    <p className="map-explanation">Dashed straight-line connections, not road directions. Select a marker for windows and exclusions.</p>
+    <p className="map-explanation">{geometry
+      ? `Road path in planned stop order, including return to plant. ${roadRoute?.source === "osrm" ? "OSRM driving profile; truck restrictions and live traffic are not verified." : "Amazon Location truck routing."}`
+      : "Road path unavailable. Stops are shown without connecting lines. Re-plan with road routing enabled; fallback distances are estimates."} Select a marker for windows and exclusions.</p>
     {provider?.kind === "osm" && <p className="map-policy">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a>. Public demo tiles; best-effort availability. <a href="https://www.openstreetmap.org/fixthemap" target="_blank" rel="noreferrer">Report a map issue</a></p>}
     {scene.length !== points.length && <p className="map-policy">Some locations are invalid. Refer to the ordered stop list.</p>}
   </div>;

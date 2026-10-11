@@ -24,6 +24,8 @@ describe("map fallback content", () => {
     expect(html).toContain("Window 06:00–08:00");
     expect(html).toContain("Resolve the hazard before loading");
     expect(html).toContain("Map legend");
+    expect(html).toContain("Road path unavailable");
+    expect(html).not.toContain("<polyline");
     expect(html).toContain("Kitchen route remains usable");
     expect(html).not.toContain("Retry basemap");
     expect(html).not.toContain("Amazon Location Service");

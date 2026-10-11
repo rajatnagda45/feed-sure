@@ -27,3 +27,9 @@ data or dispatched route snapshots. See [local run instructions](../docs/DEPLOYM
 `pilot_zone.json` and the legacy v1 seed remain historical synthetic scenarios; the mapped fixture
 is used by `seed_v3_database` and the disposable local demo runner. A custom depot does not shift
 mapped venues: the planner applies the configured service radius to their actual saved coordinates.
+
+The portable local dataset and Supabase import are generated with
+`python scripts/export_demo_dataset.py --date 2026-10-12`. JSON, table JSON payloads and CSVs
+live in `data/exports`; migration and replayable insertions live in `supabase`. See the
+[Supabase seed and integration contract](../supabase/README.md). These files prepare the incoming
+collection-data adapter; the existing demo backend continues to use DynamoDB/Moto.

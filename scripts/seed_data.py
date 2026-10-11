@@ -19,6 +19,7 @@ from urllib.parse import quote
 
 import boto3
 from botocore.exceptions import ClientError
+from demo_scenarios import demo_readiness_rows
 from feedsure.common.config import Config, get_config
 from feedsure.common.db import DynamoDB
 
@@ -350,8 +351,8 @@ def seed_v3_database(config: Config, resource: Any, collection_date: date) -> di
     ensure_v3_tables(config, resource)
     database = DynamoDB(config, resource)
     tokens = {}
-    day = collection_date.isoformat()
-    for index, location in enumerate(locations):
+    readiness = {row["generatorId"]: row for row in demo_readiness_rows(collection_date)}
+    for location in locations:
         gid = location["generatorId"]
         if database.get("generators", {"generatorId": gid}, consistent_read=True):
             continue
@@ -377,17 +378,9 @@ def seed_v3_database(config: Config, resource: Any, collection_date: date) -> di
             [database.conditional_put("generators", generator, "attribute_not_exists(generatorId)")]
         )
         # Include a cancellation, two unconfirmed suppliers and a tight-window/capacity case.
-        if index in {7, 8}:
+        request = readiness[gid]
+        if request["status"] == "UNCONFIRMED":
             continue
-        request = {
-            "generatorId": gid,
-            "collectionDate": day,
-            "status": "NOT_READY" if index == 2 else "READY",
-            "confirmedKg": 180 if index != 9 else 2500,
-            "weightSource": "ESTIMATE",
-            "window": {"start": "06:00", "end": "06:05" if index == 6 else "09:00"},
-            "reason": "Synthetic cancellation" if index == 2 else None,
-        }
         event = {"headers": {"X-Generator-Token": token}}
         Service(event, config, database, None).readiness(request)
     return tokens

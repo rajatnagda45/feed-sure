@@ -388,7 +388,7 @@ Resources:
                 - !GetAtt GateLogsTable.Arn
                 - !GetAtt MutationLogTable.Arn
             - Effect: Allow
-              Action: geo-routes:CalculateRouteMatrix
+              Action: [geo-routes:CalculateRouteMatrix, geo-routes:CalculateRoutes]
               Resource: "*"
       Events:
         Account0:

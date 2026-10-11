@@ -1,0 +1,1485 @@
+{
+  "schemaVersion": 3,
+  "datasetId": "harohalli-osm-demo-v1",
+  "collectionDate": "2026-10-12",
+  "geography": {
+    "provider": "OpenStreetMap",
+    "attribution": "© OpenStreetMap contributors",
+    "license": "ODbL-1.0",
+    "licenseUrl": "https://opendatacommons.org/licenses/odbl/1-0/",
+    "copyrightUrl": "https://www.openstreetmap.org/copyright",
+    "retrievedOn": "2026-10-11"
+  },
+  "note": "OSM venue references; no enrolled suppliers or measured waste quantities. Readiness and history are simulated. No credentials are included.",
+  "generators": [
+    {
+      "generatorId": "demo-kitchen-01",
+      "name": "Jayaram Breakfast Point (demo)",
+      "type": "cafe",
+      "lat": 12.6778162,
+      "lng": 77.4746671,
+      "address": "Harohalli pilot area; mapped point 12.6778162, 77.4746671",
+      "locationSource": {
+        "provider": "OpenStreetMap",
+        "elementType": "node",
+        "elementId": 1304825515,
+        "url": "https://www.openstreetmap.org/node/1304825515",
+        "coordinateKind": "node",
+        "tags": {
+          "amenity": "cafe",
+          "name": "Jayaram Breakfast Point"
+        },
+        "attribution": "© OpenStreetMap contributors",
+        "license": "ODbL-1.0",
+        "licenseUrl": "https://opendatacommons.org/licenses/odbl/1-0/",
+        "copyrightUrl": "https://www.openstreetmap.org/copyright",
+        "retrievedOn": "2026-10-11"
+      },
+      "venueName": "Jayaram Breakfast Point",
+      "pickupStart": "06:00",
+      "pickupEnd": "09:00",
+      "defaultLang": "en",
+      "simulated": true,
+      "verification": {
+        "participationVerified": false,
+        "wasteStreamVerified": false,
+        "pickupEntranceVerified": false,
+        "venueOperationVerified": false
+      }
+    },
+    {
+      "generatorId": "demo-kitchen-02",
+      "name": "Mandarathi Vaibhava (demo)",
+      "type": "restaurant",
+      "lat": 12.7563599,
+      "lng": 77.4854899,
+      "address": "Harohalli pilot area; mapped point 12.7563599, 77.4854899",
+      "locationSource": {
+        "provider": "OpenStreetMap",
+        "elementType": "node",
+        "elementId": 10647819582,
+        "url": "https://www.openstreetmap.org/node/10647819582",
+        "coordinateKind": "node",
+        "tags": {
+          "amenity": "restaurant",
+          "name": "Mandarathi Vaibhava"
+        },
+        "attribution": "© OpenStreetMap contributors",
+        "license": "ODbL-1.0",
+        "licenseUrl": "https://opendatacommons.org/licenses/odbl/1-0/",
+        "copyrightUrl": "https://www.openstreetmap.org/copyright",
+        "retrievedOn": "2026-10-11"
+      },
+      "venueName": "Mandarathi Vaibhava",
+      "pickupStart": "06:00",
+      "pickupEnd": "09:00",
+      "defaultLang": "en",
+      "simulated": true,
+      "verification": {
+        "participationVerified": false,
+        "wasteStreamVerified": false,
+        "pickupEntranceVerified": false,
+        "venueOperationVerified": false
+      }
+    },
+    {
+      "generatorId": "demo-kitchen-03",
+      "name": "Mandarathi Gardens (demo)",
+      "type": "restaurant",
+      "lat": 12.6227353,
+      "lng": 77.4315434,
+      "address": "Harohalli pilot area; mapped point 12.6227353, 77.4315434",
+      "locationSource": {
+        "provider": "OpenStreetMap",
+        "elementType": "node",
+        "elementId": 11513230796,
+        "url": "https://www.openstreetmap.org/node/11513230796",
+        "coordinateKind": "node",
+        "tags": {
+          "amenity": "restaurant",
+          "name": "Mandarathi Gardens"
+        },
+        "attribution": "© OpenStreetMap contributors",
+        "license": "ODbL-1.0",
+        "licenseUrl": "https://opendatacommons.org/licenses/odbl/1-0/",
+        "copyrightUrl": "https://www.openstreetmap.org/copyright",
+        "retrievedOn": "2026-10-11"
+      },
+      "venueName": "Mandarathi Gardens",
+      "pickupStart": "06:00",
+      "pickupEnd": "09:00",
+      "defaultLang": "en",
+      "simulated": true,
+      "verification": {
+        "participationVerified": false,
+        "wasteStreamVerified": false,
+        "pickupEntranceVerified": false,
+        "venueOperationVerified": false
+      }
+    },
+    {
+      "generatorId": "demo-kitchen-04",
+      "name": "Red Spice (demo)",
+      "type": "restaurant",
+      "lat": 12.6225054,
+      "lng": 77.4315749,
+      "address": "Harohalli pilot area; mapped point 12.6225054, 77.4315749",
+      "locationSource": {
+        "provider": "OpenStreetMap",
+        "elementType": "node",
+        "elementId": 11999072013,
+        "url": "https://www.openstreetmap.org/node/11999072013",
+        "coordinateKind": "node",
+        "tags": {
+          "amenity": "restaurant",
+          "name": "Red Spice"
+        },
+        "attribution": "© OpenStreetMap contributors",
+        "license": "ODbL-1.0",
+        "licenseUrl": "https://opendatacommons.org/licenses/odbl/1-0/",
+        "copyrightUrl": "https://www.openstreetmap.org/copyright",
+        "retrievedOn": "2026-10-11"
+      },
+      "venueName": "Red Spice",
+      "pickupStart": "06:00",
+      "pickupEnd": "09:00",
+      "defaultLang": "en",
+      "simulated": true,
+      "verification": {
+        "participationVerified": false,
+        "wasteStreamVerified": false,
+        "pickupEntranceVerified": false,
+        "venueOperationVerified": false
+      }
+    },
+    {
+      "generatorId": "demo-kitchen-05",
+      "name": "Campus Mess (demo)",
+      "type": "canteen",
+      "lat": 12.6408946,
+      "lng": 77.4408622,
+      "address": "Harohalli pilot area; mapped point 12.6408946, 77.4408622",
+      "locationSource": {
+        "provider": "OpenStreetMap",
+        "elementType": "node",
+        "elementId": 6357489343,
+        "url": "https://www.openstreetmap.org/node/6357489343",
+        "coordinateKind": "node",
+        "tags": {
+          "amenity": "restaurant",
+          "name": "Campus Mess"
+        },
+        "attribution": "© OpenStreetMap contributors",
+        "license": "ODbL-1.0",
+        "licenseUrl": "https://opendatacommons.org/licenses/odbl/1-0/",
+        "copyrightUrl": "https://www.openstreetmap.org/copyright",
+        "retrievedOn": "2026-10-11"
+      },
+      "venueName": "Campus Mess",
+      "pickupStart": "06:00",
+      "pickupEnd": "09:00",
+      "defaultLang": "en",
+      "simulated": true,
+      "verification": {
+        "participationVerified": false,
+        "wasteStreamVerified": false,
+        "pickupEntranceVerified": false,
+        "venueOperationVerified": false
+      }
+    },
+    {
+      "generatorId": "demo-kitchen-06",
+      "name": "S Residency Boys Hostel (demo)",
+      "type": "hostel_mess",
+      "lat": 12.6583227,
+      "lng": 77.4479832,
+      "address": "Harohalli pilot area; mapped point 12.6583227, 77.4479832",
+      "locationSource": {
+        "provider": "OpenStreetMap",
+        "elementType": "node",
+        "elementId": 13316004022,
+        "url": "https://www.openstreetmap.org/node/13316004022",
+        "coordinateKind": "node",
+        "tags": {
+          "building": "yes",
+          "name": "S Residency Boys Hostel"
+        },
+        "attribution": "© OpenStreetMap contributors",
+        "license": "ODbL-1.0",
+        "licenseUrl": "https://opendatacommons.org/licenses/odbl/1-0/",
+        "copyrightUrl": "https://www.openstreetmap.org/copyright",
+        "retrievedOn": "2026-10-11"
+      },
+      "venueName": "S Residency Boys Hostel",
+      "pickupStart": "06:00",
+      "pickupEnd": "09:00",
+      "defaultLang": "en",
+      "simulated": true,
+      "verification": {
+        "participationVerified": false,
+        "wasteStreamVerified": false,
+        "pickupEntranceVerified": false,
+        "venueOperationVerified": false
+      }
+    },
+    {
+      "generatorId": "demo-kitchen-07",
+      "name": "Nursing Girls Hostel (demo)",
+      "type": "hostel_mess",
+      "lat": 12.6584271,
+      "lng": 77.4494652,
+      "address": "Harohalli pilot area; mapped point 12.6584271, 77.4494652",
+      "locationSource": {
+        "provider": "OpenStreetMap",
+        "elementType": "node",
+        "elementId": 13316004018,
+        "url": "https://www.openstreetmap.org/node/13316004018",
+        "coordinateKind": "node",
+        "tags": {
+          "building": "yes",
+          "name": "Nursing Girls Hostel"
+        },
+        "attribution": "© OpenStreetMap contributors",
+        "license": "ODbL-1.0",
+        "licenseUrl": "https://opendatacommons.org/licenses/odbl/1-0/",
+        "copyrightUrl": "https://www.openstreetmap.org/copyright",
+        "retrievedOn": "2026-10-11"
+      },
+      "venueName": "Nursing Girls Hostel",
+      "pickupStart": "06:00",
+      "pickupEnd": "09:00",
+      "defaultLang": "en",
+      "simulated": true,
+      "verification": {
+        "participationVerified": false,
+        "wasteStreamVerified": false,
+        "pickupEntranceVerified": false,
+        "venueOperationVerified": false
+      }
+    },
+    {
+      "generatorId": "demo-kitchen-08",
+      "name": "Karakoram Hostel (demo)",
+      "type": "hostel_mess",
+      "lat": 12.6406066,
+      "lng": 77.4415259,
+      "address": "Harohalli pilot area; mapped point 12.6406066, 77.4415259",
+      "locationSource": {
+        "provider": "OpenStreetMap",
+        "elementType": "relation",
+        "elementId": 16048270,
+        "url": "https://www.openstreetmap.org/relation/16048270",
+        "coordinateKind": "feature_center",
+        "tags": {
+          "alt_name": "Hostel Block 2",
+          "building": "residential",
+          "description": "Senior Boys Hostel",
+          "name": "Karakoram Hostel"
+        },
+        "attribution": "© OpenStreetMap contributors",
+        "license": "ODbL-1.0",
+        "licenseUrl": "https://opendatacommons.org/licenses/odbl/1-0/",
+        "copyrightUrl": "https://www.openstreetmap.org/copyright",
+        "retrievedOn": "2026-10-11"
+      },
+      "venueName": "Karakoram Hostel",
+      "pickupStart": "06:00",
+      "pickupEnd": "09:00",
+      "defaultLang": "en",
+      "simulated": true,
+      "verification": {
+        "participationVerified": false,
+        "wasteStreamVerified": false,
+        "pickupEntranceVerified": false,
+        "venueOperationVerified": false
+      }
+    },
+    {
+      "generatorId": "demo-kitchen-09",
+      "name": "Purvanchal Hostel (demo)",
+      "type": "hostel_mess",
+      "lat": 12.641092,
+      "lng": 77.4415273,
+      "address": "Harohalli pilot area; mapped point 12.641092, 77.4415273",
+      "locationSource": {
+        "provider": "OpenStreetMap",
+        "elementType": "relation",
+        "elementId": 16048271,
+        "url": "https://www.openstreetmap.org/relation/16048271",
+        "coordinateKind": "feature_center",
+        "tags": {
+          "alt_name": "Hostel Block 1",
+          "building": "residential",
+          "description": "Senior Girls Hostel",
+          "name": "Purvanchal Hostel"
+        },
+        "attribution": "© OpenStreetMap contributors",
+        "license": "ODbL-1.0",
+        "licenseUrl": "https://opendatacommons.org/licenses/odbl/1-0/",
+        "copyrightUrl": "https://www.openstreetmap.org/copyright",
+        "retrievedOn": "2026-10-11"
+      },
+      "venueName": "Purvanchal Hostel",
+      "pickupStart": "06:00",
+      "pickupEnd": "09:00",
+      "defaultLang": "en",
+      "simulated": true,
+      "verification": {
+        "participationVerified": false,
+        "wasteStreamVerified": false,
+        "pickupEntranceVerified": false,
+        "venueOperationVerified": false
+      }
+    },
+    {
+      "generatorId": "demo-kitchen-10",
+      "name": "Krishna Sagar (demo)",
+      "type": "restaurant",
+      "lat": 12.8004681,
+      "lng": 77.5083839,
+      "address": "Harohalli pilot area; mapped point 12.8004681, 77.5083839",
+      "locationSource": {
+        "provider": "OpenStreetMap",
+        "elementType": "node",
+        "elementId": 4636471347,
+        "url": "https://www.openstreetmap.org/node/4636471347",
+        "coordinateKind": "node",
+        "tags": {
+          "amenity": "restaurant",
+          "name": "Krishna Sagar"
+        },
+        "attribution": "© OpenStreetMap contributors",
+        "license": "ODbL-1.0",
+        "licenseUrl": "https://opendatacommons.org/licenses/odbl/1-0/",
+        "copyrightUrl": "https://www.openstreetmap.org/copyright",
+        "retrievedOn": "2026-10-11"
+      },
+      "venueName": "Krishna Sagar",
+      "pickupStart": "06:00",
+      "pickupEnd": "09:00",
+      "defaultLang": "en",
+      "simulated": true,
+      "verification": {
+        "participationVerified": false,
+        "wasteStreamVerified": false,
+        "pickupEntranceVerified": false,
+        "venueOperationVerified": false
+      }
+    }
+  ],
+  "readiness": [
+    {
+      "generatorId": "demo-kitchen-01",
+      "collectionDate": "2026-10-12",
+      "status": "READY",
+      "confirmedKg": 180,
+      "weightSource": "ESTIMATE",
+      "window": {
+        "start": "06:00",
+        "end": "09:00"
+      },
+      "reason": null,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-02",
+      "collectionDate": "2026-10-12",
+      "status": "READY",
+      "confirmedKg": 180,
+      "weightSource": "ESTIMATE",
+      "window": {
+        "start": "06:00",
+        "end": "09:00"
+      },
+      "reason": null,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-03",
+      "collectionDate": "2026-10-12",
+      "status": "NOT_READY",
+      "confirmedKg": 0,
+      "weightSource": null,
+      "window": null,
+      "reason": "Synthetic cancellation",
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-04",
+      "collectionDate": "2026-10-12",
+      "status": "READY",
+      "confirmedKg": 180,
+      "weightSource": "ESTIMATE",
+      "window": {
+        "start": "06:00",
+        "end": "09:00"
+      },
+      "reason": null,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-05",
+      "collectionDate": "2026-10-12",
+      "status": "READY",
+      "confirmedKg": 180,
+      "weightSource": "ESTIMATE",
+      "window": {
+        "start": "06:00",
+        "end": "09:00"
+      },
+      "reason": null,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-06",
+      "collectionDate": "2026-10-12",
+      "status": "READY",
+      "confirmedKg": 180,
+      "weightSource": "ESTIMATE",
+      "window": {
+        "start": "06:00",
+        "end": "09:00"
+      },
+      "reason": null,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-07",
+      "collectionDate": "2026-10-12",
+      "status": "READY",
+      "confirmedKg": 180,
+      "weightSource": "ESTIMATE",
+      "window": {
+        "start": "06:00",
+        "end": "06:05"
+      },
+      "reason": null,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-08",
+      "collectionDate": "2026-10-12",
+      "status": "UNCONFIRMED",
+      "confirmedKg": null,
+      "weightSource": null,
+      "window": null,
+      "reason": null,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-09",
+      "collectionDate": "2026-10-12",
+      "status": "UNCONFIRMED",
+      "confirmedKg": null,
+      "weightSource": null,
+      "window": null,
+      "reason": null,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-10",
+      "collectionDate": "2026-10-12",
+      "status": "READY",
+      "confirmedKg": 2500,
+      "weightSource": "ESTIMATE",
+      "window": {
+        "start": "06:00",
+        "end": "09:00"
+      },
+      "reason": null,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    }
+  ],
+  "history": [
+    {
+      "generatorId": "demo-kitchen-01",
+      "date": "2026-09-28",
+      "kg": 182,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-01",
+      "date": "2026-09-29",
+      "kg": 164,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-01",
+      "date": "2026-09-30",
+      "kg": 183,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-01",
+      "date": "2026-10-01",
+      "kg": 163,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-01",
+      "date": "2026-10-02",
+      "kg": 155,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-01",
+      "date": "2026-10-03",
+      "kg": 127,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-01",
+      "date": "2026-10-04",
+      "kg": 125,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-01",
+      "date": "2026-10-05",
+      "kg": 165,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-01",
+      "date": "2026-10-06",
+      "kg": 181,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-01",
+      "date": "2026-10-07",
+      "kg": 124,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-01",
+      "date": "2026-10-08",
+      "kg": 208,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-01",
+      "date": "2026-10-09",
+      "kg": 121,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-01",
+      "date": "2026-10-10",
+      "kg": 210,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-01",
+      "date": "2026-10-11",
+      "kg": 217,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-02",
+      "date": "2026-09-28",
+      "kg": 205,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-02",
+      "date": "2026-09-29",
+      "kg": 164,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-02",
+      "date": "2026-09-30",
+      "kg": 147,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-02",
+      "date": "2026-10-01",
+      "kg": 204,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-02",
+      "date": "2026-10-02",
+      "kg": 197,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-02",
+      "date": "2026-10-03",
+      "kg": 187,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-02",
+      "date": "2026-10-04",
+      "kg": 136,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-02",
+      "date": "2026-10-05",
+      "kg": 180,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-02",
+      "date": "2026-10-06",
+      "kg": 123,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-02",
+      "date": "2026-10-07",
+      "kg": 120,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-02",
+      "date": "2026-10-08",
+      "kg": 149,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-02",
+      "date": "2026-10-09",
+      "kg": 150,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-02",
+      "date": "2026-10-10",
+      "kg": 139,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-02",
+      "date": "2026-10-11",
+      "kg": 144,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-03",
+      "date": "2026-09-28",
+      "kg": 167,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-03",
+      "date": "2026-09-29",
+      "kg": 211,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-03",
+      "date": "2026-09-30",
+      "kg": 178,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-03",
+      "date": "2026-10-01",
+      "kg": 198,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-03",
+      "date": "2026-10-02",
+      "kg": 157,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-03",
+      "date": "2026-10-03",
+      "kg": 122,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-03",
+      "date": "2026-10-04",
+      "kg": 137,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-03",
+      "date": "2026-10-05",
+      "kg": 152,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-03",
+      "date": "2026-10-06",
+      "kg": 173,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-03",
+      "date": "2026-10-07",
+      "kg": 208,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-03",
+      "date": "2026-10-08",
+      "kg": 164,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-03",
+      "date": "2026-10-09",
+      "kg": 218,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-03",
+      "date": "2026-10-10",
+      "kg": 213,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-03",
+      "date": "2026-10-11",
+      "kg": 145,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-04",
+      "date": "2026-09-28",
+      "kg": 158,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-04",
+      "date": "2026-09-29",
+      "kg": 148,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-04",
+      "date": "2026-09-30",
+      "kg": 165,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-04",
+      "date": "2026-10-01",
+      "kg": 185,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-04",
+      "date": "2026-10-02",
+      "kg": 133,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-04",
+      "date": "2026-10-03",
+      "kg": 208,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-04",
+      "date": "2026-10-04",
+      "kg": 140,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-04",
+      "date": "2026-10-05",
+      "kg": 208,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-04",
+      "date": "2026-10-06",
+      "kg": 177,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-04",
+      "date": "2026-10-07",
+      "kg": 128,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-04",
+      "date": "2026-10-08",
+      "kg": 180,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-04",
+      "date": "2026-10-09",
+      "kg": 163,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-04",
+      "date": "2026-10-10",
+      "kg": 163,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-04",
+      "date": "2026-10-11",
+      "kg": 166,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-05",
+      "date": "2026-09-28",
+      "kg": 156,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-05",
+      "date": "2026-09-29",
+      "kg": 160,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-05",
+      "date": "2026-09-30",
+      "kg": 179,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-05",
+      "date": "2026-10-01",
+      "kg": 148,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-05",
+      "date": "2026-10-02",
+      "kg": 212,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-05",
+      "date": "2026-10-03",
+      "kg": 148,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-05",
+      "date": "2026-10-04",
+      "kg": 126,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-05",
+      "date": "2026-10-05",
+      "kg": 135,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-05",
+      "date": "2026-10-06",
+      "kg": 189,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-05",
+      "date": "2026-10-07",
+      "kg": 149,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-05",
+      "date": "2026-10-08",
+      "kg": 123,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-05",
+      "date": "2026-10-09",
+      "kg": 199,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-05",
+      "date": "2026-10-10",
+      "kg": 184,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-05",
+      "date": "2026-10-11",
+      "kg": 151,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-06",
+      "date": "2026-09-28",
+      "kg": 171,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-06",
+      "date": "2026-09-29",
+      "kg": 142,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-06",
+      "date": "2026-09-30",
+      "kg": 165,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-06",
+      "date": "2026-10-01",
+      "kg": 158,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-06",
+      "date": "2026-10-02",
+      "kg": 156,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-06",
+      "date": "2026-10-03",
+      "kg": 153,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-06",
+      "date": "2026-10-04",
+      "kg": 191,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-06",
+      "date": "2026-10-05",
+      "kg": 161,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-06",
+      "date": "2026-10-06",
+      "kg": 147,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-06",
+      "date": "2026-10-07",
+      "kg": 202,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-06",
+      "date": "2026-10-08",
+      "kg": 171,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-06",
+      "date": "2026-10-09",
+      "kg": 215,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-06",
+      "date": "2026-10-10",
+      "kg": 166,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-06",
+      "date": "2026-10-11",
+      "kg": 173,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-07",
+      "date": "2026-09-28",
+      "kg": 195,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-07",
+      "date": "2026-09-29",
+      "kg": 213,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-07",
+      "date": "2026-09-30",
+      "kg": 153,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-07",
+      "date": "2026-10-01",
+      "kg": 132,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-07",
+      "date": "2026-10-02",
+      "kg": 129,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-07",
+      "date": "2026-10-03",
+      "kg": 199,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-07",
+      "date": "2026-10-04",
+      "kg": 164,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-07",
+      "date": "2026-10-05",
+      "kg": 181,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-07",
+      "date": "2026-10-06",
+      "kg": 129,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-07",
+      "date": "2026-10-07",
+      "kg": 146,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-07",
+      "date": "2026-10-08",
+      "kg": 218,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-07",
+      "date": "2026-10-09",
+      "kg": 198,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-07",
+      "date": "2026-10-10",
+      "kg": 160,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-07",
+      "date": "2026-10-11",
+      "kg": 186,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-08",
+      "date": "2026-09-28",
+      "kg": 185,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-08",
+      "date": "2026-09-29",
+      "kg": 201,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-08",
+      "date": "2026-09-30",
+      "kg": 214,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-08",
+      "date": "2026-10-01",
+      "kg": 217,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-08",
+      "date": "2026-10-02",
+      "kg": 212,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-08",
+      "date": "2026-10-03",
+      "kg": 191,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-08",
+      "date": "2026-10-04",
+      "kg": 154,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-08",
+      "date": "2026-10-05",
+      "kg": 208,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-08",
+      "date": "2026-10-06",
+      "kg": 143,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-08",
+      "date": "2026-10-07",
+      "kg": 197,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-08",
+      "date": "2026-10-08",
+      "kg": 178,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-08",
+      "date": "2026-10-09",
+      "kg": 132,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-08",
+      "date": "2026-10-10",
+      "kg": 214,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-08",
+      "date": "2026-10-11",
+      "kg": 197,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-09",
+      "date": "2026-09-28",
+      "kg": 172,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-09",
+      "date": "2026-09-29",
+      "kg": 198,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-09",
+      "date": "2026-09-30",
+      "kg": 163,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-09",
+      "date": "2026-10-01",
+      "kg": 198,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-09",
+      "date": "2026-10-02",
+      "kg": 218,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-09",
+      "date": "2026-10-03",
+      "kg": 145,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-09",
+      "date": "2026-10-04",
+      "kg": 188,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-09",
+      "date": "2026-10-05",
+      "kg": 203,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-09",
+      "date": "2026-10-06",
+      "kg": 120,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-09",
+      "date": "2026-10-07",
+      "kg": 169,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-09",
+      "date": "2026-10-08",
+      "kg": 182,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-09",
+      "date": "2026-10-09",
+      "kg": 135,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-09",
+      "date": "2026-10-10",
+      "kg": 162,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-09",
+      "date": "2026-10-11",
+      "kg": 139,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-10",
+      "date": "2026-09-28",
+      "kg": 162,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-10",
+      "date": "2026-09-29",
+      "kg": 177,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-10",
+      "date": "2026-09-30",
+      "kg": 217,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-10",
+      "date": "2026-10-01",
+      "kg": 167,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-10",
+      "date": "2026-10-02",
+      "kg": 121,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-10",
+      "date": "2026-10-03",
+      "kg": 171,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-10",
+      "date": "2026-10-04",
+      "kg": 215,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-10",
+      "date": "2026-10-05",
+      "kg": 144,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-10",
+      "date": "2026-10-06",
+      "kg": 176,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-10",
+      "date": "2026-10-07",
+      "kg": 158,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-10",
+      "date": "2026-10-08",
+      "kg": 159,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-10",
+      "date": "2026-10-09",
+      "kg": 216,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-10",
+      "date": "2026-10-10",
+      "kg": 185,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    },
+    {
+      "generatorId": "demo-kitchen-10",
+      "date": "2026-10-11",
+      "kg": 121,
+      "simulated": true,
+      "quantitySource": "SIMULATED"
+    }
+  ]
+}

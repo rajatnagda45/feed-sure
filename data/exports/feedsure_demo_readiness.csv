@@ -1,0 +1,11 @@
+generator_id,collection_date,status,confirmed_kg,weight_source,window_start,window_end,reason,simulated,quantity_source
+demo-kitchen-01,2026-10-12,READY,180,ESTIMATE,06:00,09:00,,true,SIMULATED
+demo-kitchen-02,2026-10-12,READY,180,ESTIMATE,06:00,09:00,,true,SIMULATED
+demo-kitchen-03,2026-10-12,NOT_READY,0,,,,Synthetic cancellation,true,SIMULATED
+demo-kitchen-04,2026-10-12,READY,180,ESTIMATE,06:00,09:00,,true,SIMULATED
+demo-kitchen-05,2026-10-12,READY,180,ESTIMATE,06:00,09:00,,true,SIMULATED
+demo-kitchen-06,2026-10-12,READY,180,ESTIMATE,06:00,09:00,,true,SIMULATED
+demo-kitchen-07,2026-10-12,READY,180,ESTIMATE,06:00,06:05,,true,SIMULATED
+demo-kitchen-08,2026-10-12,UNCONFIRMED,,,,,,true,SIMULATED
+demo-kitchen-09,2026-10-12,UNCONFIRMED,,,,,,true,SIMULATED
+demo-kitchen-10,2026-10-12,READY,2500,ESTIMATE,06:00,09:00,,true,SIMULATED
