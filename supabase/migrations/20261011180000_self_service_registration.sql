@@ -97,6 +97,13 @@ begin
   end if;
   result := public.feedsure_accounts_workflow(
     p_actor,p_session,p_action,p_target,p_revision,p_changes,p_ticket);
+  if result->>'error' = 'Your registration is pending Admin approval.' then
+    select * into account from public.feedsure_accounts where id = p_actor;
+    return jsonb_build_object('status', 403, 'error',
+      case when account.role in ('admin', 'driver')
+        then 'This managed account needs activation by an Admin.'
+        else 'Complete My profile to activate access automatically. No Admin approval is required.' end);
+  end if;
   if p_action = 'self_update' and not (result ? 'error') then
     select * into account from public.feedsure_accounts where id = p_actor;
     if account.status = 'PENDING' and public.feedsure_self_service_ready(account) then

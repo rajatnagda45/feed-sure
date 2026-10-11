@@ -84,6 +84,8 @@ test("activates existing complete registrations without changing their scopes or
     if (role === "kitchen") assert.equal(account.generator_id, `registered-${uid(n).replaceAll("-", "")}`);
   }
   assert.equal((await rpc(5, "identity")).status, "PENDING");
+  assert.equal((await rpc(5, "list")).error,
+    "Complete My profile to activate access automatically. No Admin approval is required.");
   for (const n of [6, 7]) assert.equal((await rpc(n, "identity")).status, 401);
   for (const n of [8, 9]) assert.equal((await rpc(n, "identity")).status, "PENDING");
 });
