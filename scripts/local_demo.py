@@ -1,7 +1,8 @@
 """Disposable localhost demo using Moto transport and the real v3 HTTP/domain handlers.
 
 Run from the repository root: python scripts/local_demo.py --date 2026-10-12
-No Docker, AWS credentials, external endpoint or persistent database is used.
+No Docker, AWS credentials or persistent database is used. Photo analysis defaults to
+offline fixtures; --photo-provider nvidia explicitly enables the hosted NVIDIA API.
 """
 
 from __future__ import annotations
@@ -34,12 +35,15 @@ def main() -> None:
         help="Separate private access manifest for isolated sessions.",
     )
     parser.add_argument("--photo-dir", type=Path, default=None)
+    parser.add_argument("--photo-provider", choices=["mock", "nvidia"], default="mock")
     parser.add_argument(
         "--photo-fixture",
         choices=["clean", "plastic", "hazard", "low_confidence", "malformed"],
         default="clean",
     )
     args = parser.parse_args()
+    if args.photo_provider == "nvidia" and not os.getenv("NVIDIA_API_KEY", "").strip():
+        parser.error("NVIDIA_API_KEY is required for --photo-provider nvidia")
     if not 1 <= args.port <= 65535 or not 1 <= args.frontend_port <= 65535:
         parser.error("port must be between 1 and 65535")
     # Reserve the port before replacing the private manifest; a failed second start is harmless.
@@ -58,7 +62,8 @@ def main() -> None:
         AWS_REGION="ap-south-1",
         AWS_ENDPOINT_URL="",
         MOCK_LOCATION="true",
-        MOCK_BEDROCK="true",
+        MOCK_BEDROCK="false" if args.photo_provider == "nvidia" else "true",
+        PHOTO_ANALYSIS_PROVIDER="nvidia" if args.photo_provider == "nvidia" else "bedrock",
         MOCK_BEDROCK_FIXTURE=args.photo_fixture,
         ADMIN_TOKEN=secrets.token_urlsafe(32),
         PLANT_OWNER_TOKEN=secrets.token_urlsafe(32),
@@ -105,9 +110,14 @@ def main() -> None:
             ),
             encoding="utf-8",
         )
+        screening = (
+            "live NVIDIA photo analysis"
+            if args.photo_provider == "nvidia"
+            else f"mock screening ({args.photo_fixture})"
+        )
         print(
             f"Synthetic kitchens; Moto DynamoDB; local photo bytes; "
-            f"mock screening ({args.photo_fixture}); fallback matrix. Date {args.date}."
+            f"{screening}; fallback matrix. Date {args.date}."
         )
         print(f"Private access: {access_file}. DynamoDB state is discarded on process stop.")
         print(f"Photo bytes persist privately in {photo_dir} until retention or manual cleanup.")

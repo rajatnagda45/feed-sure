@@ -4,7 +4,7 @@ export interface PhotoRecord extends ReadinessRecord {
   photoRevision?: number;
   analysis?: {
     state: "FAILED" | "COMPLETE";
-    mode: "mock" | "aws";
+    mode: "mock" | "aws" | "nvidia";
     observations: { items: { type: string; count: number; confidence: number }[];
       image_quality: string; confidence: number; notes: string; hazard: boolean } | null;
     limit: string;

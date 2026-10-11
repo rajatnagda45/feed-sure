@@ -23,6 +23,12 @@ adds scoped S3 GetObject/PutObject and configured Bedrock model/profile invocati
 function. Optional uploads are private JPEG/PNG presigned POSTs, 1,024–3,500,000 bytes and
 five-minute expiry by default. S3 lifecycle retention defaults to 30 days.
 
+Selecting `PHOTO_ANALYSIS_PROVIDER=nvidia` sends validated photo bytes to the configured
+HTTPS NVIDIA API only on an explicit screen request. `NVIDIA_API_KEY` is backend-only,
+excluded from config repr, and supplied to SAM through a NoEcho parameter. Never store
+it in frontend variables, manifests or Git. NVIDIA failures use the same bounded retry,
+redacted response and unresolved-hazard rules as Bedrock.
+
 Photo issue, attachment, analysis, current-readiness and evidence routes authenticate the owning
 kitchen or dispatcher. A scoped prefix alone never authorizes another kitchen. Local binary
 uploads require explicit store injection, loopback peer, issued key, header authentication,
