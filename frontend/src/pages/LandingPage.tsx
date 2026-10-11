@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { KitchenHeroMedia, WorkflowMedia } from "../components/WorkflowMedia";
 
 export function LandingPage() {
   return (
@@ -30,12 +31,10 @@ export function LandingPage() {
           </p>
         </div>
 
-        <div className="process-band" aria-label="FeedSure product loop">
-          <div><strong>Ready</strong><span>Kitchen confirms quantity and window</span></div>
-          <div><strong>Collect</strong><span>Driver records full or partial pickup</span></div>
-          <div><strong>Reconcile</strong><span>Plant compares pickup with gate intake</span></div>
-        </div>
+        <KitchenHeroMedia />
       </section>
+
+      <WorkflowMedia />
 
       <section className="demo-guide" id="demo-guide" aria-labelledby="demo-guide-title">
         <div className="section-heading"><div><p className="context-line">Three roles, one trip</p><h2 id="demo-guide-title">Follow a collection from readiness to intake</h2></div></div>
