@@ -79,6 +79,10 @@ class Service:
                 from feedsure.common.supabase import authenticate
 
                 self._account = authenticate(self.event, self.config)
+                if self._account.get("registration"):
+                    from feedsure.common.accounts import Accounts
+
+                    Accounts(self.config, self).enroll(self._account["registration"])
             return self._account
         return None
 
@@ -1043,6 +1047,14 @@ class Service:
         query = self.event.get("queryStringParameters") or {}
         from feedsure.handlers.photos import Photos
 
+        if path == "/auth/registration" and method == "GET":
+            from feedsure.common.accounts import Accounts
+
+            return Accounts(self.config).registration_ready()
+        if path.startswith("/auth/account"):
+            from feedsure.common.accounts import Accounts
+
+            return Accounts(self.config, self).route(self.event, path, method)
         if path == "/auth/session" and method == "GET":
             account = self.account()
             if account is None:

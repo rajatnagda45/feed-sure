@@ -72,7 +72,14 @@ Optional supplier photos start from a live browser camera with a visible supplie
 
 ## Run and verify
 
-Python 3.12+ and Node/npm required:
+Supabase registration and account management: open `/register` to request generator or CBG
+team access, `/login` to sign in, and `/accounts` as an Admin to approve, edit, reset, suspend or
+delete accounts. Run all Supabase migrations in order and bootstrap an Admin before enabling
+`SUPABASE_ACCOUNT_MANAGEMENT=true`. See [ACCOUNTS.md](docs/ACCOUNTS.md) for environment setup,
+testing, lifecycle behavior and the single pilot plant boundary. Public signup needs verification
+email delivery; for tests without SMTP, an Admin can create and approve accounts in `/accounts`.
+
+Python 3.12+ and Node/npm are required. Install declared dependencies in a fresh checkout:
 
 ```powershell
 python -m pip install -e ".[dev]"
@@ -91,7 +98,7 @@ python scripts/local_demo.py --date 2026-10-12 --port 8787 --frontend-port 5173
 
 See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for the full local run. Never publish tokens or `.tmp/` files.
 
-**Latest QA (11 Oct 2026):** 280 backend tests, 88 frontend tests and the production build pass. Route evaluation covers 18 fixed scenarios. We claim no field savings or screening accuracy — only that the workflow executes correctly on synthetic data.
+**Latest QA (11 Oct 2026):** 325 backend tests, 101 frontend tests, 10 account SQL checks and the production build pass. Route evaluation covers 18 fixed scenarios. We claim no field savings or screening accuracy — only that the workflow executes correctly on synthetic data.
 
 ## Honest boundaries (what we do *not* claim)
 
@@ -111,4 +118,3 @@ Built for Environmental Hacks 2026 (Track 3: Waste & Energy) by:
 - [Planner policy](docs/PLANNER-V3.md), [synthetic route evaluation](eval/route-results.md)
 - [Tests & evidence](docs/TESTING.md), [local run / deployment](docs/DEPLOYMENT.md)
 - [Demo script](docs/DEMO-SCRIPT.md), [submission checklist](docs/SUBMISSION.md), [media provenance](docs/FRONTEND-MEDIA.md)
-

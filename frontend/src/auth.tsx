@@ -8,10 +8,11 @@ export interface Account {
   role: "ADMIN" | "PLANT_OWNER" | "GENERATOR" | "DRIVER";
   generatorId?: string;
   planKey?: string;
+  accountRole?: "kitchen" | "cbg" | "owner" | "admin" | "driver";
 }
 export function accountPath(account: Account): string {
   switch (account.role) {
-    case "ADMIN": return "/admin";
+    case "ADMIN": return account.accountRole === "cbg" ? "/plant" : "/admin";
     case "PLANT_OWNER": return "/owner";
     case "GENERATOR":
       if (account.generatorId && /^[a-z0-9][a-z0-9-]{0,62}$/.test(account.generatorId))
@@ -65,6 +66,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     {children}
     {account && <aside className="account-session" aria-label="Account session">
       <Link to={accountPath(account)}>My dashboard</Link>
+      <Link to="/account">My account</Link>
+      {(account.accountRole === "admin") && <Link to="/accounts">Manage accounts</Link>}
       <button type="button" onClick={() => void supabase?.auth.signOut({ scope: "local" }).then(({ error: issue }) => {
         if (issue) setError(issue.message);
       })}>Sign out</button>
@@ -73,13 +76,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   </AuthContext.Provider>;
 }
 
-export function AccountGate({ role, children }: { role: Account["role"]; children: ReactNode }) {
+export function AccountGate({ role, manage = false, children }: { role: Account["role"]; manage?: boolean; children: ReactNode }) {
   const { account, loading } = useAccount();
   const { id, planKey } = useParams();
   if (!supabaseEnabled) return <>{children}</>;
   if (loading) return <main className="auth-shell"><p role="status">Verifying your account…</p></main>;
   if (!account) return <Navigate to="/login" replace />;
-  if (account.role !== role || (role === "GENERATOR" && account.generatorId !== id)
+  if (account.role !== role || (manage && account.accountRole !== "admin") || (role === "GENERATOR" && account.generatorId !== id)
     || (role === "DRIVER" && account.planKey !== planKey)) {
     return <main className="auth-shell"><section className="token-panel">
       <h1>Access is not assigned to this account</h1>

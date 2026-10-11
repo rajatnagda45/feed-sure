@@ -72,7 +72,19 @@ def request(
             raise ApiError(
                 401, "UNAUTHORIZED", "Login is invalid or expired. Sign in again."
             ) from None
+        if path.startswith("/auth/v1/token") and error.code in {400, 401, 403}:
+            raise ApiError(401, "UNAUTHORIZED", "Current password is incorrect.") from None
+        if error.code == 429:
+            raise ApiError(
+                429, "RATE_LIMITED", "Too many attempts. Wait before retrying."
+            ) from None
         if error.code == 404:
+            if path.startswith("/rest/v1/rpc/"):
+                raise ApiError(
+                    503, "DEPENDENCY_NOT_READY", "Run the Supabase account migration."
+                ) from None
+            if path.startswith("/auth/"):
+                raise ApiError(404, "NOT_FOUND", "Account is unavailable.") from None
             raise ApiError(404, "NOT_FOUND", "Saved image is unavailable.") from None
         raise ApiError(502, "UPSTREAM_FAILED", "Supabase request failed. Retry safely.") from None
     except (URLError, TimeoutError, OSError):
@@ -99,6 +111,11 @@ def authenticate(event: dict, config: Config) -> dict:
     user = json_request(
         config, "/auth/v1/user", key=config.supabase_publishable_key, token=auth[7:]
     )
+    if config.supabase_account_management:
+        from feedsure.common.accounts import Accounts, access
+
+        row = Accounts(config).identity(event, user=user)
+        return access(row)
     metadata = user.get("app_metadata")
     uid = user.get("id")
     if not isinstance(uid, str) or not uid or not isinstance(metadata, dict):

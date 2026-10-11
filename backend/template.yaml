@@ -11,6 +11,10 @@ Parameters:
     Type: String
     Default: s3
     AllowedValues: [s3, supabase]
+  SupabaseAccountManagement:
+    Type: String
+    Default: "false"
+    AllowedValues: ["true", "false"]
   SupabaseUrl:
     Type: String
     Default: ""
@@ -281,6 +285,7 @@ Globals:
         MOCK_BEDROCK_FIXTURE: !Ref MockBedrockFixture
         AUTH_PROVIDER: !Ref AuthProvider
         PHOTO_STORAGE_PROVIDER: !Ref PhotoStorageProvider
+        SUPABASE_ACCOUNT_MANAGEMENT: !Ref SupabaseAccountManagement
         SUPABASE_URL: !Ref SupabaseUrl
         SUPABASE_PUBLISHABLE_KEY: !Ref SupabasePublishableKey
         SUPABASE_SERVICE_ROLE_KEY: !Ref SupabaseServiceRoleKey
@@ -386,11 +391,47 @@ Resources:
               Action: geo-routes:CalculateRouteMatrix
               Resource: "*"
       Events:
+        Account0:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Method: GET
+            Path: /auth/account
+        Account1:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Method: POST
+            Path: /auth/account
+        Account2:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Method: GET
+            Path: /auth/accounts
+        Account3:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Method: POST
+            Path: /auth/accounts
+        Account4:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Method: POST
+            Path: /auth/accounts/{accountId}
         AuthSession:
           Type: HttpApi
           Properties:
             ApiId: !Ref HttpApi
             Path: /auth/session
+            Method: GET
+        RegistrationStatus:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /auth/registration
             Method: GET
         Route0:
           Type: HttpApi

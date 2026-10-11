@@ -56,8 +56,8 @@ export function LandingNav() {
               Sign in
             </Link>
           )}
-          <Link className="fs-btn fs-btn--primary fs-btn--sm" to="/admin">
-            Open operations desk
+          <Link className="fs-btn fs-btn--primary fs-btn--sm" to={supabaseEnabled ? "/register" : "/admin"}>
+            {supabaseEnabled ? "Register organisation" : "Open operations desk"}
           </Link>
           <button
             type="button"
@@ -86,8 +86,8 @@ export function LandingNav() {
             Sign in
           </Link>
         )}
-        <Link className="fs-btn fs-btn--primary fs-btn--block" to="/admin" onClick={() => setOpen(false)}>
-          Open operations desk
+        <Link className="fs-btn fs-btn--primary fs-btn--block" to={supabaseEnabled ? "/register" : "/admin"} onClick={() => setOpen(false)}>
+          {supabaseEnabled ? "Register organisation" : "Open operations desk"}
         </Link>
         <Link className="fs-btn fs-btn--ghost fs-btn--block" to="/supplier-access" onClick={() => setOpen(false)}>
           Waste supplier access

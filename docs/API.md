@@ -1,5 +1,8 @@
 # API — FeedSure CBG
 
+Supabase registration, account lifecycle and owner intake contracts are in
+[ACCOUNTS.md](ACCOUNTS.md). `/auth/*` is enabled only by the loopback demo, never by SAM.
+
 ## Shipped v3 API
 
 ### Mapped demo venue references
@@ -227,4 +230,4 @@ runner remains disposable in-process Moto; byte files persist until retention cl
 
 ## Supabase bearer authentication
 
-With `AUTH_PROVIDER=supabase`, all operational routes require `Authorization: Bearer <session JWT>`. Roles and assignments come from Supabase Auth-verified app_metadata. Invalid/missing login returns 401, incorrect role/scope returns 403, and upstream failures return 502. `GET /auth/session` returns `{ "account": { "id": "user-id", "role": "GENERATOR", "generatorId": "hotel-a" } }`; drivers use `planKey` instead. Upload/evidence responses may include `transport: "supabase"`; signed upload URLs accept a raw image PUT without application credentials. See [Supabase configuration](SUPABASE.md).
+With `AUTH_PROVIDER=supabase`, all operational routes require `Authorization: Bearer <session JWT>`. With account management enabled, roles and assignments come from the private Supabase account registry; otherwise they come from Auth-verified app_metadata. Invalid/missing login returns 401, incorrect role/scope returns 403, and upstream failures return 502. `GET /auth/session` returns `{ "account": { "id": "user-id", "role": "GENERATOR", "generatorId": "hotel-a" } }`; drivers use `planKey` instead. Upload/evidence responses may include `transport: "supabase"`; signed upload URLs accept a raw image PUT without application credentials. See [Supabase configuration](SUPABASE.md).
