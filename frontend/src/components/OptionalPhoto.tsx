@@ -4,6 +4,7 @@ import { t } from "../i18n";
 import { analyzePhoto, attachPhoto, createIdempotencyKey, getEvidence, getKitchenReadiness,
   PhotoRecord, PhotoUpload, photoStatusText, preparePhoto, uploadPhoto } from "../photoApi";
 import { resizePhoto } from "../photoUpload";
+import { BrowserCamera } from "./BrowserCamera";
 import "./optionalPhoto.css";
 
 interface Props {
@@ -14,7 +15,7 @@ type Pending = { record: PhotoRecord; key: string; photoKey: string | null; acti
 
 export function OptionalPhoto({ generatorId, token, language, submission, onSaved }: Props) {
   const copy = t(language);
-  const camera = useRef<HTMLInputElement>(null);
+  const [cameraOpen, setCameraOpen] = useState(false);
   const chooser = useRef<HTMLInputElement>(null);
   const [photo, setPhoto] = useState<Blob | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -31,6 +32,7 @@ export function OptionalPhoto({ generatorId, token, language, submission, onSave
 
   useEffect(() => {
     if (previousSubmission.current && previousSubmission.current !== submission?.submissionId) {
+      setCameraOpen(false);
       setPhoto(null); pending.current = null; upload.current = null; uploaded.current = false;
       setError(null); setProgress(0);
     }
@@ -59,17 +61,23 @@ export function OptionalPhoto({ generatorId, token, language, submission, onSave
     return () => { live = false; };
   }, [generatorId, token, submission]);
 
-  const choose = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.currentTarget.files?.[0];
-    event.currentTarget.value = "";
-    if (!file) return;
+  const prepare = async (file: Blob) => {
     setBusy(true); setError(null); setPhase(copy.photoPreparing);
     try {
       const resized = await resizePhoto(file);
       setPhoto(resized); upload.current = null; uploaded.current = false;
       pending.current = null; setProgress(0);
-    } catch (issue) { setError(issue instanceof Error ? issue.message : "Invalid image."); }
+    } catch (issue) {
+      setError(issue instanceof Error ? issue.message : "Invalid image.");
+      throw issue;
+    }
     finally { setBusy(false); setPhase(""); }
+  };
+
+  const choose = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.currentTarget.files?.[0];
+    event.currentTarget.value = "";
+    if (file) await prepare(file).catch(() => {});
   };
 
   const runMutation = async (action: "attach" | "screen", photoKey: string | null = null) => {
@@ -137,24 +145,32 @@ export function OptionalPhoto({ generatorId, token, language, submission, onSave
     <h2 id="photo-title">{copy.photoTitle}</h2>
     <p>{copy.photoOptional}</p>
     <p className="photo-privacy">{copy.photoPrivacy}</p>
-    <input ref={camera} type="file" accept="image/jpeg,image/png" capture="environment"
-      onChange={choose} hidden aria-label={copy.takePhoto} />
     <input ref={chooser} type="file" accept="image/jpeg,image/png" onChange={choose}
       hidden aria-label={copy.chooseImage} />
-    <div className="photo-actions">
-      <button type="button" className="button button-secondary" disabled={busy} onClick={() => camera.current?.click()}>{preview ? copy.retakePhoto : copy.takePhoto}</button>
-      <button type="button" className="button button-secondary" disabled={busy} onClick={() => chooser.current?.click()}>{copy.chooseImage}</button>
-    </div>
+    <p className="photo-privacy">{copy.cameraPrivacy}</p>
+    {cameraOpen ? <BrowserCamera key={generatorId} supplierId={generatorId} language={language}
+      onCapture={prepare} onClose={() => setCameraOpen(false)} /> : <>
+      <div className="photo-actions">
+        <button type="button" className="button button-primary" disabled={busy}
+          onClick={() => setCameraOpen(true)}>{preview ? copy.retakePhoto : copy.takePhoto}</button>
+      </div>
+      <details className="photo-upload-fallback">
+        <summary>{copy.existingPhoto}</summary>
+        <p>{copy.existingPhotoNote}</p>
+        <button type="button" className="button button-secondary" disabled={busy}
+          onClick={() => chooser.current?.click()}>{copy.chooseImage}</button>
+      </details>
+    </>}
     {(preview || evidence) && <figure><img src={preview ?? evidence ?? ""} alt={preview ? "Selected waste photo preview" : "Saved supplier waste photo"} /><figcaption>{preview ? copy.photoPreview : copy.photoSaved}</figcaption></figure>}
     {preview && <div className="photo-actions">
-      <button type="button" className="button button-primary" disabled={busy || !submission} onClick={() => void operate("upload")}>{error ? copy.retry : copy.uploadPhoto}</button>
-      <button type="button" className="button button-secondary" disabled={busy} onClick={() => { setPhoto(null); pending.current = null; upload.current = null; uploaded.current = false; setError(null); }}>{copy.removePhoto}</button>
+      <button type="button" className="button button-primary" disabled={busy || cameraOpen || !submission} onClick={() => void operate("upload")}>{error ? copy.retry : copy.uploadPhoto}</button>
+      <button type="button" className="button button-secondary" disabled={busy || cameraOpen} onClick={() => { setPhoto(null); pending.current = null; upload.current = null; uploaded.current = false; setError(null); }}>{copy.removePhoto}</button>
     </div>}
     {!submission && <p>{copy.photoSaveFirst}</p>}
     {submission?.photoKeys.length ? <div className="photo-actions">
-      {!evidence && <button type="button" className="button button-secondary" disabled={busy} onClick={() => void reloadEvidence()}>{copy.retryEvidence}</button>}
-      <button type="button" className="button button-primary" disabled={busy || Boolean(preview)} onClick={() => void operate("screen")}>{copy.analyzePhoto}</button>
-      <button type="button" className="button button-secondary" disabled={busy} onClick={() => void operate("remove")}>{copy.removeSavedPhoto}</button>
+      {!evidence && <button type="button" className="button button-secondary" disabled={busy || cameraOpen} onClick={() => void reloadEvidence()}>{copy.retryEvidence}</button>}
+      <button type="button" className="button button-primary" disabled={busy || cameraOpen || Boolean(preview)} onClick={() => void operate("screen")}>{copy.analyzePhoto}</button>
+      <button type="button" className="button button-secondary" disabled={busy || cameraOpen} onClick={() => void operate("remove")}>{copy.removeSavedPhoto}</button>
     </div> : null}
     {busy && <div role="status"><p>{phase}</p>{phase === copy.photoUploading && <progress max={100} value={progress}>{progress}%</progress>}</div>}
     {error && <p className="field-error" role="alert">{error}</p>}
