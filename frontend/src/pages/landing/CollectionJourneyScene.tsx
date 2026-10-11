@@ -1,6 +1,7 @@
 import { Suspense, lazy, useEffect, useRef, useState } from "react";
 
 import { prefersReducedMotion } from "./motion";
+import { ScenePlaceholder } from "./scene/ScenePlaceholder";
 import { StageIndicators } from "./scene/StageIndicators";
 import { StaticScene } from "./scene/StaticScene";
 
@@ -19,6 +20,21 @@ function webglAvailable(): boolean {
   }
 }
 
+/** Decide once, synchronously, so capable browsers never render the flat SVG
+ *  fallback first. Guarded for non-browser (SSR / test) environments. */
+function canRender3D(): boolean {
+  return typeof window !== "undefined" && !prefersReducedMotion() && webglAvailable();
+}
+
+function pointerIsFine(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    !prefersReducedMotion() &&
+    window.matchMedia("(pointer: fine)").matches
+  );
+}
+
 /**
  * The hero's living collection ecosystem. Renders a lazy-loaded React Three
  * Fiber scene; falls back to a code-generated SVG for reduced-motion users,
@@ -29,18 +45,9 @@ export function CollectionJourneyScene() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [stage, setStage] = useState(0);
   const [active, setActive] = useState(true);
-  const [use3D, setUse3D] = useState(false);
-  const [interactive, setInteractive] = useState(false);
-
-  useEffect(() => {
-    const reduced = prefersReducedMotion();
-    setUse3D(!reduced && webglAvailable());
-    setInteractive(
-      !reduced &&
-        typeof window.matchMedia === "function" &&
-        window.matchMedia("(pointer: fine)").matches,
-    );
-  }, []);
+  // Decided once on first render — no false flash of the SVG fallback.
+  const [use3D] = useState(canRender3D);
+  const [interactive] = useState(pointerIsFine);
 
   // Pause the render loop while the hero scrolls out of view.
   useEffect(() => {
@@ -58,7 +65,7 @@ export function CollectionJourneyScene() {
     <figure className="fs-scene" ref={containerRef}>
       <div className="fs-scene__stage">
         {use3D ? (
-          <Suspense fallback={<StaticScene />}>
+          <Suspense fallback={<ScenePlaceholder />}>
             <SceneCanvas onStage={setStage} interactive={interactive} active={active} />
           </Suspense>
         ) : (
