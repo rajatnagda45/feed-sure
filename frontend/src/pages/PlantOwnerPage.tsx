@@ -1,3 +1,5 @@
+import { supabase } from "../supabase";
+import { useAccount } from "../auth";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -94,7 +96,8 @@ export function IntakeTripPanel({ trip, token, refresh, onSaving }: {
 }
 
 export function PlantOwnerPage() {
-  const [token, setToken] = useState(() => sessionStorage.getItem("feedsure:plant-owner") ?? "");
+  const { account } = useAccount();
+  const [token, setToken] = useState(() => account ? "supabase-account" : sessionStorage.getItem("feedsure:plant-owner") ?? "");
   const [credential, setCredential] = useState("");
   const [date, setDate] = useState(() => sessionStorage.getItem("feedsure:demo-date") ?? serviceDateInIndia());
   const [data, setData] = useState<IntakeResponse | null>(null);
@@ -124,6 +127,7 @@ export function PlantOwnerPage() {
     setToken(value); setCredential("");
   }
   function lock() {
+    if (account) { void supabase?.auth.signOut({ scope: "local" }); return; }
     sessionStorage.removeItem("feedsure:plant-owner");
     setToken(""); setData(null); setError(null); setNotice(null);
   }

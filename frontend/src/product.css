@@ -30,3 +30,6 @@
 .owner-shell .operations-toolbar { padding: 16px 0; }
 @media (max-width: 700px) { .owner-trip-body { grid-template-columns: 1fr; } .owner-trip { padding: 18px; } }
 @media (min-width: 1000px) { .demo-roles { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+.account-session { position: sticky; bottom: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 1rem; padding: .8rem; background: #fff; border-top: 1px solid #d9e2d9; z-index: 5; }
+.account-session button { cursor: pointer; padding: .5rem 1rem; }

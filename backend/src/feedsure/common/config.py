@@ -94,6 +94,13 @@ class Config:
     photo_max_dimension: int = 8192
     photo_max_pixels: int = 16_000_000
     photo_max_decoded_bytes: int = 40_000_000
+    supabase_url: str = ""
+    supabase_publishable_key: str = ""
+    supabase_service_role_key: str = ""
+    supabase_photos_bucket: str = "feedsure-photos"
+    supabase_timeout_seconds: int = 5
+    auth_provider: str = "tokens"
+    photo_storage_provider: str = "s3"
     plant_owner_token: str = ""
 
 
@@ -102,6 +109,13 @@ def get_config() -> Config:
     stage = _string("STAGE", "dev")
     return Config(
         stage=stage,
+        supabase_url=_string("SUPABASE_URL", ""),
+        supabase_publishable_key=_string("SUPABASE_PUBLISHABLE_KEY", ""),
+        supabase_service_role_key=_string("SUPABASE_SERVICE_ROLE_KEY", ""),
+        supabase_photos_bucket=_string("SUPABASE_PHOTOS_BUCKET", "feedsure-photos"),
+        supabase_timeout_seconds=_integer("SUPABASE_TIMEOUT_SECONDS", 5),
+        auth_provider=_string("AUTH_PROVIDER", "tokens"),
+        photo_storage_provider=_string("PHOTO_STORAGE_PROVIDER", "s3"),
         aws_region=_string("AWS_REGION", "ap-south-1"),
         bedrock_region=_string("BEDROCK_REGION", "ap-south-1"),
         location_region=_string("LOCATION_REGION", "ap-south-1"),

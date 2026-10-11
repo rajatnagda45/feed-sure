@@ -54,3 +54,7 @@ Run `sam validate` and `sam build` when SAM CLI is installed. A build or templat
 ## Recording mode
 
 Follow [DEMO-SCRIPT.md](DEMO-SCRIPT.md). Keep synthetic-data labels visible and read actual route results. Identify the basemap provider separately from route-matrix source; straight connections are schematic. Use a phone for camera proof, or explicitly label desktop image selection. Live AWS proof, a signed-out repository/video check and final submission are separate remaining tasks in [SUBMISSION.md](SUBMISSION.md).
+
+## Optional Supabase setup
+
+Follow [SUPABASE.md](SUPABASE.md) for the private bucket migration, user assignments, paired frontend/server variables and SAM provider parameters. This preserves the existing AWS domain backend. Supabase credentials and live service verification are deployment prerequisites.

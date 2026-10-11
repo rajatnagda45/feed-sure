@@ -67,6 +67,29 @@ class Service:
         self.now = (now or datetime.now(UTC)).astimezone(UTC)
         self.planner, self.reconciler = planner, reconciler
         self.photo_store = photo_store
+        self._account: dict | None = None
+
+    def account(self) -> dict | None:
+        """Use Supabase exclusively when configured, or for an explicit bearer request."""
+        if self.config.auth_provider not in {"tokens", "supabase"}:
+            raise ApiError(503, "DEPENDENCY_NOT_READY", "Unknown AUTH_PROVIDER.")
+        if self.config.auth_provider == "supabase" or header(self.event, "authorization"):
+            if self._account is None:
+                from feedsure.common.supabase import authenticate
+
+                self._account = authenticate(self.event, self.config)
+            return self._account
+        return None
+
+    def account_actor(self, role: str, scope: str | None = None) -> dict | None:
+        """Enforce roles and assignments from verified server-controlled metadata."""
+        account = self.account()
+        if account is None:
+            return None
+        field = "generatorId" if role == "GENERATOR" else "planKey"
+        if account["role"] != role or (scope is not None and account.get(field) != scope):
+            raise ApiError(403, "FORBIDDEN", "This account cannot access that workflow.")
+        return {"type": role, "id": account["id"]}
 
     @property
     def db(self) -> DynamoDB:
@@ -77,6 +100,9 @@ class Service:
 
     def admin(self) -> dict[str, str]:
         """Authenticate the configured dispatcher without accepting client identities."""
+        actor = self.account_actor("ADMIN")
+        if actor:
+            return actor
         token = header(self.event, "x-admin-token")
         expected = self.config.admin_token
         if (
@@ -89,6 +115,9 @@ class Service:
 
     def plant_owner(self) -> dict[str, str]:
         """Authenticate the single plant's owner with a distinct intake-only credential."""
+        actor = self.account_actor("PLANT_OWNER")
+        if actor:
+            return actor
         token = header(self.event, "x-plant-token")
         expected = self.config.plant_owner_token
         if (
@@ -150,7 +179,15 @@ class Service:
         """Authenticate one kitchen or an attributable dispatcher operation."""
         if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,62}", generator_id):
             invalid("generatorId must be a valid slug.")
-        actor = self.admin() if allow_admin and header(self.event, "x-admin-token") else None
+        account = self.account()
+        if account:
+            actor = (
+                self.account_actor("ADMIN")
+                if allow_admin and account["role"] == "ADMIN"
+                else self.account_actor("GENERATOR", generator_id)
+            )
+        else:
+            actor = self.admin() if allow_admin and header(self.event, "x-admin-token") else None
         supplied = header(self.event, "x-generator-token")
         if actor is None and not supplied:
             raise ApiError(401, "UNAUTHORIZED", "Generator token is required.")
@@ -558,6 +595,13 @@ class Service:
 
     def driver(self, plan: dict) -> dict:
         """Validate token generation, expiry and dispatched trip scope."""
+        actor = self.account_actor("DRIVER", plan["planKey"])
+        if actor:
+            if plan["state"] != "DISPATCHED" or self.now.timestamp() >= plan.get(
+                "driverExpiresEpoch", 0
+            ):
+                raise ApiError(401, "UNAUTHORIZED", "Assigned trip is invalid or expired.")
+            return actor
         token_generation_valid = (
             (
                 len(self.config.driver_token_secret) >= 32
@@ -892,7 +936,13 @@ class Service:
 
     def gate(self, request: dict) -> dict:
         """Save net intake and correction history; never allocate truck mass to kitchens."""
-        actor = self.plant_owner() if header(self.event, "x-plant-token") else self.admin()
+        account = self.account()
+        actor = (
+            self.plant_owner()
+            if (account and account["role"] == "PLANT_OWNER")
+            or (not account and header(self.event, "x-plant-token"))
+            else self.admin()
+        )
         fields(
             request,
             {
@@ -992,6 +1042,11 @@ class Service:
         query = self.event.get("queryStringParameters") or {}
         from feedsure.handlers.photos import Photos
 
+        if path == "/auth/session" and method == "GET":
+            account = self.account()
+            if account is None:
+                raise ApiError(401, "UNAUTHORIZED", "Sign in with your Supabase account.")
+            return {"account": account}
         if path == "/intake" and method == "GET":
             return self.intake(query.get("date"))
         if path == "/uploads" and method == "POST":

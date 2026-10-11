@@ -128,3 +128,7 @@ Photos and precise GPS can contain personal data; the earlier no-personal-data c
 UI asks users to photograph waste only, avoiding faces/IDs. Local byte files require private folder
 permissions and idle-file cleanup; access-triggered expiry does not establish a background sweeper.
 S3 has 30-day object lifecycle; operational audit records are retained separately.
+
+## Optional Supabase provider
+
+Supabase mode denies legacy token bypasses and verifies the current user with Auth before checking administrator-controlled role and supplier/trip assignments. User-editable metadata cannot grant access. Service role credentials stay on the backend; the browser receives only single-object upload/read capabilities. Photo attachment validates bytes and freezes a private copy. Use the dedicated private bucket with no broad browser CRUD policies and configure Storage API retention cleanup. See [Supabase security/setup](SUPABASE.md).

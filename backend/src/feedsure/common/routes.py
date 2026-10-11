@@ -1,6 +1,7 @@
 """One HTTP route inventory used by local wiring and infrastructure verification."""
 
 ROUTES = [
+    ("GET", "/auth/session"),
     ("GET", "/intake"),
     ("GET", "/generators"),
     ("GET", "/generators/{generatorId}"),
