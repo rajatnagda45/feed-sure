@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { pickupRequest, planMapPoints, readinessRequest, requestGps, serviceDateInIndia } from "./workflow";
+import { parseNetGateKg, pickupRequest, planMapPoints, readinessRequest, requestGps, serviceDateInIndia } from "./workflow";
 
 describe("contract workflow normalization", () => {
   it("saves READY without photos or AI fields", () => {
@@ -68,4 +68,10 @@ describe("contract workflow normalization", () => {
     }], { id: "plant", lat: 18.6, lng: 73.9 });
     expect(points.map((point) => point.kind)).toEqual(["plant", "excluded"]);
   });
+});
+
+it("distinguishes missing gate weight from an explicitly recorded zero", () => {
+  for (const value of ["", "   ", "-1", "NaN", "Infinity"]) expect(parseNetGateKg(value)).toBeNull();
+  expect(parseNetGateKg("0")).toBe(0);
+  expect(parseNetGateKg(" 155.5 ")).toBe(155.5);
 });

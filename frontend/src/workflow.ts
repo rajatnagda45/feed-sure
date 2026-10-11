@@ -150,6 +150,11 @@ export function pickupRequest(
   };
 }
 
+export function parseNetGateKg(value: string): number | null {
+  const kg = Number(value);
+  return value.trim() && Number.isFinite(kg) && kg >= 0 ? kg : null;
+}
+
 export function formatKg(value: number | null | undefined): string {
   return value === null || value === undefined ? "N/A" : `${value.toLocaleString("en-IN")} kg`;
 }

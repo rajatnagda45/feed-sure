@@ -183,6 +183,7 @@ class Service:
                     "serviceMode": {
                         "database": "local" if self.config.aws_endpoint_url else "aws",
                         "screening": "not_used",
+                        "matrix": "fallback" if self.config.mock_location else "location",
                     },
                     "simulated": any(p["simulated"] for p in profiles),
                 }
@@ -986,7 +987,11 @@ class Service:
                     "plans", KeyConditionExpression=Key("date").eq(day), ConsistentRead=True
                 )
                 rows = [p for p in rows if p.get("schemaVersion") == 3]
-                latest = max(rows, key=lambda p: (p["createdAt"], p["planId"])) if rows else None
+                active_key = self.meta(day).get("activePlanKey")
+                active = next((p for p in rows if p["planKey"] == active_key), None)
+                latest = active or (
+                    max(rows, key=lambda p: (p["createdAt"], p["planId"])) if rows else None
+                )
                 return {"plan": self.public_plan(latest) if latest else None}
         if path == "/pickups" and method == "POST":
             return self.pickup(body(self.event))

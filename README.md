@@ -9,7 +9,8 @@ intake. Kitchens can read their own pickup records and the linked trip's reconci
 Implemented backend: header-based access scopes, durable readiness without photos, human hazard
 review, immutable plan snapshots, conditional dispatch, expiring driver access, atomic pickup/gate
 corrections and retry protection. The React frontend contains kitchen, dispatcher and driver views.
-The browser walkthrough and cloud deployment have not yet been verified by the backend owner.
+The complete workflow was verified in the browser against local real handlers and Moto DynamoDB.
+Cloud deployment remains unverified. See [integration evidence](docs/TESTING.md).
 
 The planner enforces reserved capacity, service windows and depot return. It compares with a
 nearest-first baseline under the same constraints. Defaults are a 1,200 kg target, 0.8 readiness
@@ -25,7 +26,9 @@ readiness. Precise GPS retention requires an operational removal job. No photo-d
 methane yield, screening accuracy or deployed performance is claimed.
 
 Coding tools used: OpenAI Codex, PowerShell, Python, pytest/moto, Ruff and Git. The AWS SAM
-template targets Python 3.12; local backend checks used Python 3.13. SAM CLI was unavailable.
+template targets Python 3.12; 192 backend tests passed on Python 3.12.13 and Python 3.13.9.
+Frontend checks passed: 22 unit tests, three opt-in live API-client tests, and the production build.
+All 18 synthetic route scenarios reproduced their saved reports. SAM CLI was unavailable.
 
 ## Preserved early concept notes
 

@@ -9,5 +9,7 @@ export default defineConfig({
   },
   test: {
     environment: "node",
+    // Threads share Vite's transform files; isolated Windows child processes may not.
+    pool: "threads",
   },
 });

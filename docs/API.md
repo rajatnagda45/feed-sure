@@ -8,7 +8,8 @@ dispatch, pickup and gate mutations also require `Idempotency-Key`. Tokens in re
 query strings are not accepted by active v3 routes.
 
 `POST /submissions` saves readiness with zero photos. Plan requests use `collectionDate`, and
-latest-plan reads return `{plan:null}` when absent. Public plan keys contain `#` and must be URL
+latest-plan reads return `{plan:null}` when absent and prefer the active dispatched trip over
+newer drafts for that date, keeping pickup/gate execution reachable after refresh. Public plan keys contain `#` and must be URL
 encoded. A dispatch freezes the reviewed version/input revision. Pickups and gate logs are shipped
 P0 endpoints with corrections and reconciliation, not stretch features. `POST /uploads` optionally
 presigns one JPEG/PNG; authenticated photo screening currently returns 503 (P1 deferred).

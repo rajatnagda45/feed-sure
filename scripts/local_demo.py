@@ -1,0 +1,101 @@
+"""Disposable localhost demo using Moto transport and the real v3 HTTP/domain handlers.
+
+Run from the repository root: python scripts/local_demo.py --date 2026-10-12
+No Docker, AWS credentials, external endpoint or persistent database is used.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import secrets
+import socket
+import sys
+from dataclasses import replace
+from datetime import date, datetime, timedelta, timezone
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path[:0] = [str(ROOT / "backend/src"), str(ROOT / "backend")]
+
+
+def main() -> None:
+    """Start a loopback-only disposable API and save private local access separately."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    tomorrow = datetime.now(timezone(timedelta(hours=5, minutes=30))).date() + timedelta(days=1)
+    parser.add_argument("--date", type=date.fromisoformat, default=tomorrow)
+    parser.add_argument("--port", type=int, default=8787)
+    parser.add_argument("--frontend-port", type=int, default=5173)
+    args = parser.parse_args()
+    if not 1 <= args.port <= 65535 or not 1 <= args.frontend_port <= 65535:
+        parser.error("port must be between 1 and 65535")
+    # Reserve the port before replacing the private manifest; a failed second start is harmless.
+    listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        listener.bind(("127.0.0.1", args.port))
+        listener.listen(128)
+    except OSError as error:
+        listener.close()
+        parser.error(f"Local API port is unavailable: {error}")
+    # Overrides apply only inside this child process. Never consult real account credentials.
+    os.environ.update(
+        AWS_ACCESS_KEY_ID="testing",
+        AWS_SECRET_ACCESS_KEY="testing",
+        AWS_DEFAULT_REGION="ap-south-1",
+        AWS_REGION="ap-south-1",
+        AWS_ENDPOINT_URL="",
+        MOCK_LOCATION="true",
+        ADMIN_TOKEN=secrets.token_urlsafe(32),
+        DRIVER_TOKEN_SECRET=secrets.token_urlsafe(48),
+        ALLOWED_ORIGIN=f"http://localhost:{args.frontend_port}",
+    )
+    import boto3
+    import uvicorn
+    from feedsure.common.config import get_config
+    from feedsure.common.db import DynamoDB
+    from moto import mock_aws
+    from seed_data import seed_v3_database
+
+    with mock_aws():
+        resource = boto3.resource("dynamodb", region_name="ap-south-1")
+        # The marker labels transport as local; this resource never opens that endpoint.
+        config = replace(get_config(), aws_endpoint_url="moto://in-process")
+        tokens = seed_v3_database(config, resource, args.date)
+        import dev_server
+
+        dev_server.app.state.config = config
+        dev_server.app.state.database = DynamoDB(config, resource)
+        private_dir = ROOT / ".tmp"
+        private_dir.mkdir(exist_ok=True)
+        access_file = private_dir / "local-demo-access.json"
+        access_file.write_text(
+            json.dumps(
+                {
+                    "collectionDate": args.date.isoformat(),
+                    "apiBaseUrl": f"http://localhost:{args.port}",
+                    "frontendOrigin": config.allowed_origin,
+                    "adminToken": config.admin_token,
+                    "generatorTokens": tokens,
+                    "generatorLinks": {
+                        gid: f"http://localhost:{args.frontend_port}/g/{gid}?t={token}"
+                        for gid, token in tokens.items()
+                    },
+                },
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+        print(f"Synthetic kitchens; Moto DynamoDB; fallback matrix; no Bedrock. Date {args.date}.")
+        print(f"Private access: {access_file}. Data is discarded when this process stops.")
+        server = uvicorn.Server(
+            uvicorn.Config(dev_server.app, host="127.0.0.1", port=args.port, access_log=False)
+        )
+        try:
+            server.run(sockets=[listener])
+        finally:
+            listener.close()
+
+
+if __name__ == "__main__":
+    main()

@@ -7,7 +7,9 @@ configuration fails closed. Driver access is scoped to one dispatched trip, expi
 by default, and requires a dedicated `DRIVER_TOKEN_SECRET` of at least 32 characters. Storage keeps
 only the token hash/expiry; authenticated dispatch retries regenerate access using server HMAC
 fields without storing raw tokens in dedup responses or audit entries. Secret rotation invalidates
-existing driver access.
+existing driver access. Authenticated dispatch calls can retrieve the existing private driver
+link after a dashboard refresh without issuing another trip or extending token expiry. There
+is no shipped expired-token renewal, trip-close or same-day second-trip workflow.
 
 Revision conditions, scoped idempotency keys and transactions protect dispatch, capacity, pickup
 corrections and gate intake. Positive pickup checks the current hazard flag atomically. Kitchen

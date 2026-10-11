@@ -26,6 +26,7 @@ import {
   formatKg,
   formatPercent,
   planMapPoints,
+  parseNetGateKg,
   reconciliationLabel,
   serviceDateInIndia,
 } from "../workflow";
@@ -106,8 +107,6 @@ export function PlantPage() {
     if (!adminToken) return;
     const controller = new AbortController();
     setLoading(true);
-    setError(null);
-    setMessage(null);
     Promise.all([
       getOperations(date, adminToken, controller.signal),
       getLatestPlan(date, adminToken, controller.signal),
@@ -212,7 +211,9 @@ export function PlantPage() {
       dispatchAttempt.current = null;
       setPlan(response.plan);
       setDriverAccess(response.driverAccess);
-      setMessage("Trip dispatched and frozen. Kitchen edits now appear as alerts.");
+      setMessage(activePlan.state === "DISPATCHED"
+        ? "Private driver access retrieved for the frozen trip."
+        : "Trip dispatched and frozen. Kitchen edits now appear as alerts.");
       setRefreshKey((value) => value + 1);
     } catch (reason) {
       if (reason instanceof ApiError && reason.code === "CONFLICT") {
@@ -290,8 +291,8 @@ export function PlantPage() {
   const saveGateLog = async (event: FormEvent) => {
     event.preventDefault();
     if (!activePlan || !adminToken) return;
-    const netKg = Number(gate.netKg);
-    if (!Number.isFinite(netKg) || netKg < 0) {
+    const netKg = parseNetGateKg(gate.netKg);
+    if (netKg === null) {
       setError("Enter a valid net received weight of zero or more.");
       return;
     }
@@ -367,7 +368,7 @@ export function PlantPage() {
       {loading && <p className="loading-line page-pad">Refreshing authoritative operations data…</p>}
       {error && <p className="notice error" role="alert">{error}</p>}
       {message && <p className="notice success" aria-live="polite">{message}</p>}
-      {details?.alerts.map((alert) => <p className="notice warning" key={alert.code}>{alert.message} The dispatched route remains frozen.</p>)}
+      {details?.alerts.map((alert) => <p className="notice warning" key={alert.code}>{alert.message} {activePlan?.state === "DISPATCHED" ? "The dispatched route remains frozen." : "Re-plan and review the updated inputs before dispatch."}</p>)}
 
       {snapshot && (
         <>
@@ -387,11 +388,11 @@ export function PlantPage() {
                 ["capacityBuffer", "Capacity buffer"], ["serviceMin", "Service min"],
                 ["maxRadiusKm", "Maximum radius km"],
               ] as const).map(([key, label]) => (
-                <label className="field compact" key={key}><span>{label}</span><input type="number" min="0" step={key === "capacityBuffer" ? "0.01" : "1"} value={controls[key]} onChange={(event) => { setControlsTouched(true); setControls((current) => ({ ...current, [key]: event.currentTarget.value })); }} /></label>
+                <label className="field compact" key={key}><span>{label}</span><input type="number" min="0" step={key === "capacityBuffer" ? "0.01" : "1"} value={controls[key]} onChange={(event) => { const value = event.currentTarget.value; setControlsTouched(true); setControls((current) => ({ ...current, [key]: value })); }} /></label>
               ))}
-              <label className="field compact"><span>Shift start</span><input type="time" value={controls.shiftStart} onChange={(event) => { setControlsTouched(true); setControls((current) => ({ ...current, shiftStart: event.currentTarget.value })); }} /></label>
-              <label className="field compact"><span>Shift end</span><input type="time" value={controls.shiftEnd} onChange={(event) => { setControlsTouched(true); setControls((current) => ({ ...current, shiftEnd: event.currentTarget.value })); }} /></label>
-              <button className="button button-primary" type="button" onClick={() => void replan()} disabled={planning}>{planning ? "Planning…" : activePlan ? "Re-plan" : "Build plan"}</button>
+              <label className="field compact"><span>Shift start</span><input type="time" value={controls.shiftStart} onChange={(event) => { const value = event.currentTarget.value; setControlsTouched(true); setControls((current) => ({ ...current, shiftStart: value })); }} /></label>
+              <label className="field compact"><span>Shift end</span><input type="time" value={controls.shiftEnd} onChange={(event) => { const value = event.currentTarget.value; setControlsTouched(true); setControls((current) => ({ ...current, shiftEnd: value })); }} /></label>
+              <button className="button button-primary" type="button" onClick={() => void replan()} disabled={planning || activePlan?.state === "DISPATCHED"}>{planning ? "Planning…" : activePlan?.state === "DISPATCHED" ? "Route frozen" : activePlan ? "Re-plan" : "Build plan"}</button>
             </div>
           </section>
 
@@ -413,10 +414,11 @@ export function PlantPage() {
                     {activePlan.plan.stops.map((stop) => <li key={stop.generatorId}><span className="stop-number">{activePlan.plan.stops.indexOf(stop) + 1}</span><div><strong>{stop.name}</strong><span>{stop.serviceStartAt}–{stop.serviceEndAt} · window {stop.window.start}–{stop.window.end}</span></div><div><strong>{formatKg(stop.expectedCollectionKg)}</strong><span>{formatKg(stop.reservedLoadKg)} reserved{stop.mandatory ? " · mandatory" : ""}</span></div></li>)}
                   </ol>
                   <div className="plan-actions">
-                    <button className="button button-primary" type="button" onClick={() => void dispatch()} disabled={dispatching || activePlan.status !== "FEASIBLE" || activePlan.mandatoryConflicts.length > 0 || activePlan.plan.stops.length === 0 || activePlan.state !== "DRAFT"}>{dispatching ? "Dispatching…" : activePlan.state === "DISPATCHED" ? "Dispatched" : "Dispatch reviewed version"}</button>
+                    <button className="button button-primary" type="button" onClick={() => void dispatch()} disabled={loading || dispatching || activePlan.inputRevision !== snapshot.inputRevision || activePlan.status !== "FEASIBLE" || activePlan.mandatoryConflicts.length > 0 || activePlan.plan.stops.length === 0 || activePlan.state !== "DRAFT"}>{dispatching ? "Dispatching…" : activePlan.state === "DISPATCHED" ? "Dispatched" : "Dispatch reviewed version"}</button>
+                    {activePlan.state === "DISPATCHED" && !driverAccess && <button className="button button-secondary" type="button" onClick={() => void dispatch()} disabled={dispatching}>Retrieve private driver link</button>}
                     {driverAccess && <button className="button button-secondary" type="button" onClick={() => void copyDriverLink()}>Copy private driver link</button>}
                   </div>
-                  {activePlan.state === "DISPATCHED" && !driverAccess && <p className="muted">Driver access is only returned during authenticated dispatch issuance. Replaced or expired links require dispatcher re-issuance.</p>}
+                  {activePlan.state === "DISPATCHED" && !driverAccess && <p className="muted">Retrieve the existing private driver link after a refresh. Its original expiry is retained; expired access requires operational support.</p>}
                 </>
               )}
             </div>
@@ -442,7 +444,7 @@ export function PlantPage() {
                 return (
                   <article key={generator.generatorId}>
                     <div className="supply-main">
-                      <label className="check-field"><input type="checkbox" checked={mandatoryIds.includes(generator.generatorId)} onChange={(event) => setMandatoryIds((current) => event.currentTarget.checked ? [...current, generator.generatorId] : current.filter((id) => id !== generator.generatorId))} /><span>Mandatory</span></label>
+                      <label className="check-field"><input type="checkbox" checked={mandatoryIds.includes(generator.generatorId)} onChange={(event) => { const checked = event.currentTarget.checked; setMandatoryIds((current) => checked ? [...current, generator.generatorId] : current.filter((id) => id !== generator.generatorId)); }} /><span>Mandatory</span></label>
                       <div><strong>{generator.name}</strong><span>{generator.address}</span></div>
                       <span className={`status-badge readiness-${generator.readinessStatus.toLowerCase()}`}>{generator.readinessStatus}</span>
                       <div><strong>{formatKg(generator.readiness?.confirmedKg)}</strong><span>{generator.readiness?.window ? `${generator.readiness.window.start}–${generator.readiness.window.end}` : "No confirmed window"}</span></div>
@@ -450,7 +452,7 @@ export function PlantPage() {
                     {(excluded || hazardous) && <p className="next-action">{excluded?.reason ?? "HAZARD_REVIEW"} · {exclusionAction(excluded?.reason ?? "HAZARD_REVIEW")}</p>}
                     <div className="row-actions">
                       <button className="text-button" type="button" onClick={() => setPhone({ generatorId: generator.generatorId, status: "READY", kg: generator.readiness?.confirmedKg ? String(generator.readiness.confirmedKg) : "", source: generator.readiness?.weightSource ?? "ESTIMATE", start: generator.readiness?.window?.start ?? generator.pickupWindow.start, end: generator.readiness?.window?.end ?? generator.pickupWindow.end, confirmedBy: "", reason: "" })}>Record phone confirmation</button>
-                      <input aria-label={`Hazard reason for ${generator.name}`} placeholder={hazardous ? "Resolution reason" : "Hazard reason"} value={hazardReasons[generator.generatorId] ?? ""} onChange={(event) => setHazardReasons((current) => ({ ...current, [generator.generatorId]: event.currentTarget.value }))} />
+                      <input aria-label={`Hazard reason for ${generator.name}`} placeholder={hazardous ? "Resolution reason" : "Hazard reason"} value={hazardReasons[generator.generatorId] ?? ""} onChange={(event) => { const value = event.currentTarget.value; setHazardReasons((current) => ({ ...current, [generator.generatorId]: value })); }} />
                       <button className="text-button" type="button" onClick={() => void updateHazard(generator)}>{hazardous ? "Resolve hazard" : "Record hazard"}</button>
                     </div>
                   </article>
@@ -491,10 +493,10 @@ export function PlantPage() {
               </div>
               <form className="gate-form" onSubmit={(event) => void saveGateLog(event)}>
                 <h3>Record net plant intake</h3>
-                <label className="field"><span>Net received kg</span><input type="number" min="0" step="0.1" value={gate.netKg} onChange={(event) => { setGate((current) => ({ ...current, netKg: event.currentTarget.value })); gateAttempt.current = null; }} /></label>
-                <label className="field"><span>Weight source</span><select value={gate.source} onChange={(event) => { setGate((current) => ({ ...current, source: event.currentTarget.value as WeightSource })); gateAttempt.current = null; }}><option value="SCALE">Scale</option><option value="ESTIMATE">Estimate</option></select></label>
-                <label className="field"><span>Weighbridge reference (optional)</span><input value={gate.reference} onChange={(event) => { setGate((current) => ({ ...current, reference: event.currentTarget.value })); gateAttempt.current = null; }} /></label>
-                {execution.gate && <label className="field"><span>Correction reason</span><input value={gate.correctionReason} onChange={(event) => { setGate((current) => ({ ...current, correctionReason: event.currentTarget.value })); gateAttempt.current = null; }} /></label>}
+                <label className="field"><span>Net received kg</span><input type="number" min="0" step="0.1" value={gate.netKg} onChange={(event) => { const value = event.currentTarget.value; setGate((current) => ({ ...current, netKg: value })); gateAttempt.current = null; }} /></label>
+                <label className="field"><span>Weight source</span><select value={gate.source} onChange={(event) => { const value = event.currentTarget.value as WeightSource; setGate((current) => ({ ...current, source: value })); gateAttempt.current = null; }}><option value="SCALE">Scale</option><option value="ESTIMATE">Estimate</option></select></label>
+                <label className="field"><span>Weighbridge reference (optional)</span><input value={gate.reference} onChange={(event) => { const value = event.currentTarget.value; setGate((current) => ({ ...current, reference: value })); gateAttempt.current = null; }} /></label>
+                {execution.gate && <label className="field"><span>Correction reason</span><input value={gate.correctionReason} onChange={(event) => { const value = event.currentTarget.value; setGate((current) => ({ ...current, correctionReason: value })); gateAttempt.current = null; }} /></label>}
                 <button className="button button-primary button-full" type="submit" disabled={gateSaving}>{gateSaving ? "Saving gate record…" : execution.gate ? "Save gate correction" : "Save gate record"}</button>
                 <small>Received weight is not a claim that the load was processed.</small>
               </form>

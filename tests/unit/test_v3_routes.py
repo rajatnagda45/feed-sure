@@ -264,3 +264,21 @@ def test_mandatory_conflict_and_cancellation_block_dispatch(client):
         json={"expectedVersion": 1, "expectedInputRevision": conflict_plan["inputRevision"]},
     )
     assert response.status_code == 409
+
+
+def test_snapshot_reports_configured_matrix_mode(client):
+    response = client.get("/operations?date=" + DAY, headers=ADMIN)
+    assert response.status_code == 200
+    assert response.json()["serviceMode"]["matrix"] == "fallback"
+    assert response.json()["defaults"]["readinessPrior"] == 0.8
+    assert response.json()["defaults"]["capacityBuffer"] == 0.1
+
+
+def test_latest_read_keeps_active_trip_visible_after_newer_draft(client):
+    plan, encoded, driver = plan_and_dispatch(client)
+    newer = client.post("/plans", headers=ADMIN, json={"collectionDate": DAY, "targetKg": 75})
+    assert newer.status_code == 200
+    assert newer.json()["planKey"] != plan["planKey"]
+    latest = client.get("/plans/" + DAY, headers=ADMIN).json()["plan"]
+    assert latest["planKey"] == plan["planKey"] and latest["state"] == "DISPATCHED"
+    assert client.get("/plans/" + encoded + "/driver", headers=driver).status_code == 200

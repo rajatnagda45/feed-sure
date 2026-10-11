@@ -63,6 +63,16 @@ async def _invoke(request: Request, handler: Handler) -> Response:
 
 async def operational_route(request: Request) -> Response:
     """Forward all v3 routes to real handlers; no canned local success responses."""
+    if hasattr(request.app.state, "database"):
+        # Explicit local Moto transport injection; domain handlers/calculations are unchanged.
+        def local_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
+            return operations.handle_request(
+                event,
+                config=request.app.state.config,
+                database=request.app.state.database,
+            )
+
+        return await _invoke(request, local_handler)
     return await _invoke(request, operations.lambda_handler)
 
 

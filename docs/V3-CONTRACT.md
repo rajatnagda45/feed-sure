@@ -47,7 +47,7 @@ admin secrets or raw driver tokens. 400 INVALID_INPUT, 401 UNAUTHORIZED, 404 NOT
 | POST /submissions/{submissionId}/screen | same generator or admin | `{}` -> `{submission:record,inputRevision}`; optional P1 |
 | POST /generators/{generatorId}/hazard-reviews | admin | `{collectionDate,action:ENTER|RESOLVE,reason}` -> `{hazard:record,inputRevision}` |
 | POST /plans | admin | `{collectionDate,targetKg?,truckCapacityKg?,capacityBuffer?,shiftStart?,shiftEnd?,serviceMin?,maxRadiusKm?,mandatoryIds?:[]}` -> saved plan envelope |
-| GET /plans/{date} | admin | `{plan:null}` if none, otherwise `{plan:envelope}` |
+| GET /plans/{date} | admin | `{plan:null}` if none; active dispatched trip for the date, otherwise latest draft as `{plan:envelope}` |
 | GET /plans/{planKey}/details | admin | `{plan:envelope,execution:{pickups,gate,reconciliation},alerts}` |
 | POST /plans/{planKey}/dispatch | admin | `{expectedVersion,expectedInputRevision}` -> dispatch example |
 | GET /plans/{planKey}/driver | driver | `{plan:driver-safe envelope,pickups,gate,reconciliation,alerts}` |
@@ -75,6 +75,8 @@ readinessStatus READY|NOT_READY|UNCONFIRMED, unresolvedHazards (list of hazard r
 Defaults are the exact planner params below; depot is `{id:"plant",lat,lng}`. Revision advances
 atomically for EVERY readiness edit and hazard enter/resolve, scoped by collection date.
 No stale eventually-consistent index may define dispatch inputs.
+The operations matrix mode is the configured provider (`fallback` in mock-location mode); a saved
+plan records the actual matrix source, including a Location-service failure fallback.
 
 ## Session 2: pure interfaces (required exports)
 

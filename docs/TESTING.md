@@ -10,12 +10,48 @@ readiness → draft → dispatch → pickup → gate → kitchen receipt and ref
 Cases include encoded plan IDs, stale revisions, duplicate retries, rollback, corrections, generator
 isolation, cancellation, mandatory conflicts, changed hazards, partial pickups, missing/zero gate
 and unmatched intake. Contract JSON examples are parsed and checked against actual pure outputs.
-These checks do not establish a browser walkthrough, deployed AWS operation or field savings.
+These automated checks do not establish deployed AWS operation or field savings.
 
 From `frontend/`, run `npm run test` and `npm run build`. Evaluate saved synthetic route scenarios
 with `python scripts/eval_routes.py`; definitions and recorded results are committed under `eval/`.
 Report ties and tradeoffs as well as wins. SAM validation/build requires the separately installed
 SAM CLI, unavailable in this backend implementation session.
+
+## Final local integration evidence — 11 October 2026
+
+- Backend: 192 tests passed on Python 3.12.13 (20.27 s) and Python 3.13.9 (18.55 s).
+  Both runs reported one Starlette/httpx deprecation warning.
+- Frontend: 22 tests passed; three live integration tests are skipped in the default run.
+  The production TypeScript/Vite build passed, with the existing large MapLibre bundle advisory.
+- Live frontend client: three opt-in tests passed against a fresh disposable API, using actual
+  `src/api.ts` HTTP requests, real domain handlers and Moto DynamoDB transactions. No HTTP mocks.
+- Evaluation: all 18 saved scenarios reproduced byte-for-byte: 16 ties, one shorter primary route,
+  one capacity trade-off where the baseline collected more expected kg. All inputs are synthetic.
+- Browser: kitchen readiness/cancellation, stale dispatch rejection, re-plan, dispatch, encoded
+  private driver link, partial and full pickups, refresh, missing gate, scale gate intake and own
+  kitchen record succeeded against the local API. A blank gate field was rejected without a write.
+  GPS UNKNOWN remained independent of weight reconciliation. Denied GPS is explicitly covered by
+  the opt-in client test; no physical phone permission prompt was exercised.
+
+To repeat the live client checks, start a **fresh** disposable API from the repository root:
+
+```powershell
+python scripts/local_demo.py --date 2026-10-12 --port 8791 --frontend-port 5191
+```
+
+Then, in a second shell from `frontend/`:
+
+```powershell
+$env:FEEDSURE_LOCAL_INTEGRATION = "1"
+$env:VITE_API_BASE_URL = "http://localhost:8791"
+npm run test -- integration/local-workflow.test.ts
+```
+
+The tests read ignored `.tmp/local-demo-access.json` and mutate only disposable synthetic records.
+Restart that server before repeating; these checks expect seeded initial state. Ports/origin must
+match the runner arguments. Normal frontend tests require neither the server nor its credentials.
+Vitest uses a thread pool because isolated Windows fork workers could not share Vite transform
+files. Browser results and limitations are summarised above; the working handoff remains local.
 
 The following earlier test plan is historical; screening evaluation remains deferred P1 evidence.
 

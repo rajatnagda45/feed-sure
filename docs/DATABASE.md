@@ -16,7 +16,9 @@ Readiness/history/head updates and dispatch/mutation guards use DynamoDB transac
 pickups alone define totals; old corrections are not added as extra collections. DEDUP rows expire
 after seven days, audit rows have no TTL. Plans have no operational expiry; only matrix cache rows
 carry TTL. GPS expiry metadata does not remove fields automatically; a removal job remains needed.
-See [V3-CONTRACT.md](V3-CONTRACT.md) for item shapes and retention boundaries.
+The date META activePlanKey also keeps the dispatched trip selected on dashboard refresh even
+when an API caller saves a later draft. No new table/index or key change was needed during
+integration. See [V3-CONTRACT.md](V3-CONTRACT.md) for item shapes and retention boundaries.
 
 The following v1 layouts and destructive seed instructions are historical, not the v3 run path.
 

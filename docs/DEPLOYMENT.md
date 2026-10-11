@@ -5,6 +5,39 @@
 Cloud deployment has not been performed in this implementation session. SAM CLI was unavailable;
 route/CORS consistency was tested by parsing the template, not by a SAM build or AWS deployment.
 
+### Disposable local demo without Docker
+
+After installing the declared backend development dependencies, run this from the repository root:
+
+```powershell
+python scripts/local_demo.py --date 2026-10-12
+```
+
+In a second shell from `frontend/`:
+
+```powershell
+$env:VITE_API_BASE_URL = "http://localhost:8787"
+npm ci
+npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
+```
+
+Open `http://localhost:5173/plant`. Read the private dispatcher token and kitchen links from
+ignored `.tmp/local-demo-access.json`; never publish that file. Pick the same collection date.
+The runner binds only loopback, generates random credentials, seeds ten fictional kitchens and
+uses in-process Moto DynamoDB. The actual HTTP/domain handlers, planner and reconciliation execute;
+only AWS storage transport and routing are simulated. No AWS account, Docker or Bedrock is used.
+Records disappear on process shutdown; restart creates a new demo and new credentials. An occupied
+API port fails before replacing the private access manifest. Use `--port` and `--frontend-port`
+together with matching frontend origin/port if defaults are occupied. Vite `--strictPort` prevents
+silently changing the origin expected by CORS.
+
+For browser verification, save kitchen readiness, build/review a route, dispatch it, copy/open its
+private driver link, record outcomes, save gate intake, and refresh the kitchen's own record.
+Repeat reads after saves. The map without a rendering key shows a labelled schematic fallback.
+The observed local walkthrough and automated commands are in [TESTING.md](TESTING.md).
+
+### Separate persistent Moto server
+
 Install backend dev dependencies with `python -m pip install -e ".[dev]"`. For a local demo, start
 `docker compose up -d`, then set these environment variables in the same PowerShell window:
 

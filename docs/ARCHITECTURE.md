@@ -12,6 +12,14 @@ calls pure `planner.plan.build_plan`, and saves its inputs and route as an immut
 Dispatch conditionally binds the current date revision and freezes the trip. Pickup/gate writes
 use current-record and trip execution revisions, separate audit/dedup records and transactions.
 Reads recompute `planner.reconcile.reconcile_trip` from latest stop outcomes and trip gate intake.
+The date-level plan read prefers the active dispatched trip so later drafts cannot hide its gate
+form or reconciliation. The dispatcher locks the re-plan action for that frozen trip.
+
+`scripts/local_demo.py` starts a disposable, loopback-only API using in-process Moto DynamoDB
+transport, the real local HTTP shim, planner, reconciliation and transactions. The shim receives
+an explicit local database adapter through app state; production Lambda handlers are unchanged.
+Private random demo credentials are saved only under ignored `.tmp/`. No Docker or AWS account
+is needed, and the in-memory records are discarded when the process stops.
 
 The planner reserves confirmed kg plus a buffer and applies the readiness prior only to expected
 collection. Human hazard flags block selection/loading. Photo screening is deferred and no image
