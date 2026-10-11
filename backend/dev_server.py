@@ -24,6 +24,7 @@ app.add_middleware(
     allow_headers=[
         "content-type",
         "x-admin-token",
+        "x-plant-token",
         "x-generator-token",
         "x-driver-token",
         "idempotency-key",

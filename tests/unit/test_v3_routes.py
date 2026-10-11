@@ -18,6 +18,7 @@ from seed_data import ensure_v3_tables
 @pytest.fixture
 def client(monkeypatch):
     monkeypatch.setenv("ADMIN_TOKEN", "route-test-admin")
+    monkeypatch.setenv("PLANT_OWNER_TOKEN", "route-test-plant-owner")
     monkeypatch.setenv("DRIVER_TOKEN_SECRET", "test-only-driver-secret-with-at-least-32-characters")
     monkeypatch.setenv("MOCK_LOCATION", "true")
     monkeypatch.delenv("AWS_ENDPOINT_URL", raising=False)
@@ -208,7 +209,7 @@ def test_local_and_sam_routes_match_and_cors_lists_headers():
     local = {(m, r.path) for r in app.routes if hasattr(r, "methods") for m in r.methods}
     assert sam == set(ROUTES) and set(ROUTES) <= local
     cors = template["Resources"]["HttpApi"]["Properties"]["CorsConfiguration"]["AllowHeaders"]
-    assert {"x-generator-token", "x-driver-token", "idempotency-key"} <= set(cors)
+    assert {"x-generator-token", "x-driver-token", "x-plant-token", "idempotency-key"} <= set(cors)
 
 
 def test_new_hazard_blocks_loading_without_changing_frozen_driver_stops(client):
@@ -282,3 +283,100 @@ def test_latest_read_keeps_active_trip_visible_after_newer_draft(client):
     latest = client.get("/plans/" + DAY, headers=ADMIN).json()["plan"]
     assert latest["planKey"] == plan["planKey"] and latest["state"] == "DISPATCHED"
     assert client.get("/plans/" + encoded + "/driver", headers=driver).status_code == 200
+
+
+OWNER = {"X-Plant-Token": "route-test-plant-owner"}
+
+
+def test_owner_intake_permissions_and_shared_gate_records(client):
+    assert client.get("/intake?date=" + DAY, headers=OWNER).json()["trips"] == []
+    plan, encoded, driver = plan_and_dispatch(client)
+    intake = client.get("/intake?date=" + DAY, headers=OWNER)
+    assert intake.status_code == 200, intake.text
+    trip = intake.json()["trips"][0]
+    assert trip["planKey"] == plan["planKey"] and trip["simulated"] is True
+    assert trip["reconciliation"]["status"] == "PENDING_GATE"
+    assert "driverTokenHash" not in intake.text and "inputs" not in trip
+    for headers in ({}, ADMIN, driver, {"X-Plant-Token": "wrong"}):
+        assert client.get("/intake?date=" + DAY, headers=headers).status_code == 401
+    for path in (
+        "/operations?date=" + DAY,
+        "/plans/" + DAY,
+        "/plans/" + encoded + "/details",
+        "/plans/" + encoded + "/driver",
+    ):
+        assert client.get(path, headers=OWNER).status_code == 401
+    assert client.post("/plans", headers=OWNER, json={"collectionDate": DAY}).status_code == 401
+    assert client.post("/plans/" + encoded + "/dispatch", headers=OWNER, json={}).status_code == 401
+    assert (
+        client.post("/submissions", headers=OWNER, json={"generatorId": "hotel-a"}).status_code
+        == 401
+    )
+    assert (
+        client.post("/pickups", headers=OWNER, json={"planKey": plan["planKey"]}).status_code == 401
+    )
+    for gid, kg in (("hotel-a", 100), ("hostel-b", 60)):
+        response = client.post(
+            "/pickups",
+            headers={**driver, "Idempotency-Key": "owner-test-" + gid},
+            json={
+                "planKey": plan["planKey"],
+                "generatorId": gid,
+                "outcome": "COLLECTED",
+                "kg": kg,
+                "weightSource": "SCALE",
+                "expectedRevision": 0,
+            },
+        )
+        assert response.status_code == 200, response.text
+    gate = {
+        "planKey": plan["planKey"],
+        "netKg": 155,
+        "weightSource": "SCALE",
+        "expectedRevision": 0,
+    }
+    headers = {**OWNER, "Idempotency-Key": "owner-gate"}
+    response = client.post("/gate-logs", headers=headers, json=gate)
+    assert response.status_code == 200, response.text
+    assert response.json()["gate"]["actor"] == {"type": "PLANT_OWNER", "id": "plant-owner"}
+    assert client.post("/gate-logs", headers=headers, json=gate).json() == response.json()
+    assert (
+        client.post("/gate-logs", headers=headers, json={**gate, "netKg": 150}).status_code == 409
+    )
+    trip = client.get("/intake?date=" + DAY, headers=OWNER).json()["trips"][0]
+    assert trip["reconciliation"]["deltaKg"] == -5
+    assert all("gps" not in pickup and "inputSnapshot" not in pickup for pickup in trip["pickups"])
+    correction = {
+        **gate,
+        "netKg": 100,
+        "expectedRevision": 1,
+        "correctionReason": "Corrected ticket",
+    }
+    response = client.post(
+        "/gate-logs", headers={**OWNER, "Idempotency-Key": "owner-correct"}, json=correction
+    )
+    assert response.status_code == 200 and response.json()["reconciliation"]["status"] == "REVIEW"
+    stale = client.post(
+        "/gate-logs", headers={**OWNER, "Idempotency-Key": "owner-stale"}, json=correction
+    )
+    assert stale.status_code == 409
+    details = client.get("/plans/" + encoded + "/details", headers=ADMIN).json()
+    assert details["execution"]["gate"]["netKg"] == 100
+    own = client.get(
+        "/generators/hotel-a/receipts", headers={"X-Generator-Token": "hotel-a-test-token"}
+    )
+    assert own.json()["records"][0]["gateStatus"] == "REVIEW"
+
+
+@pytest.mark.parametrize("token", ["", "CHANGE_ME", "route-test-admin"])
+def test_owner_credential_must_be_configured_and_distinct(client, monkeypatch, token):
+    monkeypatch.setenv("PLANT_OWNER_TOKEN", token)
+    assert client.get("/intake?date=" + DAY, headers={"X-Plant-Token": token}).status_code == 401
+
+
+def test_owner_does_not_see_newer_undispatched_draft(client):
+    plan, _, _ = plan_and_dispatch(client)
+    newer = client.post("/plans", headers=ADMIN, json={"collectionDate": DAY, "targetKg": 75})
+    assert newer.status_code == 200
+    trips = client.get("/intake?date=" + DAY, headers=OWNER).json()["trips"]
+    assert [trip["planKey"] for trip in trips] == [plan["planKey"]]

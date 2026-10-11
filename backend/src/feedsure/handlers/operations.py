@@ -87,6 +87,65 @@ class Service:
             raise ApiError(401, "UNAUTHORIZED", "Admin token is not valid.")
         return {"type": "ADMIN", "id": "dispatcher"}
 
+    def plant_owner(self) -> dict[str, str]:
+        """Authenticate the single plant's owner with a distinct intake-only credential."""
+        token = header(self.event, "x-plant-token")
+        expected = self.config.plant_owner_token
+        if (
+            not token
+            or expected in {"", "CHANGE_ME", self.config.admin_token}
+            or not hmac.compare_digest(token.encode(), expected.encode())
+        ):
+            raise ApiError(401, "UNAUTHORIZED", "Plant owner token is not valid.")
+        return {"type": "PLANT_OWNER", "id": "plant-owner"}
+
+    def intake(self, day: str) -> dict:
+        """List dispatched trips with intake evidence, excluding private dispatch inputs."""
+        self.plant_owner()
+        day = service_date(day)
+        rows = self.db.query(
+            "plans", KeyConditionExpression=Key("date").eq(day), ConsistentRead=True
+        )
+        trips = []
+        for plan in sorted(rows, key=lambda row: (row.get("createdAt", ""), row["planId"])):
+            if plan.get("schemaVersion") != 3 or plan.get("state") != "DISPATCHED":
+                continue
+            execution = self.execution(plan)
+            stops = {stop["generatorId"]: stop for stop in plan["plan"]["stops"]}
+            trips.append(
+                {
+                    "planKey": plan["planKey"],
+                    "collectionDate": day,
+                    "dispatchedAt": plan["dispatchedAt"],
+                    "returnAt": plan["plan"]["returnAt"],
+                    "simulated": plan["simulated"],
+                    "pickups": [
+                        {
+                            **{
+                                k: p.get(k)
+                                for k in (
+                                    "generatorId",
+                                    "outcome",
+                                    "kg",
+                                    "weightSource",
+                                    "recordedAt",
+                                )
+                            },
+                            "name": stops.get(p["generatorId"], {}).get("name", p["generatorId"]),
+                        }
+                        for p in execution["pickups"]
+                    ],
+                    "gate": execution["gate"],
+                    "reconciliation": execution["reconciliation"],
+                }
+            )
+        return {
+            "schemaVersion": 3,
+            "collectionDate": day,
+            "database": "local" if self.config.aws_endpoint_url else "aws",
+            "trips": trips,
+        }
+
     def generator(self, generator_id: str, *, allow_admin: bool = False) -> tuple[dict, dict]:
         """Authenticate one kitchen or an attributable dispatcher operation."""
         if not re.fullmatch(r"[a-z0-9][a-z0-9-]{0,62}", generator_id):
@@ -833,7 +892,7 @@ class Service:
 
     def gate(self, request: dict) -> dict:
         """Save net intake and correction history; never allocate truck mass to kitchens."""
-        actor = self.admin()
+        actor = self.plant_owner() if header(self.event, "x-plant-token") else self.admin()
         fields(
             request,
             {
@@ -933,6 +992,8 @@ class Service:
         query = self.event.get("queryStringParameters") or {}
         from feedsure.handlers.photos import Photos
 
+        if path == "/intake" and method == "GET":
+            return self.intake(query.get("date"))
         if path == "/uploads" and method == "POST":
             return Photos(self).uploads(body(self.event))
         ready_match = re.fullmatch(r"/generators/([^/]+)/readiness", path)

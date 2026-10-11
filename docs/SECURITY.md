@@ -2,7 +2,7 @@
 
 ## Shipped v3 controls and limits
 
-Admin, generator and driver credentials travel in separate headers. Blank/placeholder admin
+Admin, plant owner, generator and driver credentials travel in separate headers. Blank/placeholder admin
 configuration fails closed. Driver access is scoped to one dispatched trip, expires after 12 hours
 by default, and requires a dedicated `DRIVER_TOKEN_SECRET` of at least 32 characters. Storage keeps
 only the token hash/expiry; authenticated dispatch retries regenerate access using server HMAC
@@ -16,7 +16,9 @@ corrections and gate intake. Positive pickup checks the current hazard flag atom
 receipts query only their own index partition. API errors omit provider details, and reads omit
 credential hashes. Bodies are bounded to 16 KB and numeric inputs must be finite.
 
-SAM exposes the three auth headers plus Idempotency-Key in CORS. The optional photo implementation
+The owner desk uses a separate sessionStorage key and sends only `X-Plant-Token`. `PLANT_OWNER_TOKEN` must be nonempty, nonplaceholder and different from `ADMIN_TOKEN`; unset owner access is disabled. It permits dispatched-trip intake reads and gate writes only. The API checks permissions independently of the UI and attributes owner gate records explicitly. Admin gate API compatibility is retained. Owner summaries omit readiness snapshots, driver secrets and precise GPS. This prototype still uses one shared credential per staff role, not individual staff identities.
+
+SAM exposes the four auth headers plus Idempotency-Key in CORS. The optional photo implementation
 adds scoped S3 GetObject/PutObject and configured Bedrock model/profile invocation to the operational
 function. Optional uploads are private JPEG/PNG presigned POSTs, 1,024–3,500,000 bytes and
 five-minute expiry by default. S3 lifecycle retention defaults to 30 days.

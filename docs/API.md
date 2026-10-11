@@ -2,6 +2,12 @@
 
 ## Shipped v3 API
 
+### Separate plant owner access
+
+`GET /intake?date=YYYY-MM-DD` requires `X-Plant-Token: <PLANT_OWNER_TOKEN>` and returns `{schemaVersion:3,collectionDate,database,trips}`. Each trip contains `planKey`, `collectionDate`, `dispatchedAt`, `returnAt`, `simulated`, pickup summaries (`generatorId,name,outcome,kg,weightSource,recordedAt`), the current `gate`, and recomputed `reconciliation`. Only dispatched v3 trips for that date appear; drafts, driver credentials, kitchen readiness inputs and precise pickup GPS are omitted.
+
+`POST /gate-logs` accepts `X-Plant-Token` with the existing gate request, revision and `Idempotency-Key`. Owner writes record actor `{type:"PLANT_OWNER",id:"plant-owner"}`. Existing admin gate access remains compatible, while the admin UI directs intake recording to `/owner`. Invalid owner headers fail closed, even if an admin header is also supplied. The owner credential grants no kitchen, planner, dispatcher or driver access. Gate updates remain visible in the admin dashboard, driver trip and own-kitchen receipt.
+
 Use [V3-CONTRACT.md](V3-CONTRACT.md) for the active payloads, headers, route table, revisions and
 JSON examples. Generator credentials use `X-Generator-Token`; driver access uses `X-Driver-Token`;
 dispatch, pickup and gate mutations also require `Idempotency-Key`. Tokens in request bodies or

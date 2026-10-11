@@ -23,18 +23,20 @@ interface ErrorPayload {
 
 export interface RequestOptions extends RequestInit {
   adminToken?: string;
+  plantToken?: string;
   generatorToken?: string;
   driverToken?: string;
   idempotencyKey?: string;
 }
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { adminToken, generatorToken, driverToken, idempotencyKey, ...init } = options;
+  const { adminToken, plantToken, generatorToken, driverToken, idempotencyKey, ...init } = options;
   const headers = new Headers(init.headers);
   if (init.body !== undefined && !headers.has("content-type")) {
     headers.set("content-type", "application/json");
   }
   if (adminToken) headers.set("X-Admin-Token", adminToken);
+  if (plantToken) headers.set("X-Plant-Token", plantToken);
   if (generatorToken) headers.set("X-Generator-Token", generatorToken);
   if (driverToken) headers.set("X-Driver-Token", driverToken);
   if (idempotencyKey) headers.set("Idempotency-Key", idempotencyKey);
@@ -175,7 +177,7 @@ export interface TimeWindow {
 }
 
 export interface Actor {
-  type: "GENERATOR" | "ADMIN" | "DRIVER";
+  type: "GENERATOR" | "ADMIN" | "DRIVER" | "PLANT_OWNER";
   id: string;
 }
 
@@ -432,6 +434,34 @@ export interface GeneratorReceipt {
   gateStatus: ReconciliationStatus;
   gateRecorded: boolean;
   provisional: boolean;
+}
+
+export interface IntakeTrip {
+  planKey: string;
+  collectionDate: string;
+  dispatchedAt: string;
+  returnAt: string;
+  simulated: boolean;
+  pickups: (Pick<PickupRecord, "generatorId" | "outcome" | "kg" | "weightSource" | "recordedAt"> & { name: string })[];
+  gate: GateRecord | null;
+  reconciliation: Reconciliation;
+}
+
+export interface IntakeResponse {
+  schemaVersion: 3;
+  collectionDate: string;
+  database: "local" | "aws";
+  trips: IntakeTrip[];
+}
+
+export function getPlantIntake(date: string, plantToken: string, signal?: AbortSignal) {
+  return apiRequest<IntakeResponse>(`/intake?date=${encodeURIComponent(date)}`, { plantToken, signal });
+}
+
+export function savePlantGate(request: GateRequest, plantToken: string, idempotencyKey: string) {
+  return apiRequest<{ gate: GateRecord; reconciliation: Reconciliation }>("/gate-logs", {
+    method: "POST", plantToken, idempotencyKey, body: JSON.stringify(request),
+  });
 }
 
 export function createIdempotencyKey(scope: string): string {

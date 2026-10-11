@@ -1,5 +1,6 @@
 .hero-actions { gap: 12px; flex-wrap: wrap; }
 .demo-roles article { display: flex; flex-direction: column; align-items: flex-start; }
+.login-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
 .demo-roles .text-button { margin-top: 10px; }
 .photo-evidence { margin-top: 12px; }
 .photo-evidence > div { max-width: 640px; padding: 16px 0; }
@@ -17,3 +18,15 @@
   .saved-readiness { padding: 16px; grid-template-columns: 1fr; }
   .plant-shell .control-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+.owner-content { max-width: 1280px; margin: 0 auto; padding: 28px var(--gutter); }
+.owner-content h1 { font-size: clamp(2rem, 4vw, 3rem); }
+.owner-trip { margin-top: 24px; padding: 24px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.owner-trip .section-heading p { overflow-wrap: anywhere; }
+.owner-trip-body { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-top: 24px; }
+.owner-gate-fields { display: grid; gap: 14px; padding: 0; margin: 0; border: 0; min-width: 0; }
+.owner-records { list-style: none; padding: 0; }
+.owner-records li { display: flex; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.owner-records span { display: block; color: var(--muted); font-size: .85rem; }
+.owner-shell .operations-toolbar { padding: 16px 0; }
+@media (max-width: 700px) { .owner-trip-body { grid-template-columns: 1fr; } .owner-trip { padding: 18px; } }
+@media (min-width: 1000px) { .demo-roles { grid-template-columns: repeat(4, minmax(0, 1fr)); } }

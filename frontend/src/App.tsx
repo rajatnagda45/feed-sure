@@ -4,6 +4,7 @@ import { GeneratorPage } from "./pages/GeneratorPage";
 import { DriverPage } from "./pages/DriverPage";
 import { LandingPage } from "./pages/LandingPage";
 import { PlantPage } from "./pages/PlantPage";
+import { PlantOwnerPage } from "./pages/PlantOwnerPage";
 import { ROUTES } from "./routes";
 import { RoleAccessPage } from "./pages/RoleAccessPage";
 import { Link } from "react-router-dom";
@@ -14,6 +15,8 @@ export function App() {
       <Route path={ROUTES.landing} element={<LandingPage />} />
       <Route path={ROUTES.generator} element={<GeneratorPage />} />
       <Route path={ROUTES.plant} element={<PlantPage />} />
+      <Route path={ROUTES.admin} element={<PlantPage />} />
+      <Route path={ROUTES.owner} element={<PlantOwnerPage />} />
       <Route path={ROUTES.driver} element={<DriverPage />} />
       <Route path="/kitchen-access" element={<RoleAccessPage role="kitchen" />} />
       <Route path="/driver-access" element={<RoleAccessPage role="driver" />} />

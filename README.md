@@ -8,6 +8,8 @@ FeedSure is a single-truck collection prototype for a CBG plant and enrolled foo
 
 Readiness saves without photos or AI. Planning checks full-load capacity reservations, pickup windows and depot return. Dispatch rejects changed inputs; later edits raise alerts while preserving driver stops. Scoped access, retry protection, revisioned corrections, partial pickups and gate reconciliation execute through real domain handlers with local Moto storage.
 
+Separate interfaces share the same collection records: hotels/hostels/canteens use `/g/:id`, admins use `/admin`, CBG plant owners use `/owner`, and drivers use `/driver/:planKey`. `/plant` remains a compatible admin URL. The owner desk lists dispatched trips, recorded pickups and net-intake discrepancies, with revisioned gate corrections. Its distinct `PLANT_OWNER_TOKEN` grants intake access, not planning, dispatch or kitchen editing.
+
 All demo kitchens, quantities and scenario matrices are **synthetic**. Defaults of 0.8 readiness probability, 10% capacity buffer and a 1,200 kg target are prototype assumptions. Expected collection, reserved truck load, recorded pickups and net received kg are separate quantities.
 
 The optional photo and map repairs are undergoing independent integration verification; their current release status is in [TESTING.md](docs/TESTING.md). AWS deployment, live Bedrock analysis and physical phone-camera operation have not been established by this QA run.

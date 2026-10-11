@@ -61,6 +61,7 @@ def main() -> None:
         MOCK_BEDROCK="true",
         MOCK_BEDROCK_FIXTURE=args.photo_fixture,
         ADMIN_TOKEN=secrets.token_urlsafe(32),
+        PLANT_OWNER_TOKEN=secrets.token_urlsafe(32),
         DRIVER_TOKEN_SECRET=secrets.token_urlsafe(48),
         ALLOWED_ORIGIN=f"http://localhost:{args.frontend_port}",
     )
@@ -93,6 +94,7 @@ def main() -> None:
                     "apiBaseUrl": f"http://localhost:{args.port}",
                     "frontendOrigin": config.allowed_origin,
                     "adminToken": config.admin_token,
+                    "plantOwnerToken": config.plant_owner_token,
                     "generatorTokens": tokens,
                     "generatorLinks": {
                         gid: f"http://localhost:{args.frontend_port}/g/{gid}?t={token}"
