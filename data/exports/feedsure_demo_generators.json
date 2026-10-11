@@ -1,0 +1,326 @@
+[
+  {
+    "generator_id": "demo-kitchen-01",
+    "name": "Jayaram Breakfast Point (demo)",
+    "venue_name": "Jayaram Breakfast Point",
+    "type": "cafe",
+    "address": "Harohalli pilot area; mapped point 12.6778162, 77.4746671",
+    "lat": 12.6778162,
+    "lng": 77.4746671,
+    "location_source": {
+      "provider": "OpenStreetMap",
+      "elementType": "node",
+      "elementId": 1304825515,
+      "url": "https://www.openstreetmap.org/node/1304825515",
+      "coordinateKind": "node",
+      "tags": {
+        "amenity": "cafe",
+        "name": "Jayaram Breakfast Point"
+      },
+      "attribution": "© OpenStreetMap contributors",
+      "license": "ODbL-1.0",
+      "licenseUrl": "https://opendatacommons.org/licenses/odbl/1-0/",
+      "copyrightUrl": "https://www.openstreetmap.org/copyright",
+      "retrievedOn": "2026-10-11"
+    },
+    "verification": {
+      "participationVerified": false,
+      "wasteStreamVerified": false,
+      "pickupEntranceVerified": false,
+      "venueOperationVerified": false
+    },
+    "simulated": true
+  },
+  {
+    "generator_id": "demo-kitchen-02",
+    "name": "Mandarathi Vaibhava (demo)",
+    "venue_name": "Mandarathi Vaibhava",
+    "type": "restaurant",
+    "address": "Harohalli pilot area; mapped point 12.7563599, 77.4854899",
+    "lat": 12.7563599,
+    "lng": 77.4854899,
+    "location_source": {
+      "provider": "OpenStreetMap",
+      "elementType": "node",
+      "elementId": 10647819582,
+      "url": "https://www.openstreetmap.org/node/10647819582",
+      "coordinateKind": "node",
+      "tags": {
+        "amenity": "restaurant",
+        "name": "Mandarathi Vaibhava"
+      },
+      "attribution": "© OpenStreetMap contributors",
+      "license": "ODbL-1.0",
+      "licenseUrl": "https://opendatacommons.org/licenses/odbl/1-0/",
+      "copyrightUrl": "https://www.openstreetmap.org/copyright",
+      "retrievedOn": "2026-10-11"
+    },
+    "verification": {
+      "participationVerified": false,
+      "wasteStreamVerified": false,
+      "pickupEntranceVerified": false,
+      "venueOperationVerified": false
+    },
+    "simulated": true
+  },
+  {
+    "generator_id": "demo-kitchen-03",
+    "name": "Mandarathi Gardens (demo)",
+    "venue_name": "Mandarathi Gardens",
+    "type": "restaurant",
+    "address": "Harohalli pilot area; mapped point 12.6227353, 77.4315434",
+    "lat": 12.6227353,
+    "lng": 77.4315434,
+    "location_source": {
+      "provider": "OpenStreetMap",
+      "elementType": "node",
+      "elementId": 11513230796,
+      "url": "https://www.openstreetmap.org/node/11513230796",
+      "coordinateKind": "node",
+      "tags": {
+        "amenity": "restaurant",
+        "name": "Mandarathi Gardens"
+      },
+      "attribution": "© OpenStreetMap contributors",
+      "license": "ODbL-1.0",
+      "licenseUrl": "https://opendatacommons.org/licenses/odbl/1-0/",
+      "copyrightUrl": "https://www.openstreetmap.org/copyright",
+      "retrievedOn": "2026-10-11"
+    },
+    "verification": {
+      "participationVerified": false,
+      "wasteStreamVerified": false,
+      "pickupEntranceVerified": false,
+      "venueOperationVerified": false
+    },
+    "simulated": true
+  },
+  {
+    "generator_id": "demo-kitchen-04",
+    "name": "Red Spice (demo)",
+    "venue_name": "Red Spice",
+    "type": "restaurant",
+    "address": "Harohalli pilot area; mapped point 12.6225054, 77.4315749",
+    "lat": 12.6225054,
+    "lng": 77.4315749,
+    "location_source": {
+      "provider": "OpenStreetMap",
+      "elementType": "node",
+      "elementId": 11999072013,
+      "url": "https://www.openstreetmap.org/node/11999072013",
+      "coordinateKind": "node",
+      "tags": {
+        "amenity": "restaurant",
+        "name": "Red Spice"
+      },
+      "attribution": "© OpenStreetMap contributors",
+      "license": "ODbL-1.0",
+      "licenseUrl": "https://opendatacommons.org/licenses/odbl/1-0/",
+      "copyrightUrl": "https://www.openstreetmap.org/copyright",
+      "retrievedOn": "2026-10-11"
+    },
+    "verification": {
+      "participationVerified": false,
+      "wasteStreamVerified": false,
+      "pickupEntranceVerified": false,
+      "venueOperationVerified": false
+    },
+    "simulated": true
+  },
+  {
+    "generator_id": "demo-kitchen-05",
+    "name": "Campus Mess (demo)",
+    "venue_name": "Campus Mess",
+    "type": "canteen",
+    "address": "Harohalli pilot area; mapped point 12.6408946, 77.4408622",
+    "lat": 12.6408946,
+    "lng": 77.4408622,
+    "location_source": {
+      "provider": "OpenStreetMap",
+      "elementType": "node",
+      "elementId": 6357489343,
+      "url": "https://www.openstreetmap.org/node/6357489343",
+      "coordinateKind": "node",
+      "tags": {
+        "amenity": "restaurant",
+        "name": "Campus Mess"
+      },
+      "attribution": "© OpenStreetMap contributors",
+      "license": "ODbL-1.0",
+      "licenseUrl": "https://opendatacommons.org/licenses/odbl/1-0/",
+      "copyrightUrl": "https://www.openstreetmap.org/copyright",
+      "retrievedOn": "2026-10-11"
+    },
+    "verification": {
+      "participationVerified": false,
+      "wasteStreamVerified": false,
+      "pickupEntranceVerified": false,
+      "venueOperationVerified": false
+    },
+    "simulated": true
+  },
+  {
+    "generator_id": "demo-kitchen-06",
+    "name": "S Residency Boys Hostel (demo)",
+    "venue_name": "S Residency Boys Hostel",
+    "type": "hostel_mess",
+    "address": "Harohalli pilot area; mapped point 12.6583227, 77.4479832",
+    "lat": 12.6583227,
+    "lng": 77.4479832,
+    "location_source": {
+      "provider": "OpenStreetMap",
+      "elementType": "node",
+      "elementId": 13316004022,
+      "url": "https://www.openstreetmap.org/node/13316004022",
+      "coordinateKind": "node",
+      "tags": {
+        "building": "yes",
+        "name": "S Residency Boys Hostel"
+      },
+      "attribution": "© OpenStreetMap contributors",
+      "license": "ODbL-1.0",
+      "licenseUrl": "https://opendatacommons.org/licenses/odbl/1-0/",
+      "copyrightUrl": "https://www.openstreetmap.org/copyright",
+      "retrievedOn": "2026-10-11"
+    },
+    "verification": {
+      "participationVerified": false,
+      "wasteStreamVerified": false,
+      "pickupEntranceVerified": false,
+      "venueOperationVerified": false
+    },
+    "simulated": true
+  },
+  {
+    "generator_id": "demo-kitchen-07",
+    "name": "Nursing Girls Hostel (demo)",
+    "venue_name": "Nursing Girls Hostel",
+    "type": "hostel_mess",
+    "address": "Harohalli pilot area; mapped point 12.6584271, 77.4494652",
+    "lat": 12.6584271,
+    "lng": 77.4494652,
+    "location_source": {
+      "provider": "OpenStreetMap",
+      "elementType": "node",
+      "elementId": 13316004018,
+      "url": "https://www.openstreetmap.org/node/13316004018",
+      "coordinateKind": "node",
+      "tags": {
+        "building": "yes",
+        "name": "Nursing Girls Hostel"
+      },
+      "attribution": "© OpenStreetMap contributors",
+      "license": "ODbL-1.0",
+      "licenseUrl": "https://opendatacommons.org/licenses/odbl/1-0/",
+      "copyrightUrl": "https://www.openstreetmap.org/copyright",
+      "retrievedOn": "2026-10-11"
+    },
+    "verification": {
+      "participationVerified": false,
+      "wasteStreamVerified": false,
+      "pickupEntranceVerified": false,
+      "venueOperationVerified": false
+    },
+    "simulated": true
+  },
+  {
+    "generator_id": "demo-kitchen-08",
+    "name": "Karakoram Hostel (demo)",
+    "venue_name": "Karakoram Hostel",
+    "type": "hostel_mess",
+    "address": "Harohalli pilot area; mapped point 12.6406066, 77.4415259",
+    "lat": 12.6406066,
+    "lng": 77.4415259,
+    "location_source": {
+      "provider": "OpenStreetMap",
+      "elementType": "relation",
+      "elementId": 16048270,
+      "url": "https://www.openstreetmap.org/relation/16048270",
+      "coordinateKind": "feature_center",
+      "tags": {
+        "alt_name": "Hostel Block 2",
+        "building": "residential",
+        "description": "Senior Boys Hostel",
+        "name": "Karakoram Hostel"
+      },
+      "attribution": "© OpenStreetMap contributors",
+      "license": "ODbL-1.0",
+      "licenseUrl": "https://opendatacommons.org/licenses/odbl/1-0/",
+      "copyrightUrl": "https://www.openstreetmap.org/copyright",
+      "retrievedOn": "2026-10-11"
+    },
+    "verification": {
+      "participationVerified": false,
+      "wasteStreamVerified": false,
+      "pickupEntranceVerified": false,
+      "venueOperationVerified": false
+    },
+    "simulated": true
+  },
+  {
+    "generator_id": "demo-kitchen-09",
+    "name": "Purvanchal Hostel (demo)",
+    "venue_name": "Purvanchal Hostel",
+    "type": "hostel_mess",
+    "address": "Harohalli pilot area; mapped point 12.641092, 77.4415273",
+    "lat": 12.641092,
+    "lng": 77.4415273,
+    "location_source": {
+      "provider": "OpenStreetMap",
+      "elementType": "relation",
+      "elementId": 16048271,
+      "url": "https://www.openstreetmap.org/relation/16048271",
+      "coordinateKind": "feature_center",
+      "tags": {
+        "alt_name": "Hostel Block 1",
+        "building": "residential",
+        "description": "Senior Girls Hostel",
+        "name": "Purvanchal Hostel"
+      },
+      "attribution": "© OpenStreetMap contributors",
+      "license": "ODbL-1.0",
+      "licenseUrl": "https://opendatacommons.org/licenses/odbl/1-0/",
+      "copyrightUrl": "https://www.openstreetmap.org/copyright",
+      "retrievedOn": "2026-10-11"
+    },
+    "verification": {
+      "participationVerified": false,
+      "wasteStreamVerified": false,
+      "pickupEntranceVerified": false,
+      "venueOperationVerified": false
+    },
+    "simulated": true
+  },
+  {
+    "generator_id": "demo-kitchen-10",
+    "name": "Krishna Sagar (demo)",
+    "venue_name": "Krishna Sagar",
+    "type": "restaurant",
+    "address": "Harohalli pilot area; mapped point 12.8004681, 77.5083839",
+    "lat": 12.8004681,
+    "lng": 77.5083839,
+    "location_source": {
+      "provider": "OpenStreetMap",
+      "elementType": "node",
+      "elementId": 4636471347,
+      "url": "https://www.openstreetmap.org/node/4636471347",
+      "coordinateKind": "node",
+      "tags": {
+        "amenity": "restaurant",
+        "name": "Krishna Sagar"
+      },
+      "attribution": "© OpenStreetMap contributors",
+      "license": "ODbL-1.0",
+      "licenseUrl": "https://opendatacommons.org/licenses/odbl/1-0/",
+      "copyrightUrl": "https://www.openstreetmap.org/copyright",
+      "retrievedOn": "2026-10-11"
+    },
+    "verification": {
+      "participationVerified": false,
+      "wasteStreamVerified": false,
+      "pickupEntranceVerified": false,
+      "venueOperationVerified": false
+    },
+    "simulated": true
+  }
+]

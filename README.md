@@ -14,6 +14,10 @@ The same illustrated video shown on the landing page follows readiness, collecti
 
 ## What works locally
 
+The saved mapped venue dataset also has a [portable Supabase seed](supabase/README.md): ten
+attributed OSM venue locations, ten simulated readiness states and 140 simulated history records.
+This prepares collection-data import; the current API still uses DynamoDB/Moto for that data.
+
 Readiness saves without photos or AI. Planning checks full-load capacity reservations, pickup windows and depot return. Dispatch rejects changed inputs; later edits raise alerts while preserving driver stops. Scoped access, retry protection, revisioned corrections, partial pickups and gate reconciliation execute through real domain handlers with local Moto storage.
 
 Separate interfaces share the same collection records: hotels, hostels, PGs, canteens and organisations enter through `/supplier-access` and use `/g/:id`, admins use `/admin`, CBG plant owners use `/owner`, and drivers use `/driver/:planKey`. `/plant` remains a compatible admin URL. The owner desk lists dispatched trips, recorded pickups and net-intake discrepancies, with revisioned gate corrections. Its distinct `PLANT_OWNER_TOKEN` grants intake access, not planning, dispatch or waste supplier editing.
