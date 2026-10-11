@@ -147,7 +147,7 @@ export function GeneratorPage() {
         <section className="generator-step generator-error">
           <p className="context-line">Private link required</p>
           <h1>This link is not valid</h1>
-          <p>Ask the dispatcher for your FeedSure kitchen link.</p>
+          <p>Ask the dispatcher for your FeedSure waste supplier link.</p>
         </section>
       </main>
     );
@@ -171,16 +171,16 @@ export function GeneratorPage() {
       </header>
 
       <section className="generator-step" aria-busy={loading}>
-        {loading && <p className="loading-line">Loading kitchen details…</p>}
-        {loadError && <><p className="inline-error" role="alert">{loadError}</p><button className="button button-secondary" type="button" onClick={() => window.location.reload()}>Retry kitchen access</button></>}
+        {loading && <p className="loading-line">Loading waste supplier details…</p>}
+        {loadError && <><p className="inline-error" role="alert">{loadError}</p><button className="button button-secondary" type="button" onClick={() => window.location.reload()}>Retry waste supplier access</button></>}
 
         {!loading && profile && (
           <>
             <p className="context-line">{profile.name}</p>
             <h1>{copy.readyQuestion}</h1>
             <p className="service-note">
-              Collection: <strong>{formatServiceDate(draft.collectionDate)}</strong> in India time. Kitchen quantities are
-              {profile.simulated ? " simulated for this demo." : " supplied by this kitchen."}
+              Collection: <strong>{formatServiceDate(draft.collectionDate)}</strong> in India time. Reported quantities are
+              {profile.simulated ? " simulated for this demo." : " supplied by this waste supplier."}
             </p>
 
             {readinessLoading ? <p role="status">Checking saved readiness…</p> : readinessError ? <div><p className="inline-error" role="alert">{readinessError}</p><button className="button button-secondary" type="button" onClick={() => setRefreshKey((key) => key + 1)}>Retry saved readiness</button></div> : saved && !editing ? (
@@ -257,7 +257,7 @@ export function GeneratorPage() {
                         <strong>kg</strong>
                       </span>
                       {errors.confirmedKg && <small className="field-error">{errors.confirmedKg}</small>}
-                      <small>Editable guidance only; enter the kitchen’s current estimate or scale reading.</small>
+                      <small>Editable guidance only; enter the site’s current estimate or scale reading.</small>
                     </label>
 
                     <fieldset className="choice-field">
@@ -293,7 +293,7 @@ export function GeneratorPage() {
                       rows={3}
                       value={draft.reason}
                       onChange={(event) => updateDraft("reason", event.currentTarget.value)}
-                      placeholder="Kitchen closed, no waste today…"
+                      placeholder="Waste supplier closed, no waste today…"
                     />
                   </label>
                 )}
@@ -313,7 +313,7 @@ export function GeneratorPage() {
             <section className="records-section" aria-labelledby="records-title">
               <div className="section-heading">
                 <div>
-                  <p className="context-line">Own kitchen only</p>
+                  <p className="context-line">Your collection records</p>
                   <h2 id="records-title">{copy.records}</h2>
                 </div>
                 <span className="data-tag">{profile.simulated ? "Simulated data" : "Operational record"}</span>

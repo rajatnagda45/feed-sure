@@ -163,10 +163,10 @@ export function PlantPage() {
     : activePlan.state === "DISPATCHED" ? pendingOutcomes.length
       ? `Hand off the frozen trip. ${pendingOutcomes.length} stop outcomes are still pending.`
       : execution?.gate ? "Review the pickup and net intake reconciliation." : "All stop outcomes are recorded. Ask the plant owner to record net intake."
-    : staleDraft ? "Kitchen inputs changed. Re-plan before dispatch."
+    : staleDraft ? "Waste supplier inputs changed. Re-plan before dispatch."
     : !controlsMatchPlan ? "Planning controls changed. Re-plan to save these choices."
     : activePlan.mandatoryConflicts.length ? "Resolve mandatory stop conflicts before dispatch."
-    : !activePlan.plan.stops.length ? "No stops fit this draft. Review kitchen confirmations and constraints."
+    : !activePlan.plan.stops.length ? "No stops fit this draft. Review waste supplier confirmations and constraints."
     : activePlan.status !== "FEASIBLE" ? "This draft is not feasible. Review the shortfall and constraints before re-planning."
     : "Review addresses, windows and exclusions, then dispatch this version.";
   const currentDriverAccess = driverAccess?.planKey === activePlan?.planKey ? driverAccess : null;
@@ -247,7 +247,7 @@ export function PlantPage() {
       setDriverLinkVisible(false);
       setMessage(activePlan.state === "DISPATCHED"
         ? "Private driver access retrieved for the frozen trip."
-        : "Trip dispatched and frozen. Kitchen edits now appear as alerts.");
+        : "Trip dispatched and frozen. Waste supplier edits now appear as alerts.");
       setRefreshKey((value) => value + 1);
     } catch (reason) {
       if (reason instanceof ApiError && reason.code === "CONFLICT") {
@@ -315,7 +315,7 @@ export function PlantPage() {
     try {
       await recordHazardReview(generator.generatorId, adminToken, { collectionDate: date, action, reason });
       setHazardReasons((current) => ({ ...current, [generator.generatorId]: "" }));
-      setMessage(action === "RESOLVE" ? "Hazard resolved. Re-plan with the new input revision." : "Hazard recorded. The kitchen is held from planning.");
+      setMessage(action === "RESOLVE" ? "Hazard resolved. Re-plan with the new input revision." : "Hazard recorded. The waste supplier is held from planning.");
       setRefreshKey((value) => value + 1);
     } catch (reasonValue) {
       setError(displayError(reasonValue));
@@ -370,7 +370,7 @@ export function PlantPage() {
 
           <section className="operations-brief" aria-label="Collection brief">
             <div><h1>{formatServiceDate(date)}</h1><p>{nextStep}</p></div>
-            <nav aria-label="Operations sections"><a href="#route-review">Route</a><a href="#supply-actions">Kitchen actions</a>{activePlan?.state === "DISPATCHED" && <a href="#gate-record">Plant intake</a>}</nav>
+            <nav aria-label="Operations sections"><a href="#route-review">Route</a><a href="#supply-actions">Waste supplier actions</a>{activePlan?.state === "DISPATCHED" && <a href="#gate-record">Plant intake</a>}</nav>
             <p className="brief-detail">{formatKg(confirmedSupplyKg(snapshot.generators, true))} confirmed without hazard holds in the accepted stream. Confirmed quantity is not expected collection. Input revision {snapshot.inputRevision}.</p>
           </section>
 
@@ -436,7 +436,7 @@ export function PlantPage() {
           )}
 
           <section className="supply-panel" id="supply-actions">
-            <div className="section-heading"><div><p className="context-line">Authoritative date snapshot</p><h2>Kitchens and next actions</h2></div><label className="field compact"><span>Show kitchens</span><select value={supplyFilter} onChange={(event) => setSupplyFilter(event.currentTarget.value)}><option value="all">All kitchens</option><option value="action">Need attention</option><option value="route">On this route</option></select></label></div>
+            <div className="section-heading"><div><p className="context-line">Authoritative date snapshot</p><h2>Waste suppliers and next actions</h2></div><label className="field compact"><span>Show waste suppliers</span><select value={supplyFilter} onChange={(event) => setSupplyFilter(event.currentTarget.value)}><option value="all">All waste suppliers</option><option value="action">Need attention</option><option value="route">On this route</option></select></label></div>
             <p className="muted">Mark a promised pickup mandatory before building the draft. A mandatory stop that cannot fit blocks dispatch.</p>
             <div className="supply-list">
               {snapshot.generators.filter((generator) => supplyFilter === "all" || (supplyFilter === "route"

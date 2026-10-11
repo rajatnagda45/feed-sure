@@ -2,6 +2,10 @@
 
 Updated 11 October 2026. This document separates repeatable automated checks from earlier browser observations and pending repair integration.
 
+## Waste supplier terminology follow-up
+
+The supplier naming change passed 280 backend tests, 62 frontend tests (3 opt-in skipped), the two focused role-access/landing tests, and the production build. Existing private `/g/:id` links and `/kitchen-access` remain valid; navigation now uses `/supplier-access`. API IDs, payload fields and permissions are unchanged. No new browser walkthrough was performed.
+
 ## Separate plant owner interface
 
 The isolated owner-role change passed `python -m pytest -q` (280 backend tests), `npm run test` (62 passed, 3 opt-in skipped) and `npm run build`. Ruff and `git diff --check` passed. Real local HTTP tests cover distinct credentials, rejected planner/dispatch/kitchen/driver access, dispatched-trip visibility, gate actor attribution, replay/conflicts, stale corrections, and shared admin/kitchen reconciliation. Frontend checks cover owner auth headers, isolated session storage and missing/corrected gate rendering.

@@ -145,7 +145,7 @@ export function OptionalPhoto({ generatorId, token, language, submission, onSave
       <button type="button" className="button button-secondary" disabled={busy} onClick={() => camera.current?.click()}>{preview ? copy.retakePhoto : copy.takePhoto}</button>
       <button type="button" className="button button-secondary" disabled={busy} onClick={() => chooser.current?.click()}>{copy.chooseImage}</button>
     </div>
-    {(preview || evidence) && <figure><img src={preview ?? evidence ?? ""} alt={preview ? "Selected waste photo preview" : "Saved kitchen photo evidence"} /><figcaption>{preview ? copy.photoPreview : copy.photoSaved}</figcaption></figure>}
+    {(preview || evidence) && <figure><img src={preview ?? evidence ?? ""} alt={preview ? "Selected waste photo preview" : "Saved supplier waste photo"} /><figcaption>{preview ? copy.photoPreview : copy.photoSaved}</figcaption></figure>}
     {preview && <div className="photo-actions">
       <button type="button" className="button button-primary" disabled={busy || !submission} onClick={() => void operate("upload")}>{error ? copy.retry : copy.uploadPhoto}</button>
       <button type="button" className="button button-secondary" disabled={busy} onClick={() => { setPhoto(null); pending.current = null; upload.current = null; uploaded.current = false; setError(null); }}>{copy.removePhoto}</button>
