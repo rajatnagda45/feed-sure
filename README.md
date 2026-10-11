@@ -19,6 +19,8 @@ separate quantities.
 
 Optional photo upload, retrieval, replacement, analysis and removal have been verified through real local handlers and an actual browser. Kitchens, dispatchers and drivers have distinct entry actions; dispatchers can review private photo evidence before recording a hazard decision. See [integration evidence](docs/INTEGRATION-VERIFICATION.md). AWS deployment, live Bedrock analysis and physical phone-camera operation remain unverified.
 
+Supplier photos now start with a live browser camera preview. Captured JPEGs carry a visible supplier/device-time tag and fresh GPS coordinates with accuracy when permission is granted; missing or stale GPS is labelled unknown. Existing JPEG/PNG upload is a secondary option and is never tagged with the current location. Readiness still saves independently. See [browser camera behavior and checks](docs/BROWSER-CAMERA.md).
+
 ## Run and verify
 
 Python 3.12+ and Node/npm are required. Install declared dependencies in a fresh checkout:

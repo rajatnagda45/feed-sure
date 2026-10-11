@@ -128,3 +128,15 @@ Photos and precise GPS can contain personal data; the earlier no-personal-data c
 UI asks users to photograph waste only, avoiding faces/IDs. Local byte files require private folder
 permissions and idle-file cleanup; access-triggered expiry does not establish a background sweeper.
 S3 has 30-day object lifecycle; operational audit records are retained separately.
+
+## Browser camera capture
+
+Opening the camera explicitly requests video-only permission and optional high-accuracy GPS.
+The UI explains that supplier ID, device UTC capture time, coordinates and accuracy become a
+visible image footer and are stored with the photo only after upload. Denied, unavailable,
+invalid or older-than-30-second fixes are tagged as unknown. Existing uploaded images are
+not given current GPS. These device assertions do not verify presence, collection or safety.
+No coordinate, image or permission data is logged. Camera tracks and GPS watches stop on
+close, capture completion, component removal, hidden page or camera disconnection. Late camera
+permission grants after cancellation are immediately released. The tagged JPEG uses the same
+private photo access and retention as other evidence; tags are not separate operational fields.
