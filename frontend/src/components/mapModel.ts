@@ -11,7 +11,10 @@ export function selectBasemap(key: string, region: string, localDemo: boolean): 
     kind: "aws", label: "Amazon Location Service",
     style: `https://maps.geo.${region}.amazonaws.com/v2/styles/Standard/descriptor?key=${encodeURIComponent(renderingKey)}&color-scheme=Light`,
   };
-  if (!localDemo) return null;
+  // Public OSM tiles are normally loopback-only. A deployment without an Amazon
+  // Location key can opt in explicitly (VITE_ALLOW_OSM_BASEMAP=true) to use them
+  // as a demo basemap; AWS configuration always takes precedence above.
+  if (!localDemo && import.meta.env.VITE_ALLOW_OSM_BASEMAP !== "true") return null;
   return {
     kind: "osm", label: "OpenStreetMap · local demo",
     style: {
