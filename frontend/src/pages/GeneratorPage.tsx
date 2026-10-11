@@ -133,6 +133,29 @@ export function GeneratorPage() {
   const copy = t(language);
   const words = wasteCopy(language);
   const preview = readinessRequest({ ...draft, lang: language });
+
+  // Dashboard overview — derived only from real saved readiness + collection records.
+  const monthLabel = isCollectionDate(draft.collectionDate)
+    ? new Date(`${draft.collectionDate}T00:00:00`).toLocaleString("en-IN", { month: "long", timeZone: "Asia/Kolkata" })
+    : "";
+  const readyKg = saved && saved.status === "READY" ? saved.confirmedKg : null;
+  const collectedKg = receipts.reduce((sum, r) => sum + (Number.isFinite(r.pickup?.kg) ? r.pickup.kg : 0), 0);
+  const gateVerified = receipts.filter((r) => r.gateRecorded).length;
+  const stageReady = Boolean(saved);
+  const stagePlanned = receipts.length > 0;
+  const stageCollected = receipts.some((r) => r.pickup && Number.isFinite(r.pickup.kg));
+  const stageReceived = receipts.some((r) => r.gateRecorded);
+  const journey = [
+    { key: "ready", label: "Ready", done: stageReady },
+    { key: "planned", label: "Planned", done: stagePlanned },
+    { key: "collected", label: "Collected", done: stageCollected },
+    { key: "received", label: "Received", done: stageReceived },
+  ];
+  const dashMessage = saved
+    ? saved.status === "READY"
+      ? `Your ${saved.collectionDate} collection is confirmed at ${saved.confirmedKg} kg — we'll plan a route around it.`
+      : `You've marked ${saved.collectionDate} as not ready. You can update it any time before the cutoff.`
+    : `Confirm whether your food waste is ready. Your dispatcher plans the route around confirmed sites.`;
   const updateDraft = <K extends keyof ReadinessDraft>(key: K, value: ReadinessDraft[K]) => {
     if (key === "collectionDate" && value === draft.collectionDate) return;
     if (key === "collectionDate") {
@@ -211,6 +234,25 @@ export function GeneratorPage() {
             <p className="service-note">
               <strong>{isCollectionDate(draft.collectionDate) ? formatServiceDate(draft.collectionDate) : "—"}</strong> ({words.indiaTime}). {profile.simulated ? words.simulated : words.reported}
             </p>
+
+            <section className="gen-dash reveal-up" aria-label="Collection overview">
+              <p className="gen-dash__msg">{dashMessage}</p>
+              <div className="gen-dash__stats">
+                <div className="gen-stat"><span className="gen-stat__n">{readyKg != null ? readyKg : "—"}<small>kg</small></span><span className="gen-stat__l">Ready for collection</span></div>
+                <div className="gen-stat"><span className="gen-stat__n">{receipts.length}</span><span className="gen-stat__l">Collections{monthLabel ? ` · ${monthLabel}` : ""}</span></div>
+                <div className="gen-stat"><span className="gen-stat__n">{Math.round(collectedKg)}<small>kg</small></span><span className="gen-stat__l">Collected to date</span></div>
+                <div className="gen-stat"><span className="gen-stat__n">{gateVerified}</span><span className="gen-stat__l">Gate-verified trips</span></div>
+              </div>
+              <ol className="gen-timeline" aria-label="Collection journey">
+                {journey.map((stage, i) => (
+                  <li key={stage.key} className={stage.done ? "is-done" : ""}>
+                    <span className="gen-timeline__dot" aria-hidden="true" />
+                    <span className="gen-timeline__label">{stage.label}</span>
+                    {i < journey.length - 1 && <span className="gen-timeline__line" aria-hidden="true" />}
+                  </li>
+                ))}
+              </ol>
+            </section>
 
             <nav className="waste-flow" aria-label={words.title}>
               <a href="#collection-details"><span aria-hidden="true">1</span>{words.details}</a>

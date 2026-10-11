@@ -161,3 +161,121 @@ h3 { font-family: var(--app-sans); font-weight: 700; letter-spacing: -0.005em; }
 /* ---- Selection & focus -------------------------------------------------- */
 ::selection { background: var(--lime); color: var(--green-dark); }
 :focus-visible { outline: 3px solid var(--green-dark); outline-offset: 3px; }
+
+/* ============================================================================
+   My Profile — premium account workspace
+============================================================================ */
+.button-danger { color: #fff; background: #a3342f; border-color: #a3342f; }
+.button-danger:hover:not(:disabled) { background: #8a2823; transform: translateY(-1px); box-shadow: 0 12px 26px -12px rgb(138 40 35 / 50%); }
+
+.account-page { min-height: 100vh; padding: clamp(24px, 4vw, 48px) clamp(16px, 4vw, 40px) 96px; background: var(--wash); }
+.account-wrap { max-width: 1120px; margin: 0 auto; display: grid; gap: clamp(18px, 2.5vw, 28px); }
+
+.account-hero { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: clamp(16px, 2.5vw, 26px); }
+.account-avatar {
+  display: grid; place-items: center; width: 68px; height: 68px;
+  border-radius: 20px 20px 20px 6px; background: var(--green-dark); color: var(--lime);
+  font-family: var(--app-display); font-weight: 600; font-size: 1.7rem; letter-spacing: -0.02em;
+}
+.account-hero__id { min-width: 0; }
+.account-hero__id h1 { margin: 2px 0 0; font-size: clamp(1.9rem, 3.4vw, 2.8rem); color: var(--green-dark); overflow-wrap: anywhere; }
+.account-hero__meta { margin: 6px 0 0; color: var(--muted); font-size: 0.9rem; overflow-wrap: anywhere; }
+.account-badge {
+  display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px;
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap;
+}
+.account-badge__dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.account-badge--active { color: #1c6b43; background: var(--green-soft); }
+.account-badge--pending { color: #7a4a12; background: #f6e4c4; }
+.account-badge--suspended { color: #8a2823; background: #f7dcda; }
+
+.account-pending { margin: 0; padding: 12px 16px; border-radius: 10px; color: #5d4614; background: #fff4d6; font-size: 0.9rem; line-height: 1.6; }
+.account-flash { margin: 0; padding: 12px 16px; border-radius: 10px; color: var(--green-dark); background: var(--green-soft); font-size: 0.9rem; font-weight: 600; }
+
+.account-columns { display: grid; gap: clamp(16px, 2vw, 22px); align-items: start; }
+.account-col-main { display: grid; gap: clamp(16px, 2vw, 22px); min-width: 0; }
+.account-col-side { display: grid; gap: 18px; min-width: 0; }
+
+.account-card { border: 1px solid var(--line); border-radius: 18px; background: #fff; padding: clamp(20px, 2.4vw, 30px); box-shadow: 0 22px 48px -38px rgb(13 46 37 / 38%); }
+.account-card__head { margin-bottom: 18px; }
+.account-card__head h2 { margin: 2px 0 0; font-size: clamp(1.25rem, 2vw, 1.6rem); color: var(--green-dark); }
+.account-card--danger { border-color: #ecc9c6; }
+.account-card--danger .account-card__head h2 { color: #8a2823; }
+.account-note { margin: 0 0 16px; color: var(--muted); line-height: 1.6; font-size: 0.9rem; }
+.account-note code, .account-delete code { font-family: var(--app-mono); font-size: 0.85em; color: var(--green-dark); background: var(--green-soft); padding: 1px 6px; border-radius: 5px; }
+.account-field-pair { display: grid; gap: 16px; }
+
+.account-summary h3 { margin: 0 0 16px; font-family: var(--app-display); font-weight: 540; font-size: 1.2rem; color: var(--green-dark); }
+.account-facts { display: grid; gap: 0; margin: 0; }
+.account-facts > div { display: grid; gap: 3px; padding: 12px 0; border-top: 1px solid var(--line); }
+.account-facts > div:first-child { border-top: 0; padding-top: 0; }
+.account-facts dt { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.account-facts dd { margin: 0; font-size: 0.95rem; font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+.account-facts__status { text-transform: capitalize; }
+.account-facts__status--active, .account-facts__ok { color: #1c6b43; }
+.account-facts__status--pending, .account-facts__warn { color: #7a4a12; }
+.account-facts__status--suspended { color: #8a2823; }
+.account-side-actions { display: grid; gap: 12px; margin-top: 22px; justify-items: start; }
+.account-side-actions .button-full { justify-self: stretch; }
+
+/* Loading skeletons */
+.account-skeleton { display: grid; gap: 22px; }
+.sk { border-radius: 16px; background: linear-gradient(100deg, #efeee5 30%, #f6f5ee 50%, #efeee5 70%); background-size: 200% 100%; }
+.sk-hero { height: 88px; }
+.sk-card { height: 240px; }
+@media (prefers-reduced-motion: no-preference) {
+  .sk { animation: sk-shimmer 1.3s ease-in-out infinite; }
+  .reveal-up { opacity: 0; transform: translateY(16px); animation: acct-rise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) forwards; }
+  .account-col-main .account-card:nth-child(2) { animation-delay: 0.06s; }
+  .account-col-main .account-card:nth-child(3) { animation-delay: 0.12s; }
+  .account-col-side .reveal-up { animation-delay: 0.1s; }
+}
+@keyframes sk-shimmer { to { background-position: -200% 0; } }
+@keyframes acct-rise { to { opacity: 1; transform: none; } }
+
+@media (min-width: 900px) {
+  .account-columns { grid-template-columns: minmax(0, 1.7fr) minmax(280px, 1fr); }
+  .account-col-side { position: sticky; top: 24px; }
+  .account-field-pair { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 560px) {
+  .account-hero { grid-template-columns: auto 1fr; }
+  .account-badge { grid-column: 1 / -1; justify-self: start; }
+}
+
+/* ============================================================================
+   My Dashboard — supplier collection overview
+============================================================================ */
+.gen-dash {
+  margin: 8px 0 28px;
+  padding: clamp(20px, 2.4vw, 28px);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: linear-gradient(165deg, #fff 0%, #f4f3ea 100%);
+  box-shadow: 0 22px 48px -40px rgb(13 46 37 / 40%);
+}
+.gen-dash__msg { margin: 0 0 20px; max-width: 60ch; color: var(--ink); font-size: clamp(1rem, 1.5vw, 1.12rem); line-height: 1.6; }
+.gen-dash__stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1px; margin: 0 0 24px; background: var(--line); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.gen-stat { display: grid; gap: 5px; padding: 16px 18px; background: #fff; }
+.gen-stat__n { font-family: var(--app-display); font-weight: 500; font-size: clamp(1.5rem, 2.6vw, 2.1rem); line-height: 1; color: var(--green-dark); letter-spacing: -0.02em; }
+.gen-stat__n small { margin-left: 4px; font-size: 0.5em; font-weight: 600; color: var(--muted); }
+.gen-stat:first-child .gen-stat__n { color: var(--green); }
+.gen-stat__l { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+
+.gen-timeline { display: grid; grid-template-columns: repeat(4, 1fr); margin: 0; padding: 0; list-style: none; }
+.gen-timeline li { position: relative; display: grid; justify-items: center; gap: 9px; padding-top: 4px; }
+.gen-timeline__dot { width: 15px; height: 15px; border-radius: 50%; border: 2px solid #c6d2c4; background: #fff; z-index: 1; transition: background-color 300ms ease, border-color 300ms ease, box-shadow 300ms ease; }
+.gen-timeline__label { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); transition: color 300ms ease; }
+.gen-timeline__line { position: absolute; top: 11px; left: 50%; width: 100%; height: 2px; background: #d7ddd3; z-index: 0; }
+.gen-timeline li.is-done .gen-timeline__dot { border-color: var(--green-dark); background: var(--green-dark); box-shadow: 0 0 0 4px rgb(21 63 50 / 10%); }
+.gen-timeline li.is-done .gen-timeline__label { color: var(--green-dark); }
+.gen-timeline li.is-done .gen-timeline__line { background: var(--green-dark); }
+/* the stage after the last done one gets a lime "current" accent */
+.gen-timeline li.is-done + li:not(.is-done) .gen-timeline__dot { border-color: var(--green); box-shadow: 0 0 0 4px rgb(199 236 99 / 30%); }
+
+@media (min-width: 620px) {
+  .gen-dash__stats { grid-template-columns: repeat(4, 1fr); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .gen-dash.reveal-up { opacity: 0; transform: translateY(16px); animation: acct-rise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) 0.05s forwards; }
+}
