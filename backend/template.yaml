@@ -364,7 +364,7 @@ Resources:
       Policies:
         - Statement:
             - Effect: Allow
-              Action: [dynamodb:GetItem, dynamodb:Scan]
+              Action: [dynamodb:GetItem, dynamodb:Scan, dynamodb:PutItem, dynamodb:UpdateItem]
               Resource: !GetAtt GeneratorsTable.Arn
             - Effect: Allow
               Action: dynamodb:ConditionCheckItem
