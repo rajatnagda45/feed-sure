@@ -1,10 +1,10 @@
-import { PALETTE } from "./route";
+import { PALETTE, STOPS } from "./route";
 
 /** Stage 1 — a small commercial kitchen with warm windows and a green
- *  organic-waste container. Position is set by the parent group. */
+ *  organic-waste container. Anchored to the shared kitchen stop position. */
 export function SupplierKitchen() {
   return (
-    <group position={[-6.4, 0, 3.6]}>
+    <group position={STOPS.kitchen}>
       {/* main block */}
       <mesh position={[0, 0.5, 0]} castShadow receiveShadow>
         <boxGeometry args={[1.8, 1, 1.4]} />

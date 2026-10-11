@@ -2,7 +2,7 @@ import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Mesh, MeshStandardMaterial } from "three";
 
-import { PALETTE } from "./route";
+import { PALETTE, STOPS } from "./route";
 
 /** A cylindrical digester with a domed green roof. */
 function Digester({ x, z, r, h }: { x: number; z: number; r: number; h: number }) {
@@ -33,7 +33,7 @@ export function CBGPlant() {
   });
 
   return (
-    <group position={[6, 0, -3.1]}>
+    <group position={STOPS.plant}>
       {/* concrete pad */}
       <mesh position={[0, 0.03, 0]} receiveShadow>
         <boxGeometry args={[3.2, 0.06, 2.8]} />

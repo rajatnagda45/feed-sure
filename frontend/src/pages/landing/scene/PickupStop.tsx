@@ -2,7 +2,7 @@ import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Mesh } from "three";
 
-import { PALETTE } from "./route";
+import { PALETTE, STOPS } from "./route";
 
 /** Stage 3 — a small collection stop with a building, waste container and a
  *  pulsing waypoint marker. */
@@ -18,7 +18,7 @@ export function PickupStop() {
   });
 
   return (
-    <group position={[-0.6, 0, 2.1]}>
+    <group position={STOPS.pickup}>
       <mesh position={[0, 0.34, 0]} castShadow receiveShadow>
         <boxGeometry args={[1, 0.68, 0.9]} />
         <meshStandardMaterial color="#e6e4d8" roughness={0.78} />
