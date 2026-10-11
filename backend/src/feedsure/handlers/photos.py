@@ -19,7 +19,7 @@ import boto3
 from botocore.config import Config as BotoConfig
 
 from feedsure.common.v3 import ApiError, fields, invalid, revision, stamp
-from feedsure.screening.bedrock_client import invoke_screening
+from feedsure.screening.client import analysis_mode, invoke_screening
 from feedsure.screening.mock import load_fixture
 from feedsure.screening.prompt import build_photo_prompt
 from feedsure.screening.validate import validate_photo_observations
@@ -454,7 +454,7 @@ class Photos:
                             "actor": actor,
                             "recordedAt": stamp(self.s.now),
                             "simulated": old["simulated"],
-                            "source": "mock" if self.s.config.mock_bedrock else "aws",
+                            "source": analysis_mode(self.s.config),
                             "submissionId": old["submissionId"],
                         }
                 else:
@@ -471,7 +471,7 @@ class Photos:
                 photoStatus=status,
                 analysis={
                     "state": "FAILED" if observation is None else "COMPLETE",
-                    "mode": "mock" if self.s.config.mock_bedrock else "aws",
+                    "mode": analysis_mode(self.s.config),
                     "observations": observation,
                     "recordedAt": stamp(self.s.now),
                     "limit": "Visible surface only; no safety or whole-load certification.",

@@ -52,6 +52,30 @@ Parameters:
   PhotoMinConfidence:
     Type: Number
     Default: 0.6
+  PhotoAnalysisProvider:
+    Type: String
+    Default: bedrock
+    AllowedValues: [bedrock, nvidia]
+  NvidiaApiKey:
+    Type: String
+    Default: ""
+    NoEcho: true
+  NvidiaModelId:
+    Type: String
+    Default: nvidia/nemotron-nano-12b-v2-vl
+  NvidiaApiUrl:
+    Type: String
+    Default: https://integrate.api.nvidia.com/v1/chat/completions
+  NvidiaMaxTokens:
+    Type: Number
+    Default: 600
+    MinValue: 1
+    MaxValue: 8192
+  NvidiaTimeoutSeconds:
+    Type: Number
+    Default: 5
+    MinValue: 1
+    MaxValue: 5
   AdminToken:
     Type: String
     Default: CHANGE_ME
@@ -226,6 +250,12 @@ Globals:
         BEDROCK_MAX_TOKENS: !Ref BedrockMaxTokens
         MIN_CONFIDENCE: !Ref PhotoMinConfidence
         BEDROCK_MODEL_ID: !Ref BedrockModelId
+        PHOTO_ANALYSIS_PROVIDER: !Ref PhotoAnalysisProvider
+        NVIDIA_API_KEY: !Ref NvidiaApiKey
+        NVIDIA_MODEL_ID: !Ref NvidiaModelId
+        NVIDIA_API_URL: !Ref NvidiaApiUrl
+        NVIDIA_MAX_TOKENS: !Ref NvidiaMaxTokens
+        NVIDIA_TIMEOUT_SECONDS: !Ref NvidiaTimeoutSeconds
         MOCK_BEDROCK: !Ref MockBedrock
         MOCK_BEDROCK_FIXTURE: !Ref MockBedrockFixture
         ADMIN_TOKEN: !Ref AdminToken

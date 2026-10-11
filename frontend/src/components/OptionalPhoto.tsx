@@ -178,9 +178,9 @@ export function OptionalPhoto({ generatorId, token, language, submission, onSave
       {hazard && <strong className="photo-hazard">Unresolved hazard: human dispatcher review is still required, even if a photo is removed or analysis fails.</strong>}
       <p>{photoStatusText[submission.photoStatus]}</p>
       {submission.analysis && <>
-        <strong>{submission.analysis.mode === "mock" ? "MOCK MODEL — configured fixture, not analysis of this photo" : "Amazon Bedrock visible-item assistance"}</strong>
+        <strong>{submission.analysis.mode === "mock" ? "MOCK MODEL — configured fixture, not analysis of this photo" : submission.analysis.mode === "nvidia" ? "NVIDIA visible-item assistance" : "Amazon Bedrock visible-item assistance"}</strong>
         <p>{submission.analysis.state === "FAILED" ? "Analysis failed after one retry. Readiness is saved." : submission.analysis.observations?.notes}</p>
-        {submission.analysis.mode === "aws" && <ul>{submission.analysis.observations?.items.map((item, index) => <li key={index}>{item.type.replaceAll("_", " ")} · {item.count} visible</li>)}</ul>}
+        {submission.analysis.mode !== "mock" && <ul>{submission.analysis.observations?.items.map((item, index) => <li key={index}>{item.type.replaceAll("_", " ")} · {item.count} visible</li>)}</ul>}
       </>}
       <small>{copy.photoLimits}</small>
     </div>}
