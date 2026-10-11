@@ -24,6 +24,7 @@ interface ErrorPayload {
 }
 
 export interface RequestOptions extends RequestInit {
+  anonymous?: boolean;
   adminToken?: string;
   plantToken?: string;
   generatorToken?: string;
@@ -32,12 +33,12 @@ export interface RequestOptions extends RequestInit {
 }
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { adminToken, plantToken, generatorToken, driverToken, idempotencyKey, ...init } = options;
+  const { anonymous, adminToken, plantToken, generatorToken, driverToken, idempotencyKey, ...init } = options;
   const headers = new Headers(init.headers);
   if (init.body !== undefined && !headers.has("content-type")) {
     headers.set("content-type", "application/json");
   }
-  const bearer = await accessToken();
+  const bearer = anonymous ? null : await accessToken();
   if (bearer) headers.set("Authorization", `Bearer ${bearer}`);
   if (!bearer && adminToken) headers.set("X-Admin-Token", adminToken);
   if (!bearer && plantToken) headers.set("X-Plant-Token", plantToken);

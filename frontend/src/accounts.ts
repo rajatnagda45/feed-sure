@@ -30,6 +30,8 @@ export async function registerAccount(payload: Registration, admin = false): Pro
   if (!supabase) throw new Error("Supabase registration is not configured. Ask your operator.");
   if (admin) { await accountRequest<Account>("/auth/accounts", payload); return; }
   if (payload.role === "admin") throw new Error("Admin accounts require an existing Admin.");
+  const status = await apiRequest<{ ready: boolean }>("/auth/registration", { anonymous: true });
+  if (!status.ready) throw new Error("Account registration is not ready. Ask your operator to check Supabase setup.");
   const { email, password, lat, lng, type, ...details } = payload;
   const { error } = await supabase.auth.signUp({ email, password, options: {
     data: { feedsure_registration: { ...details,

@@ -8,7 +8,11 @@ vi.mock("./api", () => ({ apiRequest: vi.fn() }));
 const payload = { role: "kitchen" as const, email: "supplier@example.test", password: "test-password-long",
   organisation: "Test hotel", contact: "Test contact", address: "Test address", lat: 12.68, lng: 77.47, type: "hotel" };
 
-beforeEach(() => { vi.resetAllMocks(); vi.mocked(supabase!.auth.signUp).mockResolvedValue({ data: { user: null, session: null }, error: null }); });
+beforeEach(() => {
+  vi.resetAllMocks();
+  vi.mocked(apiRequest).mockResolvedValue({ ready: true });
+  vi.mocked(supabase!.auth.signUp).mockResolvedValue({ data: { user: null, session: null }, error: null });
+});
 
 it("uses native signup with pending-request metadata and no embedded password or app role", async () => {
   await registerAccount(payload);
@@ -18,7 +22,7 @@ it("uses native signup with pending-request metadata and no embedded password or
   } });
   expect(JSON.stringify(request.options?.data)).not.toContain(payload.password);
   expect(request.options?.data).not.toHaveProperty("app_metadata");
-  expect(apiRequest).not.toHaveBeenCalled();
+  expect(apiRequest).toHaveBeenCalledWith("/auth/registration", { anonymous: true });
 });
 
 it("public signup cannot request Admin while trusted creation goes through the backend", async () => {
@@ -33,4 +37,10 @@ it("public signup cannot request Admin while trusted creation goes through the b
 it("reports provider failures so the form cannot claim registration succeeded", async () => {
   vi.mocked(supabase!.auth.signUp).mockRejectedValue(new Error("Signup unavailable"));
   await expect(registerAccount(payload)).rejects.toThrow("Signup unavailable");
+});
+
+it("stops before signup when the account migration or backend is unavailable", async () => {
+  vi.mocked(apiRequest).mockRejectedValue(new Error("Run the Supabase account migration."));
+  await expect(registerAccount(payload)).rejects.toThrow("account migration");
+  expect(supabase!.auth.signUp).not.toHaveBeenCalled();
 });

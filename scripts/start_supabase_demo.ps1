@@ -1,7 +1,8 @@
 param(
     [int]$ApiPort = 8797,
     [int]$FrontendPort = 5197,
-    [switch]$Check
+    [switch]$Check,
+    [switch]$PrepareOnly
 )
 
 $ErrorActionPreference = 'Stop'
@@ -57,11 +58,6 @@ if ($Check) {
     exit 0
 }
 
-$pythonPath = Join-Path $projectRoot '.venv/Scripts/python.exe'
-if (-not (Test-Path -LiteralPath $pythonPath)) {
-    throw 'Install requirements first: python -m venv .venv; .\.venv\Scripts\python.exe -m pip install -r requirements.txt'
-}
-
 # Scope configuration to this process and its demo child. No machine settings change.
 foreach ($entry in $settings.GetEnumerator()) {
     if ($entry.Key -match '^(SUPABASE_|AUTH_PROVIDER$|PHOTO_STORAGE_PROVIDER$|PHOTO_|UPLOAD_|STAGE$)') {
@@ -83,7 +79,16 @@ if (Test-Path -LiteralPath $frontendEnvironment) {
     })
 }
 foreach ($entry in $publicSettings.GetEnumerator()) { $frontendLines += "$($entry.Key)=$($entry.Value)" }
-Set-Content -LiteralPath $frontendEnvironment -Value $frontendLines -Encoding utf8
+[System.IO.File]::WriteAllLines($frontendEnvironment, [string[]]$frontendLines, [System.Text.UTF8Encoding]::new($false))
+if ($PrepareOnly) {
+    Write-Host 'Public frontend environment prepared. No server started or remote service contacted.'
+    exit 0
+}
+
+$pythonPath = Join-Path $projectRoot '.venv/Scripts/python.exe'
+if (-not (Test-Path -LiteralPath $pythonPath)) {
+    throw 'Install requirements first: python -m venv .venv; .\.venv\Scripts\python.exe -m pip install -r requirements.txt'
+}
 
 Write-Host "API: http://localhost:$ApiPort. Frontend: http://localhost:$FrontendPort/login."
 Write-Host "In a second terminal: cd frontend; npm run dev -- --mode supabase --host localhost --port $FrontendPort --strictPort"

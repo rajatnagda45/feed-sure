@@ -1047,6 +1047,10 @@ class Service:
         query = self.event.get("queryStringParameters") or {}
         from feedsure.handlers.photos import Photos
 
+        if path == "/auth/registration" and method == "GET":
+            from feedsure.common.accounts import Accounts
+
+            return Accounts(self.config).registration_ready()
         if path.startswith("/auth/account"):
             from feedsure.common.accounts import Accounts
 

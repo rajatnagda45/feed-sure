@@ -103,6 +103,24 @@ class Accounts:
             raise ApiError(status, codes[status], result["error"])
         return result
 
+    def registration_ready(self) -> dict:
+        """Check the private registry without creating a user or exposing its contents."""
+        if self.config.auth_provider != "supabase" or not self.config.supabase_account_management:
+            raise ApiError(
+                503,
+                "DEPENDENCY_NOT_READY",
+                "Enable Supabase account management after its migration.",
+            )
+        try:
+            # A deployed registry rejects this deliberately empty identity with 401.
+            # Missing SQL, wrong keys and outages must stop signup before Auth creates a user.
+            self.rpc("identity")
+        except ApiError as error:
+            if error.status == 401:
+                return {"ready": True}
+            raise
+        raise ApiError(502, "UPSTREAM_FAILED", "Account registry readiness could not be verified.")
+
     def identity(self, event: dict, *, user: dict | None = None) -> dict:
         auth = header(event, "authorization")
         if not auth.startswith("Bearer ") or not 1 <= len(auth[7:]) <= 8192:

@@ -62,6 +62,8 @@ DynamoDB retains collection, dispatch and intake data; the private Supabase imag
 
 The launcher safely reads `.env`, starts the API on 8797 and writes only public settings to ignored
 `frontend/.env.supabase.local`. `-Check` validates local fields; it does not contact Supabase.
+`-PrepareOnly` writes the public Vite environment without starting servers. The file is UTF-8
+without a byte-order mark so Windows PowerShell cannot hide its first setting from Vite.
 The runner mocks AWS DynamoDB, routing and analysis. Auth, account persistence and private image
 storage use your **real Supabase project**. Use test users and synthetic details. Supabase profiles
 survive restart; Moto operational data resets. Approved registered generators are restored into
@@ -140,6 +142,7 @@ Signup/login/refresh/sign-out use the official JS SDK rather than local `/auth/l
 
 | Endpoint | Access | Contract |
 |---|---|---|
+| GET `/auth/registration` | Public | `{ready:true}` only when account mode and the private registry are available; no account data |
 | GET `/auth/session` | Active | Verified role, `accountRole`, generator/trip scope |
 | GET `/auth/account` | Signed-in pending/active | Own reviewed profile |
 | POST `/auth/account` | Active + current password | `action,expectedRevision,currentPassword,password?`; password/delete |
@@ -158,6 +161,9 @@ npm test
 The SQL suite executes the shipped migration/RPC in PostgreSQL WASM (PGlite), with fixture Auth
 schemas. HTTP tests run real handlers and Moto with external Auth/PostgREST responses mocked.
 Neither establishes hosted Auth/Storage deployment or multi-connection race performance.
+The registration page checks setup before enabling its form and again before submitting to Auth.
+Missing account SQL returns 503 and prevents a misleading success message. If the API returns 404,
+check that ports 5197/8797 are running this PR checkout, rather than the older login-only checkout.
 For live testing: register a generator, confirm email, approve as Admin, sign in afresh, save
 readiness and a JPEG/PNG, then refresh to retrieve it. Suspend/reactivate/reset and retry the old
 session. Verify CBG operators and owners cannot manage accounts and failure recovery works.

@@ -1,7 +1,8 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { ApiError } from "../api";
+import { ApiError, apiRequest } from "../api";
 import { AccountRole, accountLabels, registerAccount } from "../accounts";
+import { supabase } from "../supabase";
 
 export function RegistrationPage({ admin = false }: { admin?: boolean }) {
   const [params] = useSearchParams();
@@ -13,6 +14,28 @@ export function RegistrationPage({ admin = false }: { admin?: boolean }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  const [ready, setReady] = useState(admin);
+  const [checking, setChecking] = useState(!admin);
+  const [setupError, setSetupError] = useState<string | null>(null);
+  const [setupAttempt, setSetupAttempt] = useState(0);
+  useEffect(() => {
+    if (admin) return;
+    let active = true;
+    setChecking(true); setSetupError(null); setReady(false);
+    if (!supabase) {
+      setSetupError("Supabase registration is not configured. Ask your operator."); setChecking(false);
+      return;
+    }
+    apiRequest<{ ready: boolean }>("/auth/registration", { anonymous: true }).then((result) => {
+      if (!result.ready) throw new Error("Account registration is not ready. Ask your operator.");
+      if (active) setReady(true);
+    }).catch((reason) => {
+      if (active) setSetupError(reason instanceof ApiError && reason.status === 404
+        ? "This API needs the registration update. Ask your operator to restart the updated app."
+        : reason instanceof Error ? reason.message : "Could not check registration setup.");
+    }).finally(() => { if (active) setChecking(false); });
+    return () => { active = false; };
+  }, [admin, setupAttempt]);
   function field(key: keyof typeof fields, label: string, type = "text", extra = {}) {
     return <label className="field"><span>{label}</span><input type={type} required
       maxLength={key === "password" || key === "confirm" ? 256 : key === "email" ? 254 : 200}
@@ -45,7 +68,11 @@ export function RegistrationPage({ admin = false }: { admin?: boolean }) {
       <Link className="button button-primary" to={admin ? "/accounts" : `/login?role=${role === "kitchen" ? "generator" : role}`}>{admin ? "Review accounts" : "Go to sign in"}</Link>
     </div> : <form onSubmit={(event) => void submit(event)}>
       <p>Register your organic waste site or CBG plant team. Your details go to an Admin for review.</p>
-      <fieldset className="login-fields" disabled={busy}>
+      {checking && <p role="status">Checking registration setup…</p>}
+      {setupError && <div role="alert"><p className="inline-error">Registration unavailable: {setupError}</p>
+        <button className="button button-secondary" type="button" onClick={() => setSetupAttempt((value) => value + 1)}>Check setup again</button>
+      </div>}
+      <fieldset className="login-fields" disabled={busy || !ready || checking}>
         <label className="field"><span>Registration section</span><select value={role} onChange={(event) => setRole(event.currentTarget.value as AccountRole)}>
           {(Object.keys(accountLabels).filter((value) => value !== "driver") as AccountRole[]).filter((value) => admin || value !== "admin")
             .map((value) => <option key={value} value={value}>{accountLabels[value]}</option>)}

@@ -2,6 +2,7 @@
 
 ROUTES = [
     ("GET", "/auth/session"),
+    ("GET", "/auth/registration"),
     ("GET", "/auth/account"),
     ("POST", "/auth/account"),
     ("GET", "/auth/accounts"),

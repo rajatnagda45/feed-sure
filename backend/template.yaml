@@ -427,6 +427,12 @@ Resources:
             ApiId: !Ref HttpApi
             Path: /auth/session
             Method: GET
+        RegistrationStatus:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /auth/registration
+            Method: GET
         Route0:
           Type: HttpApi
           Properties:

@@ -52,6 +52,7 @@ def managed(http, monkeypatch):  # noqa: F811
     )
     http.actor, http.target, http.calls = row(), row(TARGET, "kitchen", "PENDING"), []
     http.rpc_error, http.auth_failure, http.wrong_password_identity = None, False, False
+    http.registry_missing = False
 
     def open_request(req, timeout):
         path = req.full_url.split("https://project.supabase.co")[1]
@@ -64,8 +65,11 @@ def managed(http, monkeypatch):  # noqa: F811
             result = {"id": UID, "app_metadata": {}, "user_metadata": {"feedsure_role": "ADMIN"}}
         elif path == "/rest/v1/rpc/feedsure_accounts_api":
             assert req.get_header("Authorization") == "Bearer server-secret"
-            assert data["p_actor"] == UID and data["p_session"] == SID
-            if http.rpc_error:
+            if http.registry_missing:
+                raise HTTPError(req.full_url, 404, "missing", {}, None)
+            if data["p_actor"] is None and data["p_session"] is None:
+                result = {"status": 401, "error": "Account access ended."}
+            elif http.rpc_error:
                 result = http.rpc_error
             elif data["p_action"] == "identity":
                 result = http.actor
@@ -245,3 +249,25 @@ def test_invalid_or_unverified_bearer_cannot_supply_session_identity(managed):
     assert (
         managed.get("/auth/account", headers={"Authorization": "Bearer invalid"}).status_code == 401
     )
+
+
+def test_registration_readiness_is_public_and_does_not_create_or_disclose_accounts(managed):
+    response = managed.get("/auth/registration")
+    assert response.status_code == 200 and response.json() == {"ready": True}
+    assert len(managed.calls) == 1
+    path, method, data, _ = managed.calls[0]
+    assert path == "/rest/v1/rpc/feedsure_accounts_api" and method == "POST"
+    assert data == {"p_actor": None, "p_session": None, "p_action": "identity"}
+    assert response.headers["cache-control"] == "no-store"
+
+
+def test_registration_stops_on_missing_migration_or_disabled_account_mode(managed):
+    managed.registry_missing = True
+    response = managed.get("/auth/registration")
+    assert response.status_code == 503
+    assert "migration" in response.json()["error"]["message"]
+    assert "server-secret" not in response.text
+    managed.state.config = replace(managed.state.config, supabase_account_management=False)
+    managed.calls.clear()
+    assert managed.get("/auth/registration").status_code == 503
+    assert not managed.calls
