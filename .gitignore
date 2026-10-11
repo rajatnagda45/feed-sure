@@ -28,4 +28,6 @@ eval/results.local.*
 /docs/SESSION-*.md
 /docs/handoffs/
 /docs/UI.md
+/docs/LOCALHOST-AUDIT-*.md
+/docs/PARALLEL-REPAIRS-*.md
 *.egg-info/

@@ -1,19 +1,23 @@
-# DEPLOYMENT — FeedSure CBG
+# Local run and deployment
 
-## Current v3 run path
+Updated 11 October 2026. Local P0 works through real HTTP/domain handlers with Moto. Cloud deployment and SAM build remain unverified in this repair QA session. This document replaces legacy reset/deploy instructions.
 
-Cloud deployment has not been performed in this implementation session. SAM CLI was unavailable;
-route/CORS consistency was tested by parsing the template, not by a SAM build or AWS deployment.
+## Fresh disposable local demo
 
-### Disposable local demo without Docker
-
-After installing the declared backend development dependencies, run this from the repository root:
+Use Python 3.12+ and Node/npm. From the repository root, install the development dependencies:
 
 ```powershell
-python scripts/local_demo.py --date 2026-10-12
+python -m pip install -e ".[dev]"
+python scripts/local_demo.py --help
 ```
 
-In a second shell from `frontend/`:
+In a **fresh checkout with no existing demo to preserve**, start the API:
+
+```powershell
+python scripts/local_demo.py --date 2026-10-12 --port 8787 --frontend-port 5173
+```
+
+In another shell from `frontend/`:
 
 ```powershell
 $env:VITE_API_BASE_URL = "http://localhost:8787"
@@ -21,154 +25,30 @@ npm ci
 npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
 ```
 
-Open `http://localhost:5173/plant`. Read the private dispatcher token and kitchen links from
-ignored `.tmp/local-demo-access.json`; never publish that file. Pick the same collection date.
-The runner binds only loopback, generates random credentials, seeds ten fictional kitchens and
-uses in-process Moto DynamoDB. The actual HTTP/domain handlers, planner and reconciliation execute;
-only AWS storage transport and routing are simulated. No AWS account, Docker or Bedrock is used.
-Records disappear on process shutdown; restart creates a new demo and new credentials. An occupied
-API port fails before replacing the private access manifest. Use `--port` and `--frontend-port`
-together with matching frontend origin/port if defaults are occupied. Vite `--strictPort` prevents
-silently changing the origin expected by CORS.
+Open `http://localhost:5173/plant`, privately read the dispatcher token and kitchen links from `.tmp/local-demo-access.json`, and choose 12 October 2026. These credentials are disposable secrets. Bootstrap links are scoped; the dispatched trip issues separate driver access. Keep access files out of recordings and Git.
 
-For browser verification, save kitchen readiness, build/review a route, dispatch it, copy/open its
-private driver link, record outcomes, save gate intake, and refresh the kitchen's own record.
-Repeat reads after saves. The map without a rendering key shows a labelled schematic fallback.
-The observed local walkthrough and automated commands are in [TESTING.md](TESTING.md).
+The runner binds loopback, seeds ten fictional kitchens and executes real handlers, transactions, planner and reconciliation with in-process Moto. Routing uses labelled fallback estimates. The in-progress photo repair adds local byte storage and explicit mock screening fixtures. Operational data and credentials are recreated when the runner starts; database state disappears on shutdown. Photo bytes are files under the selected private photo directory. This mode does not establish live AWS use. Photo/map runtime checks remain pending the final owner handoffs.
 
-### Separate persistent Moto server
+## Preserve an existing demo
 
-Install backend dev dependencies with `python -m pip install -e ".[dev]"`. For a local demo, start
-`docker compose up -d`, then set these environment variables in the same PowerShell window:
+Do not stop or reseed the active API/frontend on 8787/5173. A separate port alone is insufficient: the earlier runner always wrote the default access manifest. The photo repair now exposes `--manifest`, `--photo-dir` and `--photo-fixture`. After the repair owners freeze editing, use an unused port pair and a separate private path:
 
 ```powershell
-$env:AWS_ENDPOINT_URL = "http://localhost:5000"
-$env:AWS_ACCESS_KEY_ID = "testing"
-$env:AWS_SECRET_ACCESS_KEY = "testing"
-$env:AWS_DEFAULT_REGION = "ap-south-1"
-$env:MOCK_LOCATION = "true"
-$env:ADMIN_TOKEN = "<your private random dispatcher token>"
-$env:DRIVER_TOKEN_SECRET = "<your private random secret of at least 32 characters>"
-python scripts/seed_data.py --local --v3-date 2026-10-12
-python -m uvicorn dev_server:app --app-dir backend --port 8787
+python scripts/local_demo.py --date 2026-10-12 --port 8793 --frontend-port 5193 --manifest .tmp/repair-integration-access.json --photo-dir .tmp/repair-integration-photos --photo-fixture clean
 ```
 
-The local seed creates ten fictional kitchens, including cancellations, unconfirmed suppliers and
-capacity/window conflicts. It preserves existing profiles and tokens; private links are appended
-to ignored `seed_links.local.txt`. Do not use `--reset` with v3. Choose the service date you will
-demo; existing seeded records are retained on rerun.
+From `frontend/`, set `VITE_API_BASE_URL=http://localhost:8793` and start Vite with port 5193 and `--strictPort`. Do not open the default demo access file for this run. This command has been checked against the runner's argument definitions; final live startup/photo verification is pending. Independent in-process HTTP regression remains available in [TESTING.md](TESTING.md) and writes no access manifest.
 
-In a separate frontend shell, set `VITE_API_BASE_URL=http://localhost:8787`, then run `npm ci` and
-`npm run dev` from `frontend/`. Use your private dispatcher token at `/plant`; kitchen links come
-from the local links file and the dispatched trip supplies driver access. Mock mode replaces AWS
-transport/routing, while real domain handlers, planner and persistence transactions still execute.
+Use matching API base URL, frontend port and allowed origin. Always use Vite `--strictPort`; do not silently fall onto another origin. Do not set `FEEDSURE_LOCAL_INTEGRATION=1` until the opt-in client tests support the same private manifest. No current demo credentials should be copied or overwritten for tests.
 
-The SAM template now has OperationsFunction and UploadsFunction, eight DynamoDB tables, and a
-private photo bucket. A future authorised deploy requires real AdminToken/DriverTokenSecret,
-AllowedOrigin and a globally unique bucket name. Do not commit secrets or local SAM config.
+## Cloud preparation: not a deployment claim
 
-The following early deployment instructions describe v1 and are preserved only for reference.
+`backend/template.yaml` is the source of truth for resources and routes. Production uses Lambda/API Gateway, DynamoDB and private S3, with Bedrock visible-item assistance and Amazon Location routing/map adapters. The frontend has Amplify build configuration. Review the final [API](API.md), [security](SECURITY.md) and environment examples before any authorised deployment.
 
-> **Version note:** This is a legacy v1 reference; some described features remain unimplemented.
-> [PRD v3](PRD.md) governs the target workflows, calculations, contracts and build order.
-> Where these documents conflict, PRD v3 wins. Update this reference as each workflow is implemented.
+A later deployment needs an AWS account/region, enabled image-capable Bedrock model, private random admin and driver secrets, a unique photo bucket, exact allowed frontend origin and appropriately scoped map access. Verify actual service availability and current provider setup at that time. Do not put secrets in Git or `VITE_` variables; frontend configuration is public.
 
-Default region: **ap-south-1 (Mumbai)**. On day 1, confirm that Bedrock (with the chosen model) and
-Amazon Location v2 are available there. If one is not, set `BEDROCK_REGION` or `LOCATION_REGION`
-separately; every client reads its own region from config.
+Run `sam validate` and `sam build` when SAM CLI is installed. A build or template inspection proves neither deployed endpoints nor actual AWS requests. After an independently authorised deployment, verify the public URL through readiness, photo, draft, dispatch, pickup, gate and kitchen record; retain redacted evidence of actual service calls and their failure modes. No cloud resources, credentials, publications or teardown operations are part of this repair assignment.
 
-## 1. Prerequisites
-- An AWS account (new accounts get up to $200 in credits); an IAM user or SSO profile with admin for the hackathon
-- AWS CLI v2, AWS SAM CLI, Python 3.12, Node 20+, Git
-- Docker (optional, only for `docker-compose` local mode or `sam build --use-container`)
+## Recording mode
 
-## 2. One-time AWS setup (day 1, first hour)
-1. **Bedrock model access:** Bedrock console → Model catalog → enable an **image-capable** model
-   (for example a current Claude model). Note the model ID or the **inference profile ID** (cross-region
-   profiles are prefixed, e.g. `apac.` / `us.`). Put it in `BEDROCK_MODEL_ID`. Test it once in the
-   console playground with a photo.
-2. **Amazon Location API key** (for map tiles in the browser): Location console → API keys → create
-   a key allowing **Maps** actions only, with referrers `https://*.amplifyapp.com/*` and
-   `http://localhost:5173/*`, and an expiry after the judging period. Put it in `VITE_LOCATION_API_KEY`.
-   Map style URL:
-   `https://maps.geo.${REGION}.amazonaws.com/v2/styles/Standard/descriptor?key=${KEY}`
-3. Route matrix: no key needed. The `plans` Lambda role gets `geo-routes:CalculateRouteMatrix` in SAM.
-4. Set a **billing alarm** at $10 (CloudWatch → Billing).
-
-## 3. Backend (SAM)
-`backend/template.yaml` defines:
-- `PhotosBucket` (private, encrypted, CORS, 30-day lifecycle)
-- Tables `Generators`, `History`, `Submissions` (+ GSI `byDate`), `Plans` (TTL `ttl`)
-- 4 functions (Python 3.12, arm64, 512 MB, 29 s timeout): `GeneratorsFn`, `UploadsFn`,
-  `SubmissionsFn`, `PlansFn`
-- An HTTP API with CORS and throttling, and routes as in API.md
-- Parameters: `Stage`, `AdminToken` (NoEcho), `BedrockModelId`, `AllowedOrigin`
-- Outputs: `ApiUrl`, `PhotosBucketName`, table names
-
-```bash
-cd backend
-sam build                       # use --use-container if a local Python mismatch causes errors
-sam deploy --guided             # first time: stack feedsure-dev, region ap-south-1, save to samconfig.toml
-sam deploy                      # afterwards
-sam logs -n SubmissionsFn --stack-name feedsure-dev --tail
-```
-After the first deploy, copy `ApiUrl` into the frontend env and set `AllowedOrigin` to the Amplify
-URL once you have it, then redeploy.
-
-## 4. Seed data
-1. Fill `data/pilot_zone.json` with the real plant's name and coordinates.
-2. Run:
-```bash
-python scripts/seed_data.py --stage dev --reset --demo 2026-10-10
-```
-3. Copy the printed `suggested TARGET_KG` into the SAM parameter or env, and keep
-   `seed_links.local.txt` (generator links) private.
-
-## 5. Frontend (Amplify Hosting)
-1. Push the repo to GitHub (public, as the rules require).
-2. Amplify console → Host web app → GitHub → this repo, branch `main`. The monorepo app root is `frontend`.
-3. Build settings (`amplify.yml` at the repo root):
-```yaml
-version: 1
-applications:
-  - appRoot: frontend
-    frontend:
-      phases:
-        preBuild: { commands: [ "npm ci" ] }
-        build:    { commands: [ "npm run build" ] }
-      artifacts: { baseDirectory: dist, files: [ "**/*" ] }
-      cache: { paths: [ "node_modules/**/*" ] }
-```
-4. Environment variables: `VITE_API_BASE_URL`, `VITE_AWS_REGION`, `VITE_LOCATION_API_KEY`.
-5. Rewrites (SPA): source `</^[^.]+$|\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|woff2|ttf|map|json|webp)$)([^.]+$)/>`
-   → target `/index.html`, type `200 (Rewrite)`.
-6. Put the Amplify URL into `AllowedOrigin` (SAM) and the Location key referrers.
-
-## 6. Local development
-**Recommended:** run the frontend locally against the deployed dev API:
-`cd frontend && npm run dev` with `VITE_API_BASE_URL` set to `ApiUrl`.
-
-**Fully offline (optional):**
-```bash
-docker compose up -d                      # moto server on :5000 (S3 + DynamoDB)
-export $(grep -v '^#' .env | xargs)       # with AWS_ENDPOINT_URL=http://localhost:5000, MOCK_BEDROCK=true, MOCK_LOCATION=true
-python scripts/seed_data.py --local --reset --demo 2026-10-10
-cd backend && uvicorn dev_server:app --reload --port 8787
-cd frontend && VITE_API_BASE_URL=http://localhost:8787 npm run dev
-```
-`dev_server.py` is a thin FastAPI shim that converts requests into API Gateway v2 events and calls
-the same handler functions. It is a dev dependency only and is never deployed.
-
-## 7. Demo-day checklist
-- [ ] Re-seed with `--reset --demo <date>` and confirm the baseline plan meets the target
-- [ ] Open the generator link for hostel-3 on a real phone over mobile data
-- [ ] Dashboard is logged in with the admin token; polling is on
-- [ ] Bedrock latency is fine (warm the Lambda with one test submission first)
-- [ ] The AWS console tabs are open: Bedrock, Lambda, DynamoDB, Location
-
-## 8. Teardown (after judging)
-```bash
-aws s3 rm s3://<PhotosBucketName> --recursive
-cd backend && sam delete --stack-name feedsure-dev
-```
-Delete the Location API key and the Amplify app. Keep the repo public.
+Follow [DEMO-SCRIPT.md](DEMO-SCRIPT.md). Keep synthetic-data labels visible and read actual route results. Identify the basemap provider separately from route-matrix source; straight connections are schematic. Use a phone for camera proof, or explicitly label desktop image selection. Live AWS proof, a signed-out repository/video check and final submission are separate remaining tasks in [SUBMISSION.md](SUBMISSION.md).

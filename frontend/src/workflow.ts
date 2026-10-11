@@ -100,6 +100,10 @@ export interface PickupDraft {
   correctionReason: string;
 }
 
+export function updatePickupDraft<K extends keyof PickupDraft>(draft: PickupDraft, key: K, value: PickupDraft[K]): PickupDraft {
+  return { ...draft, [key]: value, ...(key === "remainingUnknown" && value === true ? { remainingKg: "" } : {}) };
+}
+
 export function pickupRequest(
   planKey: string,
   generatorId: string,
@@ -198,6 +202,16 @@ export interface MapPoint {
   kind: "plant" | "stop" | "excluded";
   order?: number;
   reason?: string;
+  address?: string;
+  window?: { start: string; end: string };
+  serviceStartAt?: string;
+  serviceEndAt?: string;
+  confirmedKg?: number;
+  expectedCollectionKg?: number;
+  reservedLoadKg?: number;
+  alert?: string;
+  departureAt?: string;
+  returnAt?: string;
 }
 
 export function planMapPoints(
@@ -206,10 +220,15 @@ export function planMapPoints(
   depot: { id: string; lat: number; lng: number } | null,
 ): MapPoint[] {
   if (!depot) return [];
-  const points: MapPoint[] = [{ ...depot, name: "CBG plant", kind: "plant" }];
+  const points: MapPoint[] = [{ ...depot, name: "CBG plant", kind: "plant", departureAt: plan?.plan.startAt, returnAt: plan?.plan.returnAt }];
   const stopIds = new Set(plan?.plan.stops.map((stop) => stop.generatorId) ?? []);
   for (const [index, stop] of (plan?.plan.stops ?? []).entries()) {
-    points.push({ id: stop.generatorId, name: stop.name, lat: stop.lat, lng: stop.lng, kind: "stop", order: index + 1 });
+    const current = generators.find((generator) => generator.generatorId === stop.generatorId);
+    const alert = current?.unresolvedHazards.length ? "Current hazard hold — contact dispatch before loading"
+      : current?.readinessStatus === "NOT_READY" ? (plan?.state === "DISPATCHED" ? "Kitchen cancelled — contact dispatch; route remains frozen" : "Kitchen cancelled — re-plan before dispatch") : undefined;
+    points.push({ id: stop.generatorId, name: stop.name, lat: stop.lat, lng: stop.lng, kind: "stop", order: index + 1,
+      address: stop.address, window: stop.window, serviceStartAt: stop.serviceStartAt, serviceEndAt: stop.serviceEndAt,
+      confirmedKg: stop.confirmedKg, expectedCollectionKg: stop.expectedCollectionKg, reservedLoadKg: stop.reservedLoadKg, alert });
   }
   const excludedById = new Map(plan?.excluded.map((item) => [item.generatorId, item.reason]) ?? []);
   for (const generator of generators) {
@@ -220,10 +239,24 @@ export function planMapPoints(
       lat: generator.lat,
       lng: generator.lng,
       kind: "excluded",
-      reason: excludedById.get(generator.generatorId) ?? generator.readinessStatus,
+      reason: generator.unresolvedHazards.length ? "HAZARD_REVIEW" : excludedById.get(generator.generatorId) ?? generator.readinessStatus,
+      address: generator.address,
+      window: generator.readiness?.window ?? undefined,
+      confirmedKg: generator.readiness?.confirmedKg ?? undefined,
     });
   }
   return points;
+}
+
+export function formatServiceDate(date: string): string {
+  return new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "long", year: "numeric", timeZone: INDIA_TIME_ZONE })
+    .format(new Date(`${date}T00:00:00+05:30`));
+}
+
+export function confirmedSupplyKg(generators: OperationGenerator[], eligibleOnly = false): number {
+  return generators.reduce((sum, generator) => sum + (generator.readinessStatus === "READY"
+    && (!eligibleOnly || (generator.unresolvedHazards.length === 0 && generator.supportedMaterial))
+    ? generator.readiness?.confirmedKg ?? 0 : 0), 0);
 }
 
 export type GpsAttempt =
@@ -238,7 +271,8 @@ export function requestGps(
     return Promise.resolve({ state: "unavailable", gps: null, message: "Location is unavailable. The outcome can still be saved." });
   }
   return new Promise((resolve) => {
-    geolocation.getCurrentPosition(
+    try {
+      geolocation.getCurrentPosition(
       (position) => resolve({
         state: "captured",
         gps: {
@@ -257,6 +291,9 @@ export function requestGps(
           : "Location could not be captured. The outcome can still be saved.",
       }),
       { enableHighAccuracy: true, maximumAge: 0, timeout: timeoutMs },
-    );
+      );
+    } catch {
+      resolve({ state: "unavailable", gps: null, message: "Location could not be captured. The outcome can still be saved." });
+    }
   });
 }

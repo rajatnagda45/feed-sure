@@ -90,6 +90,10 @@ class Config:
     absolute_tolerance_kg: float
     percentage_tolerance_pct: float
     dedup_retention_days: int
+    photo_retention_days: int = 30
+    photo_max_dimension: int = 8192
+    photo_max_pixels: int = 16_000_000
+    photo_max_decoded_bytes: int = 40_000_000
 
 
 def get_config() -> Config:
@@ -156,4 +160,8 @@ def get_config() -> Config:
         absolute_tolerance_kg=_number("ABSOLUTE_TOLERANCE_KG", 20),
         percentage_tolerance_pct=_number("PERCENTAGE_TOLERANCE_PCT", 5),
         dedup_retention_days=_integer("DEDUP_RETENTION_DAYS", 7),
+        photo_retention_days=_integer("PHOTO_RETENTION_DAYS", 30),
+        photo_max_dimension=_integer("PHOTO_MAX_DIMENSION", 8192),
+        photo_max_pixels=_integer("PHOTO_MAX_PIXELS", 16_000_000),
+        photo_max_decoded_bytes=_integer("PHOTO_MAX_DECODED_BYTES", 40_000_000),
     )

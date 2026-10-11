@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from feedsure.common.config import get_config
 from feedsure.common.routes import ROUTES
-from feedsure.handlers import operations, uploads
+from feedsure.handlers import operations
 
 Handler = Callable[[dict[str, Any], Any], dict[str, Any]]
 
@@ -70,6 +70,7 @@ async def operational_route(request: Request) -> Response:
                 event,
                 config=request.app.state.config,
                 database=request.app.state.database,
+                photo_store=getattr(request.app.state, "photo_store", None),
             )
 
         return await _invoke(request, local_handler)
@@ -83,4 +84,42 @@ for method, path in ROUTES:
 @app.post("/uploads")
 async def upload_route(request: Request) -> Response:
     """Forward the optional single-photo upload endpoint."""
-    return await _invoke(request, uploads.lambda_handler)
+    return await operational_route(request)
+
+
+@app.post("/local-photos/{key:path}")
+async def local_photo_upload(request: Request, key: str) -> Response:
+    """Bounded authenticated binary transport, absent in deployed SAM and disabled by default."""
+    from feedsure.common.v3 import ApiError
+    from feedsure.handlers.photos import Photos
+
+    store = getattr(request.app.state, "photo_store", None)
+    if (
+        store is None
+        or request.client is None
+        or request.client.host not in {"127.0.0.1", "::1", "testclient"}
+    ):
+        return Response(status_code=404)
+    service = operations.Service(
+        {"headers": dict(request.headers)},
+        request.app.state.config,
+        request.app.state.database,
+        None,
+        photo_store=store,
+    )
+    try:
+        gid = key.split("/")[1] if key.startswith("submissions/") else ""
+        service.generator(gid, allow_admin=True)
+        Photos(service).key(key, gid)
+        data = bytearray()
+        async for chunk in request.stream():
+            data.extend(chunk)
+            if len(data) > service.config.upload_max_bytes:
+                raise ApiError(400, "INVALID_INPUT", "Photo exceeds upload limit.")
+        store.put(key, bytes(data), request.headers.get("content-type", ""), service)
+        return Response(status_code=204, headers={"cache-control": "no-store"})
+    except ApiError as error:
+        from feedsure.common.http import error_response
+
+        result = error_response(error.status, error.code, error.message)
+        return Response(result["body"], status_code=error.status, media_type="application/json")

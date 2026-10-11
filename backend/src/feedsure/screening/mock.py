@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-FIXTURE_NAMES = {"clean", "plastic", "low_confidence", "malformed"}
+FIXTURE_NAMES = {"clean", "plastic", "hazard", "low_confidence", "malformed"}
 FIXTURES_DIRECTORY = Path(__file__).with_name("fixtures")
 
 

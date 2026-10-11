@@ -2,6 +2,7 @@ export const PHOTO_MAX_DIMENSION = 1280;
 export const PHOTO_JPEG_QUALITY = 0.8;
 export const PHOTO_MIN_BYTES = 1024;
 export const PHOTO_MAX_BYTES = 3_500_000;
+export const PHOTO_INPUT_MAX_BYTES = 20_000_000;
 
 export type PhotoSlot = "top" | "tray";
 
@@ -33,7 +34,8 @@ export function fitWithinDimensions(
   height: number,
   maxDimension = PHOTO_MAX_DIMENSION,
 ): Dimensions {
-  if (width <= 0 || height <= 0 || maxDimension <= 0) {
+  if (![width, height, maxDimension].every(Number.isFinite)
+    || width <= 0 || height <= 0 || maxDimension <= 0) {
     throw new Error("Photo dimensions must be positive.");
   }
   const scale = Math.min(1, maxDimension / Math.max(width, height));
@@ -103,8 +105,20 @@ export async function resizePhoto(file: Blob, codec: ImageCodec = browserCodec):
   if (file.type !== "image/jpeg" && file.type !== "image/png") {
     throw new Error("Choose a JPEG or PNG photo.");
   }
+  if (file.size > PHOTO_INPUT_MAX_BYTES || file.size === 0) {
+    throw new Error("Choose a non-empty photo under 20 MB.");
+  }
+  const signature = new Uint8Array(await file.slice(0, 8).arrayBuffer());
+  const png = [137, 80, 78, 71, 13, 10, 26, 10];
+  const matches = file.type === "image/png" ? png.every((byte, index) => signature[index] === byte)
+    : signature[0] === 255 && signature[1] === 216 && signature[2] === 255;
+  if (!matches) throw new Error("Photo bytes do not match JPEG or PNG. Choose another image.");
   const decoded = await codec.decode(file);
   try {
+    if (!Number.isFinite(decoded.width) || !Number.isFinite(decoded.height)
+      || decoded.width * decoded.height > 40_000_000) {
+      throw new Error("Photo dimensions are too large.");
+    }
     const dimensions = fitWithinDimensions(decoded.width, decoded.height);
     const photo = await codec.encode(
       decoded.source,
@@ -119,6 +133,7 @@ export async function resizePhoto(file: Blob, codec: ImageCodec = browserCodec):
     if (photo.size > PHOTO_MAX_BYTES) {
       throw new Error("This photo is too large. Take another photo closer to the waste.");
     }
+    if (photo.type !== "image/jpeg") throw new Error("Photo compression did not produce a JPEG.");
     return photo;
   } finally {
     decoded.release();

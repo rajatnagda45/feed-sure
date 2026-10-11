@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import {
@@ -12,6 +12,8 @@ import {
   saveReadiness,
 } from "../api";
 import { t } from "../i18n";
+import { OptionalPhoto } from "../components/OptionalPhoto";
+import { getKitchenReadiness } from "../photoApi";
 import { consumeBootstrapToken } from "../session";
 import { ReadinessDraft, monthForDate, readinessRequest, serviceDateInIndia } from "../workflow";
 
@@ -50,6 +52,20 @@ export function GeneratorPage() {
   const [saved, setSaved] = useState<ReadinessRecord | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [editing, setEditing] = useState(true);
+  const saveGeneration = useRef(0);
+
+  useEffect(() => {
+    if (!token || !id) return;
+    const controller = new AbortController();
+    const generation = saveGeneration.current;
+    setSaved(null);
+    getKitchenReadiness(id, draft.collectionDate, token, controller.signal).then((result) => {
+      if (controller.signal.aborted || generation !== saveGeneration.current) return;
+      setSaved(result.submission);
+      setEditing(!result.submission);
+    }).catch(() => {});
+    return () => controller.abort();
+  }, [id, token, draft.collectionDate]);
 
   useEffect(() => {
     if (!token || !id) {
@@ -94,13 +110,14 @@ export function GeneratorPage() {
     setErrors(normalized.errors);
     if (!normalized.request || !token) return;
     setSaving(true);
+    saveGeneration.current += 1;
     setSaveError(null);
     try {
       const response = await saveReadiness(normalized.request, { generatorToken: token });
       setSaved(response.submission);
       setEditing(false);
-      const receiptResponse = await getGeneratorReceipts(id, token, monthForDate(draft.collectionDate));
-      setReceipts(receiptResponse.records);
+      getGeneratorReceipts(id, token, monthForDate(draft.collectionDate))
+        .then((receiptResponse) => setReceipts(receiptResponse.records)).catch(() => {});
     } catch (error) {
       setSaveError(errorMessage(error));
     } finally {
@@ -167,7 +184,13 @@ export function GeneratorPage() {
                     not automatically change the driver route.
                   </p>
                 </div>
-                <button className="button button-secondary" type="button" onClick={() => setEditing(true)}>
+                <button className="button button-secondary" type="button" onClick={() => {
+                  setDraft((current) => ({ ...current, status: saved.status,
+                    confirmedKg: String(saved.confirmedKg), weightSource: saved.weightSource ?? "ESTIMATE",
+                    windowStart: saved.window?.start ?? current.windowStart,
+                    windowEnd: saved.window?.end ?? current.windowEnd, reason: saved.reason ?? "" }));
+                  setEditing(true);
+                }}>
                   {copy.edit}
                 </button>
               </section>
@@ -260,10 +283,6 @@ export function GeneratorPage() {
                   </label>
                 )}
 
-                <aside className="photo-optional">
-                  <strong>No photo is required.</strong>
-                  <span>Optional visible-item assistance is not part of this readiness save.</span>
-                </aside>
 
                 {saveError && <p className="inline-error" role="alert">{saveError}</p>}
                 <button className="button button-primary button-full" type="submit" disabled={saving}>
@@ -271,6 +290,10 @@ export function GeneratorPage() {
                 </button>
               </form>
             )}
+
+            <OptionalPhoto generatorId={id} token={token} language={language}
+              submission={editing ? null : saved} onSaved={(record) => setSaved((current) =>
+                current?.submissionId === saved?.submissionId ? record : current)} />
 
             <section className="records-section" aria-labelledby="records-title">
               <div className="section-heading">

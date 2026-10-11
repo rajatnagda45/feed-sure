@@ -91,3 +91,34 @@ def validate_observations(raw_text: str) -> dict[str, Any]:
         "confidence": min(1.0, max(0.0, confidence)),
         "notes": notes.strip()[:500],
     }
+
+
+def validate_photo_observations(raw_text: str) -> dict[str, Any]:
+    """Strict v3 schema: reject verdicts, numeric coercion and out-of-range observations."""
+    try:
+        parsed = json.loads(raw_text)
+    except (ValueError, TypeError) as error:
+        raise ScreeningInvalid("Invalid observation JSON") from error
+    keys = {"items", "hazard", "image_quality", "confidence", "notes"}
+    if not isinstance(parsed, dict) or set(parsed) != keys:
+        raise ScreeningInvalid("Unexpected observation fields")
+    if not isinstance(parsed["items"], list) or len(parsed["items"]) > 50:
+        raise ScreeningInvalid("Too many observation items")
+    for item in parsed["items"]:
+        if not isinstance(item, dict) or set(item) != {"type", "count", "confidence"}:
+            raise ScreeningInvalid("Invalid item schema")
+        if item["type"] not in ALLOWED_ITEM_TYPES:
+            raise ScreeningInvalid("Unknown item type")
+        if (
+            isinstance(item["count"], bool)
+            or not isinstance(item["count"], int)
+            or not 1 <= item["count"] <= 1000
+        ):
+            raise ScreeningInvalid("Invalid item count")
+        if not 0 <= _number(item["confidence"], "confidence") <= 1:
+            raise ScreeningInvalid("Invalid item confidence")
+    if not 0 <= _number(parsed["confidence"], "confidence") <= 1:
+        raise ScreeningInvalid("Invalid confidence")
+    validated = validate_observations(json.dumps({**parsed, "visible_contaminant_pct": 0}))
+    validated.pop("visible_contaminant_pct")
+    return validated

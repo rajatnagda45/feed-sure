@@ -1,157 +1,81 @@
-# TESTING — FeedSure CBG
+# Testing and evidence
 
-## Current v3 checks
+Updated 11 October 2026. This document separates repeatable automated checks from earlier browser observations and pending repair integration.
 
-`python -m pytest -q -p no:cacheprovider` runs backend tests. The v3 persistence/auth tests use moto
-with real DynamoDB adapters and transactions; their injected planner fixtures prove storage only.
-`test_v3_routes.py` additionally drives the local HTTP shim and real planner/reconciliation through
-readiness → draft → dispatch → pickup → gate → kitchen receipt and refreshes saved reads.
+## Session C: verified independent checks
 
-Cases include encoded plan IDs, stale revisions, duplicate retries, rollback, corrections, generator
-isolation, cancellation, mandatory conflicts, changed hazards, partial pickups, missing/zero gate
-and unmatched intake. Contract JSON examples are parsed and checked against actual pure outputs.
-These automated checks do not establish deployed AWS operation or field savings.
+| Check | Actual result | Scope |
+|---|---|---|
+| `python -m pytest -q --durations=20 -o faulthandler_timeout=30 -p no:cacheprovider` | 225 passed, 21.94 s, Python 3.13.9 | Existing 192 tests plus 32 independent planner cases and one HTTP correction regression; before final map/photo integration |
+| Focused real-handler correction test | 1 passed, 3.65 s | Dispatch, pickup, gate, correction, replay/conflict, frozen stops and own receipt |
+| Focused planner/fairness regression | 32 passed, 0.18 s | Directed route arithmetic, shared eligibility/constraints and deterministic order independence |
+| `npm run test` in `frontend/` | 22 passed, 3 opt-in skipped | Current unit/client logic; no new live browser claim |
+| `npm run build` in `frontend/` | Passed | TypeScript + production bundle; existing >500 kB bundle advisory |
+| `python scripts/eval_routes.py --json-output .tmp/repair-qa-route-results.json --report-output .tmp/repair-qa-route-results.md` | All 18 scenarios evaluated | Synthetic fixture matrices; no AWS calls |
+| Focused Ruff checks | Passed | New Session C test files only |
 
-From `frontend/`, run `npm run test` and `npm run build`. Evaluate saved synthetic route scenarios
-with `python scripts/eval_routes.py`; definitions and recorded results are committed under `eval/`.
-Report ties and tradeoffs as well as wins. SAM validation/build requires the separately installed
-SAM CLI, unavailable in this backend implementation session.
+The reported backend stall was investigated rather than treated as a product deadlock. In the
+restricted Windows sandbox, Starlette TestClient startup blocked in asyncio's fallback socketpair
+before an application request; the earlier faulthandler trace ended at `socket.accept` in
+`_fallback_socketpair`. Outside that restriction, the suspected integration test completed in
+3.65 seconds and the entire suite completed in 21.94 seconds. The slowest full-suite test took
+2.23 seconds, so there was no test-level hang or 30-second faulthandler trigger. The rerun used
+synthetic credentials and in-process Moto. No active demo was restarted or reseeded.
 
-## Final local integration evidence — 11 October 2026
+The independent planner tests check both routes against input arithmetic without importing the production scheduler: directed travel and depot return, service/waiting, eligibility, capacity reservation, deterministic output, generator-order independence and mandatory commitments. All 32 fixed seeds are retained; these are regression cases, not a new performance benchmark.
 
-- Backend: 192 tests passed on Python 3.12.13 (20.27 s) and Python 3.13.9 (18.55 s).
-  Both runs reported one Starlette/httpx deprecation warning.
-- Frontend: 22 tests passed; three live integration tests are skipped in the default run.
-  The production TypeScript/Vite build passed, with the existing large MapLibre bundle advisory.
-- Live frontend client: three opt-in tests passed against a fresh disposable API, using actual
-  `src/api.ts` HTTP requests, real domain handlers and Moto DynamoDB transactions. No HTTP mocks.
-- Evaluation: all 18 saved scenarios reproduced byte-for-byte: 16 ties, one shorter primary route,
-  one capacity trade-off where the baseline collected more expected kg. All inputs are synthetic.
-- Browser: kitchen readiness/cancellation, stale dispatch rejection, re-plan, dispatch, encoded
-  private driver link, partial and full pickups, refresh, missing gate, scale gate intake and own
-  kitchen record succeeded against the local API. A blank gate field was rejected without a write.
-  GPS UNKNOWN remained independent of weight reconciliation. Denied GPS is explicitly covered by
-  the opt-in client test; no physical phone permission prompt was exercised.
+The independent HTTP test uses actual FastAPI/domain handlers, the production planner and reconciliation with in-process Moto. It seeds private disposable data, dispatches, records pickup and gate, corrects a pickup from 100 kg SCALE to 60 kg ESTIMATE, verifies exact retry/conflict responses, then reads driver and kitchen records. Picked kg remains 60, gap +40, REVIEW/provisional; frozen stops remain unchanged and another kitchen receives 401. It writes no demo-access manifest.
 
-To repeat the live client checks, start a **fresh** disposable API from the repository root:
+## Repeatable commands
+
+From repository root:
 
 ```powershell
-python scripts/local_demo.py --date 2026-10-12 --port 8791 --frontend-port 5191
+python -m pytest -q
+python -m pytest -q --durations=20 -o faulthandler_timeout=30 -p no:cacheprovider
+python -m pytest tests/unit/test_repair_qa_planner.py tests/integration/test_repair_qa.py -q
+ruff check tests/unit/test_repair_qa_planner.py tests/integration/test_repair_qa.py
+python scripts/eval_routes.py --json-output .tmp/repair-qa-route-results.json --report-output .tmp/repair-qa-route-results.md
 ```
 
-Then, in a second shell from `frontend/`:
+From `frontend/`:
+
+```powershell
+npm run test
+npm run build
+```
+
+The three tests in `frontend/integration/local-workflow.test.ts` are opt-in and were **not rerun in
+the independent phase of Session C**. Do not enable them against the user's active demo or replace
+its manifest. Final integration must use an isolated API/frontend port pair, a separate private
+manifest, and a fresh disposable data set. See [DEPLOYMENT.md](DEPLOYMENT.md).
+
+The opt-in harness now requires `FEEDSURE_LOCAL_ACCESS_FILE` and rejects the active manifest,
+default API port and mismatched API URL. For a fresh isolated API on 8793, from `frontend/`:
 
 ```powershell
 $env:FEEDSURE_LOCAL_INTEGRATION = "1"
-$env:VITE_API_BASE_URL = "http://localhost:8791"
+$env:FEEDSURE_LOCAL_ACCESS_FILE = "../.tmp/repair-integration-access.json"
+$env:VITE_API_BASE_URL = "http://localhost:8793"
 npm run test -- integration/local-workflow.test.ts
+Remove-Item Env:FEEDSURE_LOCAL_INTEGRATION, Env:FEEDSURE_LOCAL_ACCESS_FILE
 ```
 
-The tests read ignored `.tmp/local-demo-access.json` and mutate only disposable synthetic records.
-Restart that server before repeating; these checks expect seeded initial state. Ports/origin must
-match the runner arguments. Normal frontend tests require neither the server nor its credentials.
-Vitest uses a thread pool because isolated Windows fork workers could not share Vite transform
-files. Browser results and limitations are summarised above; the working handoff remains local.
+These live commands remain pending the repair freeze. After the harness-only change, the default
+suite passed 29 tests with 3 opt-in tests skipped; this is a moving-tree check, not final integration.
+The prepared `scripts/verify_repair_integration.py` adds independent HTTP/photo-byte verification;
+its unexecuted scenarios and required separate fixtures are recorded in the integration handoff.
 
-The following earlier test plan is historical; screening evaluation remains deferred P1 evidence.
+## Evaluation and fairness
 
-> **Version note:** This is a legacy v1 reference; some described features remain unimplemented.
-> [PRD v3](PRD.md) governs the target workflows, calculations, contracts and build order.
-> Where these documents conflict, PRD v3 wins. Update this reference as each workflow is implemented.
+Primary and nearest-first use the same readiness inputs, hazard/material eligibility, mandatory insertion, matrix, capacity, windows, shift including return and target stopping. The primary applies feasibility-preserving 2-opt; the baseline selects nearest feasible optional stops. Both are heuristics.
 
-Test what can break the demo: the decision rules, the planner's feasibility, and the handler wiring.
-Don't chase coverage numbers.
+Saved results remain: 18 scenarios, 16 ties, one equal-quantity distance improvement, one capacity trade-off; primary/baseline miss targets in 10/9 scenarios. In the trade-off, primary expects 176 kg with a 64 kg gap, while baseline expects 240 kg and meets target. A tie compares expected kg and distance only. Expected kg is not recorded collection; scenario matrices and quantities are synthetic. No realised-outcome replay, model-accuracy evaluation or field improvement is established.
 
-## 1. Layout
-```
-tests/
-├── unit/
-│   ├── test_validate.py        model JSON parsing and normalisation
-│   ├── test_decision.py        verdict rule table, one test per row
-│   ├── test_forecast.py
-│   ├── test_usable.py
-│   ├── test_greedy.py          feasibility invariants
-│   ├── test_two_opt.py
-│   ├── test_baseline.py
-│   ├── test_shortfall.py
-│   └── test_plan_golden.py     fixed inputs → exact expected output
-├── integration/
-│   ├── test_handlers_submissions.py   moto S3 + DynamoDB, MOCK_BEDROCK
-│   ├── test_handlers_plans.py         moto DynamoDB, MOCK_LOCATION
-│   └── test_auth.py                   401 paths
-└── fixtures/
-    ├── bedrock_clean.json  bedrock_plastic.json  bedrock_glass.json
-    ├── bedrock_dark.json   bedrock_garbage.txt   (invalid output)
-    ├── generators_10.json  history_10x14.json
-    └── matrix_11.json      (km + min, plant + 10)
-```
+## Earlier evidence and remaining gates
 
-## 2. Must-have unit tests
+Earlier P0 integration notes reported a browser walkthrough of kitchen readiness/cancellation, stale dispatch, replanning, private driver access, partial/full pickups, refresh, gate intake and own-kitchen records. That was prior evidence; Session C's current HTTP tests do not repeat those browser interactions. The 11 October localhost audit observed a working draft with 5 stops, expected 720 kg, reserved 990 kg and a 480 kg target gap, with equal 7.5 km comparison routes.
 
-**validate.py**
-- Valid JSON wrapped in prose or code fences → parsed.
-- Unknown item type → `other_non_food`; % = 140 → clamped to 100; confidence = −1 → 0.
-- Missing key or non-JSON → raises `ScreeningInvalid`.
+Final map/photo checks remain pending until both repair owners declare READY and freeze editing. Required final evidence includes real selected-byte upload/retrieval, preview/resize/retry, scoped evidence access, persistent screening state and failure/hazard precedence, maps at desktop and phone width, and tile/WebGL failure fallback. Desktop file selection cannot prove a phone camera works. Moto/injected observations cannot prove Bedrock accuracy, S3 deployment or Amazon Location operation.
 
-**decision.py** (one test per rule row in ARCHITECTURE §5.2, plus precedence)
-- hazard plus 0 % → HOLD (`hazard`)
-- 6 % → HOLD; exactly 5 % → INSPECT (the threshold is strictly greater-than)
-- 0 % with confidence 0.5 → INSPECT (`low_confidence`)
-- `image_quality = "blurry"` with hazard → INSPECT (`retake_photo`), because rule 1 wins
-- 0 % with confidence 0.9 → ACCEPT
-
-**Planner invariants** (`test_greedy.py`, `test_two_opt.py`, property-style over 20 random seeded instances)
-- Load never exceeds capacity.
-- Every arrival falls within the stop's pickup window (waiting allowed).
-- The return to the depot is before shift end.
-- HOLD and out-of-radius generators never appear in the route.
-- 2-opt never increases km and never breaks feasibility.
-- The output is deterministic: two runs give identical results.
-
-**shortfall.py**
-- Target met → `kg = 0`, `targetMet = true`, `reasons = []`.
-- A HOLD on a 130 kg generator → a `held` reason with that ID and its lost usable kg.
-- A capacity-limited case → a `capacity` reason.
-
-**test_plan_golden.py**: use the fixtures and fixed params, then assert the exact stop order, total km
-(±0.01) and usable kg. Update the golden file only on purpose.
-
-## 3. Integration tests (moto, no real AWS)
-- `POST /uploads` → two presigned POSTs with the right key prefix and conditions.
-- `POST /submissions` with `MOCK_BEDROCK=true` → a packaged observation fixture is used without S3
-  or Bedrock reads, the item is stored, and a verdict is returned.
-- `POST /submissions` with a photo key from another generator → 400.
-- `POST /plans` with `MOCK_LOCATION=true` → valid shape, `matrixSource="fallback"`, plan stored.
-- Missing or invalid tokens → 401 on every protected route.
-
-## 4. Frontend
-- vitest: `i18n` keys match between `en` and `hi`; the shortfall sentence builder; the image-resize
-  helper's output dimensions (pure function).
-- Manual smoke test on a real Android phone before recording: the camera opens, the upload works over
-  mobile data, and the verdict renders in Hindi.
-
-## 5. Screening evaluation (`scripts/eval_screening.py`)
-- Data: `eval/images/*.jpg` (30–50 staged photos of real food scraps; some clean, some with wrappers,
-  foil, cutlery, glass) and `eval/labels.csv` with columns
-  `file_top,file_tray,expected,notes` where `expected` ∈ `ACCEPT|HOLD`.
-- Run the real Bedrock screener + `decision.py`. Treat INSPECT as "not accepted".
-- Report a confusion table and:
-  - **False-accept rate** = contaminated samples verdicted ACCEPT ÷ contaminated samples. This is
-    the most important number.
-  - **Catch rate** = contaminated samples verdicted HOLD or INSPECT ÷ contaminated samples.
-  - **Clean pass rate** = clean samples verdicted ACCEPT ÷ clean samples.
-- Write `eval/results.md`, then copy the headline line into README and the video.
-- Tune `HOLD_THRESHOLD_PCT` and `MIN_CONFIDENCE` only on half the set, and report on the other half.
-
-## 6. Commands
-```bash
-pytest -q                       # everything
-pytest tests/unit -q            # fast loop
-cd frontend && npm run test
-python scripts/eval_screening.py --images eval/images --labels eval/labels.csv
-```
-
-## 7. Pre-recording checklist
-- [ ] All tests green on `main`
-- [ ] End-to-end on the deployed URL: phone submit → dashboard shows it within 10 s → re-plan changes the route
-- [ ] The HOLD → shortfall → ACCEPT → target-met sequence works three times in a row
+Physical-phone camera/GPS prompts, deployed AWS end-to-end, SAM build and the recorded submission video remain unverified in this QA session. Do not use the legacy two-photo ACCEPT/HOLD screening evaluation as v3 visible-item accuracy evidence.

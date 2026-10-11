@@ -1,0 +1,12 @@
+.optional-photo { padding: 1.25rem 0; border-top: 1px solid #d5ded9; margin-top: 1.5rem; }
+.optional-photo h2 { font-size: 1.15rem; margin: 0 0 .6rem; }
+.optional-photo p { line-height: 1.5; }
+.optional-photo .photo-actions { display: flex; flex-wrap: wrap; gap: .65rem; margin: .8rem 0; }
+.optional-photo .photo-actions button { min-height: 44px; flex: 1 1 140px; }
+.optional-photo figure { margin: 1rem 0; }
+.optional-photo img { display: block; max-width: 100%; width: 100%; max-height: 320px; object-fit: contain; border-radius: 10px; background: #edf1ee; }
+.optional-photo figcaption { font-size: .85rem; margin-top: .4rem; color: #53665b; }
+.optional-photo progress { width: 100%; }
+.optional-photo .photo-result { padding: .9rem; background: #eef4ef; border-radius: 8px; overflow-wrap: anywhere; }
+.optional-photo .photo-result small { display: block; line-height: 1.5; }
+.optional-photo .photo-hazard { display: block; color: #8c351f; }

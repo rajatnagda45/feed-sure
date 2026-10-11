@@ -61,10 +61,12 @@ class Service:
         now: datetime | None,
         planner: Any = None,
         reconciler: Any = None,
+        photo_store: Any = None,
     ) -> None:
         self.event, self.config, self._db = event, config, database
         self.now = (now or datetime.now(UTC)).astimezone(UTC)
         self.planner, self.reconciler = planner, reconciler
+        self.photo_store = photo_store
 
     @property
     def db(self) -> DynamoDB:
@@ -929,6 +931,38 @@ class Service:
         method = (self.event.get("requestContext") or {}).get("http", {}).get("method", "GET")
         path = self.event.get("rawPath") or ""
         query = self.event.get("queryStringParameters") or {}
+        from feedsure.handlers.photos import Photos
+
+        if path == "/uploads" and method == "POST":
+            return Photos(self).uploads(body(self.event))
+        ready_match = re.fullmatch(r"/generators/([^/]+)/readiness", path)
+        if ready_match and method == "GET":
+            gid = ready_match.group(1)
+            self.generator(gid, allow_admin=True)
+            day = service_date(query.get("date"))
+            row = self.db.get(
+                "operations",
+                {"collectionDate": day, "recordKey": "READY#" + gid},
+                consistent_read=True,
+            )
+            hazard = self.db.get(
+                "operations",
+                {"collectionDate": day, "recordKey": "HAZARD#" + gid},
+                consistent_read=True,
+            )
+            return {
+                "submission": row["submission"] if row else None,
+                "unresolvedHazard": hazard["hazard"]
+                if hazard and hazard["hazard"]["action"] == "ENTER"
+                else None,
+            }
+        photo_match = re.fullmatch(r"/submissions/([^/]+)/(photo|screen|evidence)", path)
+        if photo_match:
+            sid, action = photo_match.groups()
+            if action == "evidence" and method == "GET":
+                return Photos(self).evidence(sid)
+            if action in {"photo", "screen"} and method == "POST":
+                return Photos(self).mutate(sid, body(self.event), screen=action == "screen")
         if method == "GET" and path in {"/operations", "/submissions"}:
             self.admin()
             day = service_date(query.get("date"))
@@ -997,11 +1031,6 @@ class Service:
             return self.pickup(body(self.event))
         if path == "/gate-logs" and method == "POST":
             return self.gate(body(self.event))
-        if re.fullmatch(r"/submissions/[^/]+/screen", path) and method == "POST":
-            submission_id = unquote(path.split("/")[2])
-            gid = submission_id.split("#")[0]
-            self.generator(gid, allow_admin=True)
-            raise ApiError(503, "DEPENDENCY_NOT_READY", "Optional P1 screening is not shipped.")
         raise ApiError(404, "NOT_FOUND", "Endpoint was not found.")
 
 
@@ -1013,11 +1042,12 @@ def handle_request(
     now: datetime | None = None,
     planner: Any = None,
     reconciler: Any = None,
+    photo_store: Any = None,
 ) -> dict[str, Any]:
     """Execute the same real domain handler under Lambda, local transport or moto tests."""
     try:
         response = Service(
-            event, config or get_config(), database, now, planner, reconciler
+            event, config or get_config(), database, now, planner, reconciler, photo_store
         ).route()
         result = json_response(200, response)
     except ApiError as error:

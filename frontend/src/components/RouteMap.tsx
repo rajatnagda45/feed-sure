@@ -1,162 +1,161 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  LngLatBounds,
-  LngLatBoundsLike,
-  Map as MapLibreMap,
-  Marker,
-  NavigationControl,
-  Popup,
-} from "maplibre-gl";
+import { AttributionControl, GeoJSONSource, LngLatBounds, Map as MapLibreMap, Marker, NavigationControl, Popup, setWorkerUrl } from "maplibre-gl";
+import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
+import type { MapPoint } from "../workflow";
+import { mapPointLabel, mapRequest, mapSignature, routeCoordinates, selectBasemap, validMapPoints } from "./mapModel";
+import { createMapSession, type MapStatus } from "./mapSession";
 
-import { MapPoint } from "../workflow";
+// MapLibre v6 needs an explicit bundled worker URL under Vite.
+setWorkerUrl(workerUrl);
 
-const region = import.meta.env.VITE_AWS_REGION ?? "ap-south-1";
-const apiKey = import.meta.env.VITE_LOCATION_API_KEY ?? "";
-const configured = Boolean(apiKey && apiKey !== "CHANGE_ME");
+const loopback = typeof window !== "undefined" && ["localhost", "127.0.0.1", "[::1]"].includes(window.location.hostname);
+const provider = selectBasemap(import.meta.env.VITE_LOCATION_API_KEY ?? "", import.meta.env.VITE_AWS_REGION ?? "ap-south-1",
+  loopback && (import.meta.env.VITE_LOCAL_DEMO_BASEMAP ?? (import.meta.env.DEV ? "osm" : "off")) === "osm");
 
-interface RouteMapProps {
-  points: MapPoint[];
-}
+interface RouteMapProps { points: MapPoint[] }
 
 function Schematic({ points }: RouteMapProps) {
-  if (points.length === 0) {
-    return <div className="map-empty">Plan a route to see its stops.</div>;
-  }
-  const lngs = points.map((point) => point.lng);
-  const lats = points.map((point) => point.lat);
-  const minLng = Math.min(...lngs);
-  const maxLng = Math.max(...lngs);
-  const minLat = Math.min(...lats);
-  const maxLat = Math.max(...lats);
-  const position = (point: MapPoint) => ({
-    x: 8 + ((point.lng - minLng) / Math.max(maxLng - minLng, 0.001)) * 84,
-    y: 92 - ((point.lat - minLat) / Math.max(maxLat - minLat, 0.001)) * 84,
+  if (!points.length) return <div className="map-empty">The route list is available below.</div>;
+  const minLng = Math.min(...points.map((point) => point.lng));
+  const minLat = Math.min(...points.map((point) => point.lat));
+  const width = Math.max(...points.map((point) => point.lng)) - minLng;
+  const height = Math.max(...points.map((point) => point.lat)) - minLat;
+  const position = (lng: number, lat: number) => ({
+    x: width ? 8 + ((lng - minLng) / width) * 84 : 50,
+    y: height ? 92 - ((lat - minLat) / height) * 84 : 50,
   });
-  const route = points.filter((point) => point.kind !== "excluded");
-  const polyline = route.map((point) => {
-    const { x, y } = position(point);
+  const polyline = routeCoordinates(points).map(([lng, lat]) => {
+    const { x, y } = position(lng, lat);
     return `${x},${y}`;
   }).join(" ");
-
-  return (
-    <div className="schematic-wrap">
-      <svg className="schematic-map" viewBox="0 0 100 100" role="img" aria-label="Schematic route map">
-        {polyline && <polyline points={polyline} fill="none" stroke="currentColor" strokeWidth="1.2" />}
-        {points.map((point) => {
-          const { x, y } = position(point);
-          return (
-            <g key={point.id} transform={`translate(${x} ${y})`}>
-              <circle r="4" className={`schematic-${point.kind}`} />
-              <text textAnchor="middle" dominantBaseline="central">
-                {point.kind === "plant" ? "◆" : point.kind === "excluded" ? "×" : point.order}
-              </text>
-              <title>{point.name}{point.reason ? `: ${point.reason}` : ""}</title>
-            </g>
-          );
-        })}
-      </svg>
-      <p>Schematic straight-line view — not road navigation.</p>
-    </div>
-  );
+  return <div className="schematic-wrap">
+    <svg className="schematic-map" viewBox="0 0 100 100" role="img" aria-label="Schematic route including return to plant; not road navigation">
+      {polyline && <polyline points={polyline} fill="none" stroke="currentColor" strokeWidth="1.2" strokeDasharray="2 1" />}
+      {points.map((point) => {
+        const { x, y } = position(point.lng, point.lat);
+        return <g key={point.id} transform={`translate(${x} ${y})`}>
+          <circle r="4" className={`schematic-${point.kind}`} />
+          <text textAnchor="middle" dominantBaseline="central">{point.kind === "plant" ? "P" : point.kind === "excluded" ? "×" : point.order}</text>
+          <title>{mapPointLabel(point)}</title>
+        </g>;
+      })}
+    </svg>
+    <p>Schematic positions. Straight connections include return to plant.</p>
+  </div>;
 }
 
 export function RouteMap({ points }: RouteMapProps) {
-  const container = useRef<HTMLDivElement | null>(null);
-  const map = useRef<MapLibreMap | null>(null);
-  const markers = useRef<Marker[]>([]);
-  const [unavailable, setUnavailable] = useState(!configured);
-  const signature = useMemo(
-    () => points.map((point) => `${point.id}:${point.lat}:${point.lng}:${point.kind}`).join("|"),
-    [points],
-  );
+  const scene = useMemo(() => validMapPoints(points), [points]);
+  const signature = mapSignature(scene);
+  const latest = useRef(scene);
+  latest.current = scene;
+  const container = useRef<HTMLDivElement>(null);
+  const session = useRef<ReturnType<typeof createMapSession> | null>(null);
+  const [status, setStatus] = useState<MapStatus>(provider ? "loading" : "failed");
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
-    if (!configured || !container.current || points.length === 0) return;
-    let active = true;
-    try {
-      const instance = new MapLibreMap({
-        container: container.current,
-        style: `https://maps.geo.${region}.amazonaws.com/v2/styles/Standard/descriptor?key=${apiKey}&color-scheme=Light`,
-        center: [points[0].lng, points[0].lat],
-        zoom: 11,
-        attributionControl: false,
-      });
-      map.current = instance;
-      instance.addControl(new NavigationControl({ showCompass: false }), "top-right");
-      instance.on("load", () => {
-        if (!active) return;
-        const route = points.filter((point) => point.kind !== "excluded");
-        if (route.length > 1) {
-          instance.addSource("route", {
-            type: "geojson",
-            data: {
-              type: "Feature",
-              properties: {},
-              geometry: { type: "LineString", coordinates: route.map((point) => [point.lng, point.lat]) },
+    if (!provider || !container.current) return;
+    const element = container.current;
+    const owned = createMapSession({
+      points: latest.current,
+      onStatus: setStatus,
+      open(onLoad, onFailure) {
+        const first = latest.current[0];
+        const instance = new MapLibreMap({
+          container: element, style: provider.style,
+          ...(first ? { center: [first.lng, first.lat] as [number, number] } : {}), zoom: 11,
+          attributionControl: false, transformRequest: mapRequest,
+          // Keep fetch-based raster loading and normal HTTP expiry headers.
+          refreshExpiredTiles: true,
+        });
+        let markers: Marker[] = [];
+        let observer: ResizeObserver | undefined;
+        const destroy = () => {
+          observer?.disconnect();
+          markers.forEach((marker) => marker.remove());
+          markers = [];
+          instance.remove();
+        };
+        try {
+          instance.addControl(new NavigationControl({ showCompass: false }), "top-right");
+          instance.addControl(new AttributionControl({ compact: false }), "bottom-right");
+          instance.on("load", onLoad);
+          instance.on("error", onFailure);
+          instance.on("webglcontextlost", onFailure);
+          observer = new ResizeObserver(() => instance.resize());
+          observer.observe(element);
+          return {
+            draw(current) {
+              const coordinates = routeCoordinates(current);
+              const data: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: coordinates.length ? [{
+                type: "Feature", properties: {}, geometry: { type: "LineString", coordinates },
+              }] : [] };
+              const source = instance.getSource("collection-route") as GeoJSONSource | undefined;
+              if (source) source.setData(data);
+              else {
+                instance.addSource("collection-route", { type: "geojson", data });
+                instance.addLayer({ id: "collection-route", type: "line", source: "collection-route",
+                  paint: { "line-color": "#285a91", "line-width": 3, "line-dasharray": [2, 1.5] } });
+              }
+              markers.forEach((marker) => marker.remove());
+              markers = [];
+              for (const point of current) {
+                const markerElement = document.createElement("button");
+                markerElement.type = "button";
+                markerElement.className = "map-marker map-marker-" + point.kind;
+                markerElement.textContent = point.kind === "plant" ? "P" : point.kind === "excluded" ? "×" : String(point.order);
+                markerElement.setAttribute("aria-label", mapPointLabel(point));
+                // Plain text prevents supplier addresses/reasons from becoming HTML.
+                const marker = new Marker({ element: markerElement }).setLngLat([point.lng, point.lat])
+                  .setPopup(new Popup({ offset: 22 }).setText(mapPointLabel(point)));
+                markers.push(marker);
+                marker.addTo(instance);
+              }
             },
-          });
-          instance.addLayer({
-            id: "route",
-            type: "line",
-            source: "route",
-            paint: { "line-color": "#1f4e99", "line-width": 3, "line-dasharray": [2, 1.5] },
-          });
+            fit(current) {
+              const first = current[0];
+              const bounds = current.reduce((bounds, point) => bounds.extend([point.lng, point.lat]),
+                new LngLatBounds([first.lng, first.lat], [first.lng, first.lat]));
+              instance.fitBounds(bounds, { padding: 56, maxZoom: 14, duration: 0 });
+            },
+            destroy,
+          };
+        } catch {
+          destroy();
+          throw new Error("Map initialization failed");
         }
-        markers.current = points.map((point) => {
-          const element = document.createElement("div");
-          element.className = `map-marker map-marker-${point.kind}`;
-          element.textContent = point.kind === "plant" ? "◆" : point.kind === "excluded" ? "×" : String(point.order);
-          element.setAttribute("aria-label", point.name);
-          return new Marker({ element })
-            .setLngLat([point.lng, point.lat])
-            .setPopup(new Popup({ offset: 18 }).setText(
-              point.reason ? `${point.name}: ${point.reason}` : point.name,
-            ))
-            .addTo(instance);
-        });
-        const bounds = points.reduce(
-          (value, point) => value.extend([point.lng, point.lat]),
-          new LngLatBounds([points[0].lng, points[0].lat], [points[0].lng, points[0].lat]),
-        );
-        instance.fitBounds(bounds as LngLatBoundsLike, { padding: 52, maxZoom: 14, duration: 0 });
-      });
-      instance.on("error", () => {
-        if (!active) return;
-        setUnavailable(true);
-        markers.current.forEach((marker) => marker.remove());
-        markers.current = [];
-        queueMicrotask(() => {
-          if (map.current === instance) {
-            instance.remove();
-            map.current = null;
-          }
-        });
-      });
-    } catch {
-      setUnavailable(true);
-    }
-    return () => {
-      active = false;
-      markers.current.forEach((marker) => marker.remove());
-      markers.current = [];
-      map.current?.remove();
-      map.current = null;
-    };
-  }, [signature]);
+      },
+    });
+    session.current = owned;
+    return () => { owned.destroy(); session.current = null; };
+  }, [attempt]);
 
-  if (unavailable) {
-    return (
-      <div className="map-fallback">
-        <p className="map-notice">Map tiles unavailable. The route list remains authoritative.</p>
-        <Schematic points={points} />
-      </div>
-    );
-  }
+  useEffect(() => { session.current?.update(latest.current); }, [signature]);
 
-  return (
-    <div className="map-frame">
-      <div ref={container} className="map-canvas" aria-label="Collection route map" />
-      <p className="map-caption">Numbered stops with schematic straight-line connections.</p>
+  const fitRoute = () => session.current?.fit();
+
+  return <div className="route-map">
+    <div className="map-heading">
+      <div><strong>Collection area</strong><span>{status === "failed" ? "Schematic · no geographic basemap" : provider?.label ?? "No basemap configured"}</span></div>
+      {status === "ready" && <button className="text-button" type="button" onClick={fitRoute}>Fit route</button>}
     </div>
-  );
+    <div className={`map-frame${status === "failed" ? " map-failed" : ""}`}>
+      <div ref={container} className="map-canvas" aria-label="Collection area map" aria-hidden={status === "failed"} />
+      {status === "loading" && <p className="map-notice" aria-live="polite">Loading geographic basemap…</p>}
+      {status === "failed" && <div className="map-fallback">
+        <div className="map-notice" role="status">
+          <span>{provider ? `${provider.label} could not load (network or WebGL).` : "Configure AWS map access or enable the loopback demo basemap."} The ordered route remains available.</span>
+          {provider && <button className="text-button" type="button" onClick={() => setAttempt((value) => value + 1)}>Retry basemap</button>}
+        </div>
+        <Schematic points={scene} />
+      </div>}
+    </div>
+    <div className="map-legend" aria-label="Map legend">
+      <span><b className="legend-plant">P</b> Plant / return</span><span><b className="legend-stop">1</b> Ordered stop</span><span><b className="legend-excluded">×</b> Outside route</span><span><b className="legend-line" aria-hidden="true" /> Straight connection</span>
+    </div>
+    <p className="map-explanation">Dashed straight-line connections, not road directions. Select a marker for windows and exclusions.</p>
+    {provider?.kind === "osm" && <p className="map-policy">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap contributors</a>. Public demo tiles; best-effort availability. <a href="https://www.openstreetmap.org/fixthemap" target="_blank" rel="noreferrer">Report a map issue</a></p>}
+    {scene.length !== points.length && <p className="map-policy">Some locations are invalid. Refer to the ordered stop list.</p>}
+  </div>;
 }

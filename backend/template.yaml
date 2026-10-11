@@ -33,6 +33,25 @@ Parameters:
   UploadExpirySeconds:
     Type: Number
     Default: 300
+  PhotoRetentionDays:
+    Type: Number
+    Default: 30
+    MinValue: 1
+  PhotoMaxDimension:
+    Type: Number
+    Default: 8192
+  PhotoMaxPixels:
+    Type: Number
+    Default: 16000000
+  PhotoMaxDecodedBytes:
+    Type: Number
+    Default: 40000000
+  BedrockMaxTokens:
+    Type: Number
+    Default: 600
+  PhotoMinConfidence:
+    Type: Number
+    Default: 0.6
   AdminToken:
     Type: String
     Default: CHANGE_ME
@@ -43,6 +62,9 @@ Parameters:
   BedrockRegion:
     Type: String
     Default: ap-south-1
+  BedrockFoundationModelId:
+    Type: String
+    Default: anthropic.claude-haiku-4-5-20251001-v1:0
   MockBedrock:
     Type: String
     Default: "false"
@@ -58,6 +80,7 @@ Parameters:
       - plastic
       - low_confidence
       - malformed
+      - hazard
   LocationRegion:
     Type: String
     Default: ap-south-1
@@ -191,6 +214,12 @@ Globals:
         UPLOAD_MIN_BYTES: !Ref UploadMinBytes
         UPLOAD_MAX_BYTES: !Ref UploadMaxBytes
         UPLOAD_EXPIRY_SECONDS: !Ref UploadExpirySeconds
+        PHOTO_RETENTION_DAYS: !Ref PhotoRetentionDays
+        PHOTO_MAX_DIMENSION: !Ref PhotoMaxDimension
+        PHOTO_MAX_PIXELS: !Ref PhotoMaxPixels
+        PHOTO_MAX_DECODED_BYTES: !Ref PhotoMaxDecodedBytes
+        BEDROCK_MAX_TOKENS: !Ref BedrockMaxTokens
+        MIN_CONFIDENCE: !Ref PhotoMinConfidence
         BEDROCK_MODEL_ID: !Ref BedrockModelId
         MOCK_BEDROCK: !Ref MockBedrock
         MOCK_BEDROCK_FIXTURE: !Ref MockBedrockFixture
@@ -269,8 +298,16 @@ Resources:
               Action: dynamodb:Query
               Resource: !GetAtt HistoryTable.Arn
             - Effect: Allow
-              Action: dynamodb:PutItem
+              Action: [dynamodb:PutItem, dynamodb:GetItem]
               Resource: !GetAtt SubmissionsTable.Arn
+            - Effect: Allow
+              Action: [s3:GetObject, s3:PutObject]
+              Resource: !Sub ${PhotosBucket.Arn}/submissions/*
+            - Effect: Allow
+              Action: bedrock:InvokeModel
+              Resource:
+                - !Sub arn:${AWS::Partition}:bedrock:*::foundation-model/${BedrockFoundationModelId}
+                - !Sub arn:${AWS::Partition}:bedrock:${BedrockRegion}:${AWS::AccountId}:inference-profile/${BedrockModelId}
             - Effect: Allow
               Action: [dynamodb:GetItem, dynamodb:Query, dynamodb:PutItem]
               Resource:
@@ -374,6 +411,24 @@ Resources:
             ApiId: !Ref HttpApi
             Method: POST
             Path: /gate-logs
+        AttachPhoto:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Method: POST
+            Path: /submissions/{submissionId}/photo
+        ReadEvidence:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Method: GET
+            Path: /submissions/{submissionId}/evidence
+        KitchenReadiness:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Method: GET
+            Path: /generators/{generatorId}/readiness
 
   GeneratorsTable:
     Type: AWS::DynamoDB::Table
@@ -562,10 +617,10 @@ Resources:
             MaxAge: 300
       LifecycleConfiguration:
         Rules:
-          - Id: DeleteSubmissionsAfter30Days
+          - Id: DeleteSubmissionsAfterRetention
             Prefix: submissions/
             Status: Enabled
-            ExpirationInDays: 30
+            ExpirationInDays: !Ref PhotoRetentionDays
 
   PhotosBucketPolicy:
     Type: AWS::S3::BucketPolicy

@@ -14,6 +14,11 @@ import {
   uploadIsComplete,
 } from "./photoUpload";
 
+function image(type: "image/png" | "image/jpeg"): Blob {
+  return new Blob([new Uint8Array(type === "image/png" ? [137, 80, 78, 71, 13, 10, 26, 10]
+    : [255, 216, 255, 224])], { type });
+}
+
 class FakeUploadRequest implements UploadRequest {
   upload: UploadRequest["upload"] = { onprogress: null };
   status = 0;
@@ -62,7 +67,7 @@ describe("photo resizing", () => {
       encode: vi.fn().mockResolvedValue(encoded),
     };
 
-    const result = await resizePhoto(new Blob(["photo"], { type: "image/png" }), codec);
+    const result = await resizePhoto(image("image/png"), codec);
 
     expect(result).toBe(encoded);
     expect(codec.encode).toHaveBeenCalledWith(expect.anything(), 1280, 853, "image/jpeg", 0.8);
@@ -83,10 +88,41 @@ describe("photo resizing", () => {
       ),
     };
 
-    await expect(resizePhoto(new Blob(["photo"], { type: "image/jpeg" }), codec)).rejects.toThrow(
+    await expect(resizePhoto(image("image/jpeg"), codec)).rejects.toThrow(
       "This photo is too large",
     );
     expect(release).toHaveBeenCalledOnce();
+  });
+
+  it("rejects wrong types, empty/oversized inputs before decoding", async () => {
+    const codec: ImageCodec = { decode: vi.fn(), encode: vi.fn() };
+    await expect(resizePhoto(new Blob(["gif"], { type: "image/gif" }), codec)).rejects.toThrow("JPEG or PNG");
+    await expect(resizePhoto(new Blob([], { type: "image/jpeg" }), codec)).rejects.toThrow("non-empty");
+    await expect(resizePhoto(new Blob([new Uint8Array(20_000_001)], { type: "image/png" }), codec)).rejects.toThrow("20 MB");
+    expect(codec.decode).not.toHaveBeenCalled();
+  });
+
+  it("releases decoded resources for invalid dimensions and failed encodes", async () => {
+    const release = vi.fn();
+    const codec: ImageCodec = { decode: vi.fn().mockResolvedValue({ width: Infinity, height: 10,
+      source: {} as CanvasImageSource, release }), encode: vi.fn() };
+    await expect(resizePhoto(image("image/jpeg"), codec)).rejects.toThrow("dimensions");
+    expect(release).toHaveBeenCalledOnce();
+    expect(codec.encode).not.toHaveBeenCalled();
+    expect(() => fitWithinDimensions(NaN, 10)).toThrow();
+    expect(() => fitWithinDimensions(0, 10)).toThrow();
+  });
+
+  it("rejects corrupt browser decoding without requesting an upload", async () => {
+    const codec: ImageCodec = { decode: vi.fn().mockRejectedValue(new Error("could not be read")), encode: vi.fn() };
+    await expect(resizePhoto(image("image/jpeg"), codec)).rejects.toThrow("could not be read");
+    expect(codec.encode).not.toHaveBeenCalled();
+  });
+
+  it("rejects forged image MIME types before browser decoding", async () => {
+    const codec: ImageCodec = { decode: vi.fn(), encode: vi.fn() };
+    await expect(resizePhoto(new Blob(["fake"], { type: "image/png" }), codec)).rejects.toThrow("bytes do not match");
+    expect(codec.decode).not.toHaveBeenCalled();
   });
 });
 

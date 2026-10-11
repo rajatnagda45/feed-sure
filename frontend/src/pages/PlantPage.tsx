@@ -23,7 +23,9 @@ import {
 import { RouteMap } from "../components/RouteMap";
 import {
   exclusionAction,
+  confirmedSupplyKg,
   formatKg,
+  formatServiceDate,
   formatPercent,
   planMapPoints,
   parseNetGateKg,
@@ -97,25 +99,39 @@ export function PlantPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [phone, setPhone] = useState<PhoneForm | null>(null);
   const [hazardReasons, setHazardReasons] = useState<Record<string, string>>({});
-  const [driverAccess, setDriverAccess] = useState<{ token: string; expiresAt: string } | null>(null);
+  const [driverAccess, setDriverAccess] = useState<{ token: string; expiresAt: string; planKey: string } | null>(null);
   const [gate, setGate] = useState({ netKg: "", source: "SCALE" as WeightSource, reference: "", correctionReason: "" });
   const [gateSaving, setGateSaving] = useState(false);
+  const [supplyFilter, setSupplyFilter] = useState("all");
+  const [driverLinkVisible, setDriverLinkVisible] = useState(false);
   const dispatchAttempt = useRef<{ signature: string; key: string } | null>(null);
   const gateAttempt = useRef<{ signature: string; key: string } | null>(null);
+  const phoneEditor = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (!phone) return;
+    phoneEditor.current?.scrollIntoView({ block: "start" });
+    phoneEditor.current?.querySelector<HTMLSelectElement>("select")?.focus({ preventScroll: true });
+  }, [phone?.generatorId]);
 
   useEffect(() => {
     if (!adminToken) return;
     const controller = new AbortController();
     setLoading(true);
+    setError(null);
     Promise.all([
       getOperations(date, adminToken, controller.signal),
       getLatestPlan(date, adminToken, controller.signal),
     ]).then(async ([operations, latest]) => {
       if (controller.signal.aborted) return;
       setSnapshot(operations);
-      if (!controlsTouched) setControls(controlsFrom(operations.defaults));
+      if (!controlsTouched) {
+        setControls(controlsFrom(latest.plan?.params ?? operations.defaults));
+        setMandatoryIds(latest.plan?.params.mandatoryIds ?? []);
+      }
       setMandatoryIds((current) => current.filter((id) => operations.generators.some((g) => g.generatorId === id)));
       setPlan(latest.plan);
+      setDetails(null);
       if (latest.plan) {
         const response = await getPlanDetails(latest.plan.planKey, adminToken, controller.signal);
         if (!controller.signal.aborted) setDetails(response);
@@ -142,6 +158,24 @@ export function PlantPage() {
     return counts;
   }, {}) ?? {};
   const actualPicked = execution?.pickups.reduce((sum, pickup) => sum + pickup.kg, 0) ?? null;
+  const controlsMatchPlan = !activePlan || (Object.entries(controls).every(([key, value]) =>
+    String(activePlan.params[key as keyof PlanControls]) === String(Number.isFinite(Number(value)) ? Number(value) : value))
+    && [...mandatoryIds].sort().join("|") === [...activePlan.params.mandatoryIds].sort().join("|"));
+  const staleDraft = activePlan?.state === "DRAFT" && activePlan.inputRevision !== snapshot?.inputRevision;
+  const pendingOutcomes = activePlan?.plan.stops.filter((stop) => !execution?.pickups.some((pickup) => pickup.generatorId === stop.generatorId)) ?? [];
+  const nextStep = !activePlan ? "Review the confirmations and build a draft route."
+    : activePlan.state === "DISPATCHED" ? pendingOutcomes.length
+      ? `Hand off the frozen trip. ${pendingOutcomes.length} stop outcomes are still pending.`
+      : execution?.gate ? "Review the pickup and net intake reconciliation." : "All stop outcomes are recorded. Record net plant intake."
+    : staleDraft ? "Kitchen inputs changed. Re-plan before dispatch."
+    : !controlsMatchPlan ? "Planning controls changed. Re-plan to save these choices."
+    : activePlan.mandatoryConflicts.length ? "Resolve mandatory stop conflicts before dispatch."
+    : !activePlan.plan.stops.length ? "No stops fit this draft. Review kitchen confirmations and constraints."
+    : activePlan.status !== "FEASIBLE" ? "This draft is not feasible. Review the shortfall and constraints before re-planning."
+    : "Review addresses, windows and exclusions, then dispatch this version.";
+  const currentDriverAccess = driverAccess?.planKey === activePlan?.planKey ? driverAccess : null;
+  const driverLink = currentDriverAccess && activePlan
+    ? `${window.location.origin}/driver/${encodeURIComponent(activePlan.planKey)}?t=${encodeURIComponent(currentDriverAccess.token)}` : "";
 
   const authenticate = (event: FormEvent) => {
     event.preventDefault();
@@ -158,6 +192,8 @@ export function PlantPage() {
     setSnapshot(null);
     setPlan(null);
     setDetails(null);
+    setDriverAccess(null);
+    setDriverLinkVisible(false);
   };
 
   const replan = async () => {
@@ -180,6 +216,7 @@ export function PlantPage() {
       setPlan(response);
       setDetails(null);
       setDriverAccess(null);
+      setDriverLinkVisible(false);
       dispatchAttempt.current = null;
       setMessage("New draft saved. Review the stops and conflicts before dispatch.");
     } catch (reason) {
@@ -195,7 +232,7 @@ export function PlantPage() {
       expectedVersion: activePlan.version,
       expectedInputRevision: activePlan.inputRevision,
     };
-    const signature = JSON.stringify(request);
+    const signature = JSON.stringify({ planKey: activePlan.planKey, ...request });
     if (!dispatchAttempt.current || dispatchAttempt.current.signature !== signature) {
       dispatchAttempt.current = { signature, key: createIdempotencyKey("dispatch") };
     }
@@ -210,7 +247,8 @@ export function PlantPage() {
       );
       dispatchAttempt.current = null;
       setPlan(response.plan);
-      setDriverAccess(response.driverAccess);
+      setDriverAccess({ ...response.driverAccess, planKey: response.plan.planKey });
+      setDriverLinkVisible(false);
       setMessage(activePlan.state === "DISPATCHED"
         ? "Private driver access retrieved for the frozen trip."
         : "Trip dispatched and frozen. Kitchen edits now appear as alerts.");
@@ -228,13 +266,13 @@ export function PlantPage() {
   };
 
   const copyDriverLink = async () => {
-    if (!driverAccess || !activePlan) return;
-    const link = `${window.location.origin}/driver/${encodeURIComponent(activePlan.planKey)}?t=${encodeURIComponent(driverAccess.token)}`;
+    if (!currentDriverAccess || !activePlan) return;
     try {
-      await navigator.clipboard.writeText(link);
-      setMessage(`Private driver link copied. It expires at ${new Date(driverAccess.expiresAt).toLocaleString()}.`);
+      await navigator.clipboard.writeText(driverLink);
+      setMessage(`Private driver link copied. It expires at ${new Date(currentDriverAccess.expiresAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}.`);
     } catch {
-      setError("Clipboard access was unavailable. Keep this page open and copy the private link manually from a supported browser.");
+      setDriverLinkVisible(true);
+      setMessage("Clipboard access was unavailable. Select and copy the private link in the handoff panel.");
     }
   };
 
@@ -360,7 +398,7 @@ export function PlantPage() {
       </header>
 
       <section className="operations-toolbar">
-        <label className="field compact"><span>Planning date</span><input type="date" value={date} onChange={(event) => { setDate(event.currentTarget.value); setControlsTouched(false); setMandatoryIds([]); }} /></label>
+        <label className="field compact"><span>Planning date · India time</span><input type="date" disabled={planning || dispatching || gateSaving} value={date} onChange={(event) => { const value = event.currentTarget.value; if (!value) return; setDate(value); setControlsTouched(false); setMandatoryIds([]); setSnapshot(null); setPlan(null); setDetails(null); setDriverAccess(null); setDriverLinkVisible(false); setPhone(null); setGate({ netKg: "", source: "SCALE", reference: "", correctionReason: "" }); setMessage(null); }} /></label>
         <button className="button button-secondary" type="button" onClick={() => setRefreshKey((value) => value + 1)} disabled={loading}>Refresh data</button>
         {snapshot && <div className="mode-line"><span>Database {snapshot.serviceMode.database}</span><span>Matrix {activePlan?.matrixSource ?? snapshot.serviceMode.matrix}</span><span>Screening {snapshot.serviceMode.screening}</span></div>}
       </section>
@@ -377,7 +415,13 @@ export function PlantPage() {
             <div><span>Not ready</span><strong>{statusCounts.NOT_READY ?? 0}</strong></div>
             <div><span>Unconfirmed</span><strong>{statusCounts.UNCONFIRMED ?? 0}</strong></div>
             <div><span>Hazard holds</span><strong>{statusCounts.HAZARD ?? 0}</strong></div>
-            <div><span>Input revision</span><strong>{snapshot.inputRevision}</strong></div>
+            <div><span>Confirmed quantity</span><strong>{formatKg(confirmedSupplyKg(snapshot.generators))}</strong></div>
+          </section>
+
+          <section className="operations-brief" aria-label="Collection brief">
+            <div><h1>{formatServiceDate(date)}</h1><p>{nextStep}</p></div>
+            <nav aria-label="Operations sections"><a href="#route-review">Route</a><a href="#supply-actions">Kitchen actions</a>{activePlan?.state === "DISPATCHED" && <a href="#gate-record">Plant intake</a>}</nav>
+            <p className="brief-detail">{formatKg(confirmedSupplyKg(snapshot.generators, true))} confirmed without hazard holds in the accepted stream. Confirmed quantity is not expected collection. Input revision {snapshot.inputRevision}.</p>
           </section>
 
           <section className="planner-controls" aria-labelledby="plan-controls-title">
@@ -396,7 +440,7 @@ export function PlantPage() {
             </div>
           </section>
 
-          <section className="operations-grid">
+          <section className="operations-grid" id="route-review">
             <div className="map-panel"><RouteMap points={points} /></div>
             <div className="plan-panel">
               <div className="section-heading"><div><p className="context-line">{activePlan?.state ?? "No draft"}</p><h2>Route review</h2></div>{activePlan && <span className={`status-badge status-${activePlan.status.toLowerCase()}`}>{activePlan.status.replaceAll("_", " ")}</span>}</div>
@@ -408,17 +452,23 @@ export function PlantPage() {
                     <div><span>Actual picked</span><strong>{formatKg(actualPicked)}</strong></div>
                     <div><span>Net received</span><strong>{formatKg(execution?.reconciliation.netGateKg)}</strong></div>
                   </div>
+                  <div className="trip-overview"><strong>{activePlan.plan.stops.length} stops · {activePlan.plan.totals.totalKm.toFixed(1)} km · {Math.round(activePlan.plan.totals.totalMin)} min</strong><span>Plant departure {activePlan.plan.startAt} · return {activePlan.plan.returnAt}</span><span>Shift {activePlan.params.shiftStart}–{activePlan.params.shiftEnd} · target {formatKg(activePlan.params.targetKg)}</span><span>Reserved {formatKg(activePlan.plan.totals.reservedLoadKg)} of {formatKg(activePlan.params.truckCapacityKg)} capacity</span></div>
+                  <p className="assumption-note">Planning assumptions: {(activePlan.assumptions.readinessPrior * 100).toFixed(0)}% readiness prior, {(activePlan.assumptions.capacityBuffer * 100).toFixed(0)}% capacity buffer. Expected kg is a forecast; reserved kg protects capacity.</p>
                   {activePlan.shortfall.kg > 0 && <p className="shortfall">Short by {formatKg(activePlan.shortfall.kg)}. Constraints: {activePlan.shortfall.reasons.join(", ") || "available confirmed supply"}.</p>}
                   {activePlan.mandatoryConflicts.length > 0 && <p className="notice error">Mandatory conflicts: {activePlan.mandatoryConflicts.map((item) => `${item.generatorId} (${item.reason})`).join(", ")}. Dispatch is blocked.</p>}
                   <ol className="route-list">
-                    {activePlan.plan.stops.map((stop) => <li key={stop.generatorId}><span className="stop-number">{activePlan.plan.stops.indexOf(stop) + 1}</span><div><strong>{stop.name}</strong><span>{stop.serviceStartAt}–{stop.serviceEndAt} · window {stop.window.start}–{stop.window.end}</span></div><div><strong>{formatKg(stop.expectedCollectionKg)}</strong><span>{formatKg(stop.reservedLoadKg)} reserved{stop.mandatory ? " · mandatory" : ""}</span></div></li>)}
+                    <li className="depot-stop"><span className="stop-number plant-number">P</span><div><strong>Depart CBG plant</strong><span>{activePlan.plan.startAt} · {snapshot.depot.lat.toFixed(4)}, {snapshot.depot.lng.toFixed(4)}</span></div></li>
+                    {activePlan.plan.stops.map((stop, index) => <li key={stop.generatorId}><span className="stop-number">{index + 1}</span><div><strong>{stop.name}</strong><span>{stop.address}</span><span>Arrival {stop.arrivalAt} · service {stop.serviceStartAt}–{stop.serviceEndAt}</span><span>Window {stop.window.start}–{stop.window.end} · {formatKg(stop.confirmedKg)} confirmed ({stop.weightSource.toLowerCase()})</span></div><div><strong>{formatKg(stop.expectedCollectionKg)} expected</strong><span>{formatKg(stop.reservedLoadKg)} reserved{stop.mandatory ? " · mandatory" : ""}</span></div></li>)}
+                    <li className="depot-stop"><span className="stop-number plant-number">P</span><div><strong>Return to CBG plant</strong><span>{activePlan.plan.returnAt} · unload and record net intake</span></div></li>
                   </ol>
+                  {(staleDraft || !controlsMatchPlan) && activePlan.state === "DRAFT" && <p className="notice warning">{staleDraft ? "Confirmations changed since this draft." : "Controls differ from the saved draft."} Re-plan before dispatch.</p>}
                   <div className="plan-actions">
-                    <button className="button button-primary" type="button" onClick={() => void dispatch()} disabled={loading || dispatching || activePlan.inputRevision !== snapshot.inputRevision || activePlan.status !== "FEASIBLE" || activePlan.mandatoryConflicts.length > 0 || activePlan.plan.stops.length === 0 || activePlan.state !== "DRAFT"}>{dispatching ? "Dispatching…" : activePlan.state === "DISPATCHED" ? "Dispatched" : "Dispatch reviewed version"}</button>
-                    {activePlan.state === "DISPATCHED" && !driverAccess && <button className="button button-secondary" type="button" onClick={() => void dispatch()} disabled={dispatching}>Retrieve private driver link</button>}
-                    {driverAccess && <button className="button button-secondary" type="button" onClick={() => void copyDriverLink()}>Copy private driver link</button>}
+                    <button className="button button-primary" type="button" onClick={() => void dispatch()} disabled={loading || dispatching || !controlsMatchPlan || activePlan.inputRevision !== snapshot.inputRevision || activePlan.status !== "FEASIBLE" || activePlan.mandatoryConflicts.length > 0 || activePlan.plan.stops.length === 0 || activePlan.state !== "DRAFT"}>{dispatching ? "Dispatching…" : activePlan.state === "DISPATCHED" ? "Dispatched" : "Dispatch reviewed version"}</button>
+                    {activePlan.state === "DISPATCHED" && !currentDriverAccess && <button className="button button-secondary" type="button" onClick={() => void dispatch()} disabled={dispatching}>Retrieve private driver link</button>}
+                    {currentDriverAccess && <button className="button button-secondary" type="button" onClick={() => void copyDriverLink()}>Copy private driver link</button>}
                   </div>
-                  {activePlan.state === "DISPATCHED" && !driverAccess && <p className="muted">Retrieve the existing private driver link after a refresh. Its original expiry is retained; expired access requires operational support.</p>}
+                  {activePlan.state === "DISPATCHED" && !currentDriverAccess && <p className="muted">Retrieve the existing private driver link after a refresh. Its original expiry is retained; expired access requires operational support.</p>}
+                  {currentDriverAccess && <aside className="driver-handoff"><h3>Driver handoff</h3><p>Share the private link with the assigned driver. Ask them to check the stop windows, record every outcome while parked, and return to the plant.</p><p>Access expires {new Date(currentDriverAccess.expiresAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })} India time.</p><button type="button" className="text-button" onClick={() => setDriverLinkVisible((value) => !value)}>{driverLinkVisible ? "Hide private link" : "Show private link for manual copy"}</button>{driverLinkVisible && <label className="field"><span>Private driver link · keep off public recordings</span><input readOnly value={driverLink} onFocus={(event) => event.currentTarget.select()} /></label>}</aside>}
                 </>
               )}
             </div>
@@ -435,21 +485,25 @@ export function PlantPage() {
             </section>
           )}
 
-          <section className="supply-panel">
-            <div className="section-heading"><div><p className="context-line">Authoritative date snapshot</p><h2>Kitchens and next actions</h2></div></div>
+          <section className="supply-panel" id="supply-actions">
+            <div className="section-heading"><div><p className="context-line">Authoritative date snapshot</p><h2>Kitchens and next actions</h2></div><label className="field compact"><span>Show kitchens</span><select value={supplyFilter} onChange={(event) => setSupplyFilter(event.currentTarget.value)}><option value="all">All kitchens</option><option value="action">Need attention</option><option value="route">On this route</option></select></label></div>
+            <p className="muted">Mark a promised pickup mandatory before building the draft. A mandatory stop that cannot fit blocks dispatch.</p>
             <div className="supply-list">
-              {snapshot.generators.map((generator) => {
+              {snapshot.generators.filter((generator) => supplyFilter === "all" || (supplyFilter === "route"
+                ? activePlan?.plan.stops.some((stop) => stop.generatorId === generator.generatorId)
+                : generator.unresolvedHazards.length || generator.readinessStatus !== "READY" || activePlan?.excluded.some((item) => item.generatorId === generator.generatorId))).map((generator) => {
                 const excluded = activePlan?.excluded.find((item) => item.generatorId === generator.generatorId);
                 const hazardous = generator.unresolvedHazards.length > 0;
                 return (
                   <article key={generator.generatorId}>
                     <div className="supply-main">
-                      <label className="check-field"><input type="checkbox" checked={mandatoryIds.includes(generator.generatorId)} onChange={(event) => { const checked = event.currentTarget.checked; setMandatoryIds((current) => checked ? [...current, generator.generatorId] : current.filter((id) => id !== generator.generatorId)); }} /><span>Mandatory</span></label>
+                      <label className="check-field"><input type="checkbox" disabled={activePlan?.state === "DISPATCHED"} checked={activePlan?.state === "DISPATCHED" ? activePlan.params.mandatoryIds.includes(generator.generatorId) : mandatoryIds.includes(generator.generatorId)} onChange={(event) => { const checked = event.currentTarget.checked; setControlsTouched(true); setMandatoryIds((current) => checked ? [...current, generator.generatorId] : current.filter((id) => id !== generator.generatorId)); }} /><span>Mandatory</span></label>
                       <div><strong>{generator.name}</strong><span>{generator.address}</span></div>
                       <span className={`status-badge readiness-${generator.readinessStatus.toLowerCase()}`}>{generator.readinessStatus}</span>
                       <div><strong>{formatKg(generator.readiness?.confirmedKg)}</strong><span>{generator.readiness?.window ? `${generator.readiness.window.start}–${generator.readiness.window.end}` : "No confirmed window"}</span></div>
                     </div>
-                    {(excluded || hazardous) && <p className="next-action">{excluded?.reason ?? "HAZARD_REVIEW"} · {exclusionAction(excluded?.reason ?? "HAZARD_REVIEW")}</p>}
+                    {(excluded || hazardous || generator.readinessStatus !== "READY") && <p className="next-action">{hazardous ? "HAZARD_REVIEW" : excluded?.reason ?? generator.readinessStatus} · {exclusionAction(hazardous ? "HAZARD_REVIEW" : excluded?.reason ?? generator.readinessStatus)}</p>}
+                    {hazardous && <p className="hazard-detail">Unresolved hazard: {generator.unresolvedHazards.map((hazard) => hazard.reason).join("; ")}</p>}
                     <div className="row-actions">
                       <button className="text-button" type="button" onClick={() => setPhone({ generatorId: generator.generatorId, status: "READY", kg: generator.readiness?.confirmedKg ? String(generator.readiness.confirmedKg) : "", source: generator.readiness?.weightSource ?? "ESTIMATE", start: generator.readiness?.window?.start ?? generator.pickupWindow.start, end: generator.readiness?.window?.end ?? generator.pickupWindow.end, confirmedBy: "", reason: "" })}>Record phone confirmation</button>
                       <input aria-label={`Hazard reason for ${generator.name}`} placeholder={hazardous ? "Resolution reason" : "Hazard reason"} value={hazardReasons[generator.generatorId] ?? ""} onChange={(event) => { const value = event.currentTarget.value; setHazardReasons((current) => ({ ...current, [generator.generatorId]: value })); }} />
@@ -462,9 +516,9 @@ export function PlantPage() {
           </section>
 
           {phone && (
-            <section className="inline-editor">
+            <section className="inline-editor" ref={phoneEditor} aria-label="Phone confirmation editor">
               <form onSubmit={(event) => void submitPhone(event)}>
-                <div className="section-heading"><div><p className="context-line">Attributable dispatcher call</p><h2>Phone confirmation</h2></div><button className="text-button" type="button" onClick={() => setPhone(null)}>Cancel</button></div>
+                <div className="section-heading"><div><p className="context-line">Attributable dispatcher call</p><h2>Phone confirmation</h2><p>{snapshot.generators.find((generator) => generator.generatorId === phone.generatorId)?.name} · {formatServiceDate(date)}</p></div><button className="text-button" type="button" onClick={() => setPhone(null)}>Cancel</button></div>
                 <div className="control-grid">
                   <label className="field compact"><span>Status</span><select value={phone.status} onChange={(event) => setPhone({ ...phone, status: event.currentTarget.value as PhoneForm["status"] })}><option value="READY">Ready</option><option value="NOT_READY">Not ready</option></select></label>
                   {phone.status === "READY" && <><label className="field compact"><span>Confirmed kg</span><input type="number" min="0.1" value={phone.kg} onChange={(event) => setPhone({ ...phone, kg: event.currentTarget.value })} /></label><label className="field compact"><span>Source</span><select value={phone.source} onChange={(event) => setPhone({ ...phone, source: event.currentTarget.value as WeightSource })}><option value="SCALE">Scale</option><option value="ESTIMATE">Estimate</option></select></label><label className="field compact"><span>Window start</span><input type="time" value={phone.start} onChange={(event) => setPhone({ ...phone, start: event.currentTarget.value })} /></label><label className="field compact"><span>Window end</span><input type="time" value={phone.end} onChange={(event) => setPhone({ ...phone, end: event.currentTarget.value })} /></label></>}
@@ -477,7 +531,7 @@ export function PlantPage() {
           )}
 
           {activePlan?.state === "DISPATCHED" && execution && (
-            <section className="reconciliation-panel">
+            <section className="reconciliation-panel" id="gate-record">
               <div>
                 <p className="context-line">Trip reconciliation</p>
                 <h2>{reconciliationLabel(execution.reconciliation.status)}</h2>

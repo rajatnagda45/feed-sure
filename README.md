@@ -1,114 +1,57 @@
 # FeedSure CBG
 
-## Hackathon implementation: v3
+Before the truck leaves, know which kitchens are ready. After it returns, know how much waste the plant received.
 
-Kitchens confirm tomorrow's food-waste quantity and pickup window. The dispatcher reviews a
-feasible route and freezes it; the driver records actual pickups; the plant records net gate
-intake. Kitchens can read their own pickup records and the linked trip's reconciliation state.
+FeedSure is a single-truck collection prototype for a CBG plant and enrolled food-waste kitchens. A kitchen confirms a date, quantity and pickup window. The dispatcher reviews a feasible route and freezes it. The driver records pickups; the plant records net intake; kitchens see their own collection record and trip-level gate status.
 
-Implemented backend: header-based access scopes, durable readiness without photos, human hazard
-review, immutable plan snapshots, conditional dispatch, expiring driver access, atomic pickup/gate
-corrections and retry protection. The React frontend contains kitchen, dispatcher and driver views.
-The complete workflow was verified in the browser against local real handlers and Moto DynamoDB.
-Cloud deployment remains unverified. See [integration evidence](docs/TESTING.md).
+## What works locally
 
-The planner enforces reserved capacity, service windows and depot return. It compares with a
-nearest-first baseline under the same constraints. Defaults are a 1,200 kg target, 0.8 readiness
-prior and 10% capacity buffer. Synthetic scenarios are evaluation fixtures, not field savings.
+Readiness saves without photos or AI. Planning checks full-load capacity reservations, pickup windows and depot return. Dispatch rejects changed inputs; later edits raise alerts while preserving driver stops. Scoped access, retry protection, revisioned corrections, partial pickups and gate reconciliation execute through real domain handlers with local Moto storage.
 
-- [API contract](docs/V3-CONTRACT.md) and executable examples in `tests/contracts/`
-- [Local run and deployment](docs/DEPLOYMENT.md)
-- [Planner and evaluation](docs/PLANNER-V3.md), results in `eval/route-results.md`
-- [Security and remaining hardening](docs/SECURITY.md)
+All demo kitchens, quantities and scenario matrices are **synthetic**. Defaults of 0.8 readiness probability, 10% capacity buffer and a 1,200 kg target are prototype assumptions. Expected collection, reserved truck load, recorded pickups and net received kg are separate quantities.
 
-P1 photo screening is deferred: the optional screen endpoint returns 503 and never blocks
-readiness. Precise GPS retention requires an operational removal job. No photo-derived purity,
-methane yield, screening accuracy or deployed performance is claimed.
+The optional photo and map repairs are undergoing independent integration verification; their current release status is in [TESTING.md](docs/TESTING.md). AWS deployment, live Bedrock analysis and physical phone-camera operation have not been established by this QA run.
 
-Coding tools used: OpenAI Codex, PowerShell, Python, pytest/moto, Ruff and Git. The AWS SAM
-template targets Python 3.12; 192 backend tests passed on Python 3.12.13 and Python 3.13.9.
-Frontend checks passed: 22 unit tests, three opt-in live API-client tests, and the production build.
-All 18 synthetic route scenarios reproduced their saved reports. SAM CLI was unavailable.
+## Run and verify
 
-## Preserved early concept notes
+Python 3.12+ and Node/npm are required. Install declared dependencies in a fresh checkout:
 
-The text below is historical planning material, superseded by the shipped API contract above.
-Its earlier statistics, feature descriptions and TODOs are not submission evidence. Private
-working documents referenced below are retained locally and excluded from this Git update.
-
-> **Implementation target: PRD v3 (10 Oct 2026).** Kitchens confirm readiness; a dispatcher plans
-> and freezes a feasible route; drivers record pickups; the plant reconciles net gate intake.
-> Photos are optional assistance. See [PRD v3](docs/PRD.md), especially §12, and the
-> [hackathon review](docs/HACKATHON-REVIEW.md) for scope, evidence and implementation gaps.
-> Existing code largely follows v1: the plant dashboard is still a placeholder, and driver/gate
-> workflows are not implemented. The sections below describe the legacy concept, not v3 completion.
-> Earlier research statistics below need re-verification before use in a pitch.
-> [PRD v1](docs/PRD-v1.md) and [PRD v2](docs/PRD-v2.md) are preserved for reference.
-
-**A phone-based pre-pickup quality check and route planner for compressed-biogas (CBG) plants.**
-
-Hostel messes, hotels and canteens photograph their wet waste before pickup. Amazon Bedrock flags
-visible contamination (plastic, foil, cutlery, glass) and gives the kitchen an exact fix. The plant's
-planner then builds tomorrow's collection route on **expected usable kilograms**, not raw weight or
-distance alone, and states plainly when the intake target cannot be met, by how much, and why.
-
-> Built for WeMakeDevs **Environmental Hacks** (Bharat Builds Tour), Waste and Energy track, Oct 8–11 2026.
-
-## The problem
-
-India had about 1,900 registered CBG/Bio-CNG projects in August 2026, but only about 217 were
-commissioned (GOBARdhan portal, via PIB, 6 Aug 2026). Plants that do run are reported to average
-about 35% utilisation (IEA, India Bioenergy Market Report, Jan 2026), and unreliable, poorly
-segregated feedstock is a leading cited reason. Trucks get sent to contaminated loads, and kitchens
-never learn what was wrong.
-
-## Who it is for
-
-- **Plant logistics manager**: decides which pickups go on tomorrow's route.
-- **Mess or kitchen worker** at a bulk waste generator: takes two photos and fixes what is flagged.
-
-## How it works
-
-1. The worker opens their generator link, enters approximate kg and takes two guided photos.
-2. Bedrock (vision) lists visible contaminants; our rules engine returns **Accept / Inspect / Hold**
-   with one plain instruction.
-3. The planner estimates usable kg per generator and builds a single-truck route that respects
-   capacity, pickup windows and shift time.
-4. The dashboard compares the result against a nearest-first baseline and shows any shortfall.
-
-## AWS services
-
-Amazon Bedrock · AWS Lambda · Amazon API Gateway · Amazon S3 · Amazon DynamoDB ·
-Amazon Location Service · AWS Amplify Hosting · AWS SAM
-
-## Quick start
-
-See `docs/DEPLOYMENT.md`. In short:
-
-```bash
-pip install -e ".[dev]" && pytest
-cd backend && sam build && sam deploy --guided
-python scripts/seed_data.py --stage dev
-cd frontend && npm install && npm run dev
+```powershell
+python -m pip install -e ".[dev]"
+python -m pytest -q
+python scripts/eval_routes.py
+Set-Location frontend
+npm ci
+npm run test
+npm run build
 ```
 
-## Screening accuracy
+For private kitchen links and the disposable local API/frontend, follow [DEPLOYMENT.md](docs/DEPLOYMENT.md). Preserve any running demo and its private access manifest. Never publish tokens or `.tmp/` files.
 
-_TODO after M7:_ "On N labelled test photos: X false accepts, Y caught contaminated loads."
+QA on 11 October 2026: **225 backend tests passed in 21.94 seconds** on Python 3.13.9; the independent real-handler correction test passed in 3.65 seconds and the 32 directed planner cases passed in 0.18 seconds. Frontend/map/photo results are provisional until the two repair handoffs freeze and the final integration run completes. The 18 fixed route scenarios reproduced the saved reports: 16 ties, one shorter primary route at equal expected kg, and one trade-off where nearest-first collected more expected kg. No field savings or screening accuracy are claimed.
 
-## Limits (read before judging)
+Three evidence levels are kept separate throughout the repository: pure fixture/unit results,
+real HTTP handlers backed by disposable local Moto storage, and deployed AWS/browser-device evidence.
+Only the first two have been established by Session C so far; a responsive or mock screen alone is
+not treated as an integrated workflow.
 
-- Generator volumes and history are **simulated**. Plant coordinates are approximate and must be
-  verified before the demo; thresholds are assumptions unless stated otherwise.
-- Photo screening sees only **visible** contamination. It is a triage aid, not a lab test, and does
-  not estimate moisture or methane yield.
+## AWS and boundaries
 
+The source contains AWS SAM infrastructure and adapters for Lambda, API Gateway, DynamoDB, private S3, Bedrock and Amazon Location; Amplify hosting configuration is included. Local Moto and routing fallback do not establish live AWS use. SAM build/deployment was not performed in this QA session.
 
+Photos can assist with visible items only; they cannot establish whole-load safety, chemistry, mass or gas yield. Hazards need human resolution. Gate records show received waste, not independently verified processing. GPS is optional evidence; precise-field retention still needs an operational removal job. Field benefit and user usability remain unvalidated.
 
-## Team
+## Documentation
 
-_TODO_
+- [API](docs/API.md), [database](docs/DATABASE.md), [security](docs/SECURITY.md)
+- [Planner policy](docs/PLANNER-V3.md) and [synthetic evaluation](eval/route-results.md)
+- [Tests and evidence](docs/TESTING.md), [local run/deployment](docs/DEPLOYMENT.md)
+- [2 minute 45 second demo script](docs/DEMO-SCRIPT.md), [submission draft and evidence checklist](docs/SUBMISSION.md)
 
-## Licence
+## AI tools used
 
-MIT
+OpenAI Codex was used for implementation, review, tests and documentation. Confirm any additional AI tools used by the team before submission. Runtime Bedrock is a separate optional service; this local QA does not establish a live model call.
+
+## Credits and licence
+
+React, React Router, Vite, TypeScript, MapLibre GL JS, boto3, FastAPI, uvicorn, pytest, Moto and Vitest are external dependencies; retain their respective licences. A project licence file is currently missing; the owner should select and add it before publication.

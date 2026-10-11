@@ -27,6 +27,18 @@ def main() -> None:
     parser.add_argument("--date", type=date.fromisoformat, default=tomorrow)
     parser.add_argument("--port", type=int, default=8787)
     parser.add_argument("--frontend-port", type=int, default=5173)
+    parser.add_argument(
+        "--manifest",
+        type=Path,
+        default=ROOT / ".tmp/local-demo-access.json",
+        help="Separate private access manifest for isolated sessions.",
+    )
+    parser.add_argument("--photo-dir", type=Path, default=None)
+    parser.add_argument(
+        "--photo-fixture",
+        choices=["clean", "plastic", "hazard", "low_confidence", "malformed"],
+        default="clean",
+    )
     args = parser.parse_args()
     if not 1 <= args.port <= 65535 or not 1 <= args.frontend_port <= 65535:
         parser.error("port must be between 1 and 65535")
@@ -46,6 +58,8 @@ def main() -> None:
         AWS_REGION="ap-south-1",
         AWS_ENDPOINT_URL="",
         MOCK_LOCATION="true",
+        MOCK_BEDROCK="true",
+        MOCK_BEDROCK_FIXTURE=args.photo_fixture,
         ADMIN_TOKEN=secrets.token_urlsafe(32),
         DRIVER_TOKEN_SECRET=secrets.token_urlsafe(48),
         ALLOWED_ORIGIN=f"http://localhost:{args.frontend_port}",
@@ -66,9 +80,12 @@ def main() -> None:
 
         dev_server.app.state.config = config
         dev_server.app.state.database = DynamoDB(config, resource)
-        private_dir = ROOT / ".tmp"
-        private_dir.mkdir(exist_ok=True)
-        access_file = private_dir / "local-demo-access.json"
+        from feedsure.handlers.photos import LocalPhotoStore
+
+        access_file = args.manifest.resolve()
+        access_file.parent.mkdir(parents=True, exist_ok=True)
+        photo_dir = args.photo_dir or access_file.parent / (access_file.stem + "-photos")
+        dev_server.app.state.photo_store = LocalPhotoStore(photo_dir)
         access_file.write_text(
             json.dumps(
                 {
@@ -86,8 +103,12 @@ def main() -> None:
             ),
             encoding="utf-8",
         )
-        print(f"Synthetic kitchens; Moto DynamoDB; fallback matrix; no Bedrock. Date {args.date}.")
-        print(f"Private access: {access_file}. Data is discarded when this process stops.")
+        print(
+            f"Synthetic kitchens; Moto DynamoDB; local photo bytes; "
+            f"mock screening ({args.photo_fixture}); fallback matrix. Date {args.date}."
+        )
+        print(f"Private access: {access_file}. DynamoDB state is discarded on process stop.")
+        print(f"Photo bytes persist privately in {photo_dir} until retention or manual cleanup.")
         server = uvicorn.Server(
             uvicorn.Config(dev_server.app, host="127.0.0.1", port=args.port, access_log=False)
         )

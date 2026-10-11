@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   createPlan, dispatchPlan, getDriverTrip, getGenerator, getGeneratorReceipts,
@@ -9,7 +10,19 @@ import { requestGps } from "../src/workflow";
 
 // Opt-in only: requires the disposable scripts/local_demo.py API. No HTTP mocks.
 const live = process.env.FEEDSURE_LOCAL_INTEGRATION === "1";
-const access = live ? JSON.parse(readFileSync("../.tmp/local-demo-access.json", "utf8")) : null;
+const accessFile = process.env.FEEDSURE_LOCAL_ACCESS_FILE;
+if (live && (!accessFile || resolve(accessFile) === resolve("../.tmp/local-demo-access.json"))) {
+  throw new Error("Set FEEDSURE_LOCAL_ACCESS_FILE to a separate disposable demo manifest.");
+}
+const access = live ? JSON.parse(readFileSync(accessFile!, "utf8")) : null;
+if (live) {
+  const endpoint = new URL(access.apiBaseUrl);
+  if (endpoint.protocol !== "http:" || !["localhost", "127.0.0.1"].includes(endpoint.hostname)
+    || !endpoint.port || endpoint.port === "8787"
+    || process.env.VITE_API_BASE_URL !== access.apiBaseUrl) {
+    throw new Error("Use a disposable loopback API on a non-default port matching VITE_API_BASE_URL.");
+  }
+}
 const a = "demo-kitchen-01";
 const b = "demo-kitchen-02";
 const key = (scope: string) => scope + ":" + crypto.randomUUID();
