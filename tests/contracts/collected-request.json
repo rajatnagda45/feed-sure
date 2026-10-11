@@ -1,0 +1,12 @@
+{
+  "planKey": "2026-10-11#p-example",
+  "generatorId": "hotel-a",
+  "outcome": "COLLECTED",
+  "kg": 98,
+  "weightSource": "SCALE",
+  "reason": null,
+  "remainingKg": null,
+  "remainingUnknown": false,
+  "gps": null,
+  "expectedRevision": 0
+}

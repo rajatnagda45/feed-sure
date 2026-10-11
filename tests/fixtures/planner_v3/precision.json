@@ -1,0 +1,11 @@
+{
+  "scenarioId": "precision-before-presentation",
+  "description": "Internal target comparison must use unrounded contributions.",
+  "generators": [
+    {"generatorId":"a","confirmedKg":0.5000008},
+    {"generatorId":"b","confirmedKg":0.1}
+  ],
+  "params":{"targetKg":0.4000007},
+  "km":[[0,0,0],[0,0,0],[0,0,0]],
+  "min":[[0,0,0],[0,0,0],[0,0,0]]
+}

@@ -9,7 +9,8 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from feedsure.common.config import get_config
-from feedsure.handlers import generators, plans, submissions, uploads
+from feedsure.common.routes import ROUTES
+from feedsure.handlers import operations, uploads
 
 Handler = Callable[[dict[str, Any], Any], dict[str, Any]]
 
@@ -20,7 +21,13 @@ app.add_middleware(
     allow_origins=[config.allowed_origin],
     allow_credentials=False,
     allow_methods=["GET", "POST"],
-    allow_headers=["content-type", "x-admin-token"],
+    allow_headers=[
+        "content-type",
+        "x-admin-token",
+        "x-generator-token",
+        "x-driver-token",
+        "idempotency-key",
+    ],
 )
 
 
@@ -28,15 +35,16 @@ async def _invoke(request: Request, handler: Handler) -> Response:
     body = await request.body()
     event: dict[str, Any] = {
         "version": "2.0",
-        "rawPath": request.url.path,
-        "rawQueryString": request.url.query,
+        # ASGI path is already decoded. URL.path reparses a decoded '#' as a fragment.
+        "rawPath": request.scope["path"],
+        "rawQueryString": request.scope.get("query_string", b"").decode("utf-8"),
         "headers": dict(request.headers),
         "queryStringParameters": dict(request.query_params) or None,
         "pathParameters": dict(request.path_params) or None,
         "requestContext": {
             "http": {
                 "method": request.method,
-                "path": request.url.path,
+                "path": request.scope["path"],
             }
         },
         "body": body.decode("utf-8") if body else None,
@@ -53,30 +61,16 @@ async def _invoke(request: Request, handler: Handler) -> Response:
     )
 
 
-@app.get("/generators")
-@app.get("/generators/{generator_id}")
-async def generator_routes(request: Request, generator_id: str | None = None) -> Response:
-    """Forward generator requests to the Lambda handler."""
-    del generator_id
-    return await _invoke(request, generators.lambda_handler)
+async def operational_route(request: Request) -> Response:
+    """Forward all v3 routes to real handlers; no canned local success responses."""
+    return await _invoke(request, operations.lambda_handler)
+
+
+for method, path in ROUTES:
+    app.add_api_route(path, operational_route, methods=[method])
 
 
 @app.post("/uploads")
 async def upload_route(request: Request) -> Response:
-    """Forward upload requests to the Lambda handler."""
+    """Forward the optional single-photo upload endpoint."""
     return await _invoke(request, uploads.lambda_handler)
-
-
-@app.get("/submissions")
-@app.post("/submissions")
-async def submission_routes(request: Request) -> Response:
-    """Forward submission requests to the Lambda handler."""
-    return await _invoke(request, submissions.lambda_handler)
-
-
-@app.post("/plans")
-@app.get("/plans/{date}")
-async def plan_routes(request: Request, date: str | None = None) -> Response:
-    """Forward plan requests to the Lambda handler."""
-    del date
-    return await _invoke(request, plans.lambda_handler)

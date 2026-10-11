@@ -1,174 +1,265 @@
-"""Pure M4 forecast, usable-weight, routing, and shortfall tests."""
+"""FeedSure v3 pure quantity, constraint, routing, and contract tests."""
 
 from __future__ import annotations
 
+import copy
 import json
+import math
+from pathlib import Path
 
 import pytest
-from feedsure.planner.forecast import forecast_kg
 from feedsure.planner.plan import build_plan
-from feedsure.planner.shortfall import explain_shortfall
 from feedsure.planner.two_opt import improve_route
-from feedsure.planner.usable import expected_usable_kg
+from feedsure.planner.usable import collection_quantities
+
+CONTRACTS = Path(__file__).parents[1] / "contracts"
 
 
-def test_forecast_submission_weekday_fallback_and_empty() -> None:
-    history = [
-        {"date": "2026-09-23", "kg": 100},
-        {"date": "2026-09-30", "kg": 120},
-        {"date": "2026-10-01", "kg": 300},
-    ]
-    assert forecast_kg(history, {"reportedKg": 151.26}, "2026-10-07") == 151.3
-    assert forecast_kg(history, None, "2026-10-07") == 110.0
-    assert forecast_kg(history, None, "2026-10-09") == pytest.approx(173.3)
-    assert forecast_kg([], None, "2026-10-09") == 0.0
+def _contract(name: str) -> dict[str, object]:
+    return json.loads((CONTRACTS / name).read_text(encoding="utf-8"))
 
 
-@pytest.mark.parametrize(
-    ("screening", "prior_accept", "prior_contam", "expected"),
-    [
-        ({"verdict": "ACCEPT", "visibleContaminantPct": 2}, 0.7, 2, 93.1),
-        ({"verdict": "INSPECT", "visibleContaminantPct": 5}, 0.7, 2, 57.0),
-        ({"verdict": "HOLD", "visibleContaminantPct": 8}, 0.7, 2, 0.0),
-        (None, 0.7, 2, 68.6),
-    ],
-)
-def test_usable_probability_cases(
-    screening: dict[str, object] | None,
-    prior_accept: float,
-    prior_contam: float,
-    expected: float,
-) -> None:
-    assert (
-        expected_usable_kg(100, screening, prior_accept=prior_accept, prior_contam_pct=prior_contam)
-        == expected
-    )
-
-
-def _params(**changes: object) -> dict[str, object]:
-    values: dict[str, object] = {
-        "targetKg": 150,
-        "truckCapacityKg": 150,
-        "shiftStart": "06:00",
-        "shiftEnd": "06:10",
-        "serviceMin": 1,
-        "maxRadiusKm": 15,
-        "stopAtTarget": False,
-        "defaultPriorAccept": 0.7,
-        "defaultPriorContamPct": 2,
-    }
-    values.update(changes)
-    return values
-
-
-def _generator(identifier: str, end: str, *, prior: float = 1.0) -> dict[str, object]:
+def _single(
+    *,
+    kilograms: float = 100,
+    target: float = 80,
+    capacity: float = 500,
+    window: tuple[str, str] = ("06:00", "09:00"),
+    shift_end: str = "11:00",
+    travel_min: float | None = 5,
+    distance_km: float | None = 2,
+    mandatory: bool = False,
+) -> dict[str, object]:
+    identifier = "g-a"
     return {
-        "generatorId": identifier,
-        "pickupStart": "06:00",
-        "pickupEnd": end,
-        "priorAccept": prior,
-        "priorContamPct": 0,
-    }
-
-
-def test_known_answer_is_unique_outward_order_and_deterministic() -> None:
-    ids = ["plant", "A", "B", "C"]
-    kilometres = [[float(abs(first - second)) for second in range(4)] for first in range(4)]
-    durations = [[float(abs(first - second)) for second in range(4)] for first in range(4)]
-    inputs = {
-        "date": "2026-10-08",
+        "collectionDate": "2026-10-11",
+        "inputRevision": 1,
         "generators": [
-            _generator("C", "06:06"),
-            _generator("A", "06:02"),
-            _generator("B", "06:04"),
+            {
+                "generatorId": identifier,
+                "name": "Synthetic A",
+                "address": "Synthetic address",
+                "lat": 12.69,
+                "lng": 77.47,
+                "supportedMaterial": True,
+                "simulated": True,
+                "readinessStatus": "READY",
+                "unresolvedHazards": [],
+                "readiness": {
+                    "schemaVersion": 3,
+                    "generatorId": identifier,
+                    "collectionDate": "2026-10-11",
+                    "status": "READY",
+                    "confirmedKg": kilograms,
+                    "weightSource": "SCALE",
+                    "window": {"start": window[0], "end": window[1]},
+                    "submissionId": "ready-a",
+                },
+            }
         ],
         "history": {},
-        "submissions": {
-            identifier: {"reportedKg": 50, "verdict": "ACCEPT", "visibleContaminantPct": 0}
-            for identifier in ids[1:]
+        "depot": {"id": "plant", "lat": 12.681, "lng": 77.474},
+        "matrix": {
+            "pointIds": ["plant", identifier],
+            "km": [[0, distance_km], [distance_km, 0]],
+            "min": [[0, travel_min], [travel_min, 0]],
+            "source": "fixture",
         },
-        "matrix": {"pointIds": ids, "km": kilometres, "min": durations, "source": "fallback"},
-        "params": _params(),
+        "params": {
+            "targetKg": target,
+            "truckCapacityKg": capacity,
+            "capacityBuffer": 0.1,
+            "readinessPrior": 0.8,
+            "shiftStart": "06:00",
+            "shiftEnd": shift_end,
+            "serviceMin": 10,
+            "maxRadiusKm": 15,
+            "mandatoryIds": [identifier] if mandatory else [],
+        },
+        "simulated": True,
     }
+
+
+def test_frozen_planner_contract_and_determinism() -> None:
+    inputs = _contract("planner-input.json")
+    expected = _contract("planner-result.json")
     first = build_plan(inputs)
-    second = build_plan(inputs)
-    assert [stop["generatorId"] for stop in first["plan"]["stops"]] == ["A", "B", "C"]
-    assert first["plan"]["totalKm"] == 6.0
-    assert first["plan"]["loadKg"] == 150.0
-    assert json.dumps(first, sort_keys=True, separators=(",", ":")) == json.dumps(
-        second, sort_keys=True, separators=(",", ":")
+    assert first == expected
+    assert json.dumps(first, sort_keys=True) == json.dumps(build_plan(inputs), sort_keys=True)
+    assert first["plan"] == first["baseline"]
+
+
+def test_frozen_ineligible_mandatory_conflict_contract() -> None:
+    inputs = _contract("planner-input.json")
+    inputs["params"]["mandatoryIds"] = ["kitchen-d"]
+    assert build_plan(inputs) == _contract("mandatory-conflict-response.json")
+
+
+def test_quantities_use_ready_confirmation_not_photo_quality() -> None:
+    quantities = collection_quantities(
+        123.456,
+        readiness_prior=0.8,
+        volume_ratio=1,
+        capacity_buffer=0.1,
     )
+    assert quantities["expectedCollectionKg"] == pytest.approx(98.7648)
+    assert quantities["reservedLoadKg"] == pytest.approx(135.8016)
+    assert quantities["baseKg"] == 123.456
 
 
-def test_two_opt_only_accepts_feasible_distance_reduction() -> None:
+def test_reserved_load_blocks_nominal_truck_capacity() -> None:
+    result = build_plan(_single(kilograms=2_000, target=100, capacity=2_000))
+    assert result["plan"]["stops"] == []
+    assert result["excluded"] == [{"generatorId": "g-a", "reason": "CAPACITY"}]
+    assert result["shortfall"]["kg"] == 100
+
+
+def test_service_must_finish_within_window() -> None:
+    result = build_plan(_single(window=("06:00", "06:10")))
+    assert result["plan"]["stops"] == []
+    assert result["excluded"] == [{"generatorId": "g-a", "reason": "WINDOW"}]
+
+
+def test_route_must_return_before_shift_end() -> None:
+    result = build_plan(_single(travel_min=15, shift_end="06:35"))
+    assert result["plan"]["stops"] == []
+    assert result["excluded"] == [{"generatorId": "g-a", "reason": "SHIFT"}]
+
+
+def test_mandatory_overload_is_explicit_conflict() -> None:
+    result = build_plan(_single(kilograms=2_000, target=100, capacity=2_000, mandatory=True))
+    assert result["status"] == "MANDATORY_CONFLICT"
+    assert result["mandatoryConflicts"] == [{"generatorId": "g-a", "reason": "CAPACITY"}]
+    assert result["excluded"] == [{"generatorId": "g-a", "reason": "CAPACITY"}]
+
+
+def test_history_never_turns_unconfirmed_generator_ready() -> None:
+    inputs = _single()
+    generator = inputs["generators"][0]
+    generator["readiness"] = None
+    generator["readinessStatus"] = "UNCONFIRMED"
+    inputs["history"] = {"g-a": [{"date": "2026-10-04", "kg": 100}]}
+    result = build_plan(inputs)
+    assert result["plan"]["stops"] == []
+    assert result["excluded"] == [{"generatorId": "g-a", "reason": "UNCONFIRMED"}]
+
+
+def test_exclusion_precedence_is_safety_first_without_double_counting() -> None:
+    inputs = _single()
+    generator = inputs["generators"][0]
+    generator["readiness"] = None
+    generator["readinessStatus"] = "UNCONFIRMED"
+    generator["supportedMaterial"] = False
+    generator["unresolvedHazards"] = [{"action": "ENTER", "reason": "Synthetic glass"}]
+    result = build_plan(inputs)
+    assert result["excluded"] == [{"generatorId": "g-a", "reason": "HAZARD_REVIEW"}]
+    assert result["shortfall"]["reasons"] == ["HAZARD_REVIEW"]
+
+
+def test_unreachable_directed_leg_is_not_fabricated_as_zero_cost() -> None:
+    inputs = _single()
+    inputs["matrix"]["km"][1][0] = None
+    inputs["matrix"]["min"][1][0] = None
+    result = build_plan(inputs)
+    assert result["plan"]["stops"] == []
+    assert result["excluded"] == [{"generatorId": "g-a", "reason": "NOT_SELECTED_BY_HEURISTIC"}]
+
+
+def test_colocated_optional_tie_is_stable_by_identifier() -> None:
+    inputs = _contract("planner-input.json")
+    inputs["generators"] = inputs["generators"][:2]
+    inputs["matrix"] = {
+        "pointIds": ["plant", "hotel-a", "hostel-b"],
+        "km": [[0, 0, 0], [0, 0, 0], [0, 0, 0]],
+        "min": [[0, 0, 0], [0, 0, 0], [0, 0, 0]],
+        "source": "fixture",
+    }
+    inputs["params"]["targetKg"] = 80
+    result = build_plan(inputs)
+    assert [stop["generatorId"] for stop in result["plan"]["stops"]] == ["hostel-b"]
+    assert result["excluded"] == [{"generatorId": "hotel-a", "reason": "TARGET_REACHED"}]
+    assert result["plan"]["totals"]["totalKm"] == 0
+
+
+def test_two_opt_evaluates_full_directed_reversal() -> None:
     candidates = {
         index: {
             "generatorId": identifier,
-            "forecastKg": 10,
-            "usableKg": 9,
-            "verdict": "ACCEPT",
-            "pickupStart": "06:00",
-            "pickupEnd": "10:00",
+            "name": identifier,
+            "address": "Synthetic",
+            "lat": 0.0,
+            "lng": 0.0,
+            "window": {"start": "06:00", "end": "10:00"},
+            "submissionId": identifier,
+            "confirmedKg": 1,
+            "weightSource": "SCALE",
+            "expectedCollectionKg": 1.0,
+            "reservedLoadKg": 1.1,
+            "mandatory": False,
+            "simulated": True,
         }
-        for index, identifier in enumerate(["unused", "A", "B", "C"])
-        if index
+        for index, identifier in ((1, "A"), (2, "B"), (3, "C"))
     }
-    km = [
-        [0, 1, 2, 3],
-        [1, 0, 1, 5],
-        [2, 1, 0, 1],
-        [3, 5, 1, 0],
+    directed = [
+        [0, 1, 1, 9],
+        [9, 0, 1, 1],
+        [1, 100, 0, 1],
+        [1, 9, 9, 0],
     ]
     result = improve_route(
-        [0, 1, 3, 2, 0],
+        [0, 1, 2, 3, 0],
         candidates,
-        km,
-        km,
-        capacity_kg=100,
+        directed,
+        directed,
+        capacity_kg=10,
         shift_start="06:00",
         shift_end="10:00",
         service_min=0,
     )
     assert result["routeIndices"] == [0, 1, 2, 3, 0]
-    assert result["totalKm"] == 6.0
+    assert result["totals"]["totalKm"] == 4
 
 
-def test_shortfall_aggregates_and_sorts_reasons() -> None:
-    result = explain_shortfall(
-        100,
-        20,
-        [
-            {"code": "capacity", "kg": 10, "generatorId": "b"},
-            {"code": "held", "kg": 30, "generatorId": "z"},
-            {"code": "capacity", "kg": 25, "generatorId": "a"},
-            {"code": "time_window", "kg": 5, "generatorId": "c"},
-            {"code": "out_of_radius", "kg": 4, "generatorId": "d"},
-            {"code": "unscreened_risk", "kg": 3, "generatorId": "e"},
-        ],
-    )
-    assert result["kg"] == 80.0
-    assert [reason["code"] for reason in result["reasons"]] == [
-        "capacity",
-        "held",
-        "time_window",
-        "out_of_radius",
-        "unscreened_risk",
-    ]
-    assert result["reasons"][0]["generatorIds"] == ["a", "b"]
-    assert explain_shortfall(10, 10, result["reasons"])["reasons"] == []
+def test_empty_plan_is_explicit_and_finite() -> None:
+    inputs = _contract("planner-input.json")
+    inputs["generators"] = []
+    inputs["history"] = {}
+    inputs["matrix"] = {
+        "pointIds": ["plant"],
+        "km": [[0]],
+        "min": [[0]],
+        "source": "fixture",
+    }
+    inputs["params"]["mandatoryIds"] = []
+    result = build_plan(inputs)
+    assert result["plan"] == {
+        "stops": [],
+        "startAt": "06:00",
+        "returnAt": "06:00",
+        "totals": {
+            "expectedCollectionKg": 0,
+            "reservedLoadKg": 0,
+            "totalKm": 0,
+            "totalMin": 0,
+            "serviceMin": 0,
+            "waitingMin": 0,
+        },
+    }
+    assert result["shortfall"] == {"kg": 200, "reasons": []}
 
 
-def test_empty_inputs_return_empty_routes() -> None:
-    result = build_plan(
-        {
-            "date": "2026-10-08",
-            "generators": [],
-            "history": {},
-            "submissions": {},
-            "matrix": {"pointIds": ["plant"], "km": [[0]], "min": [[0]], "source": "fallback"},
-            "params": _params(),
-        }
-    )
-    assert result["plan"]["stops"] == []
-    assert result["baseline"]["stops"] == []
-    assert result["shortfall"]["kg"] == 150.0
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        lambda value: value["params"].__setitem__("targetKg", math.nan),
+        lambda value: value["history"].__setitem__("hotel-a", [{"date": "2026-10-11", "kg": 100}]),
+        lambda value: value["matrix"]["pointIds"].reverse(),
+        lambda value: value["matrix"]["km"][0].pop(),
+        lambda value: value["generators"].append(copy.deepcopy(value["generators"][0])),
+    ],
+)
+def test_malformed_inputs_raise_value_error(mutate: object) -> None:
+    inputs = _contract("planner-input.json")
+    mutate(inputs)
+    with pytest.raises(ValueError):
+        build_plan(inputs)

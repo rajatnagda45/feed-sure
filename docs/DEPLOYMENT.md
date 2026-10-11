@@ -1,5 +1,45 @@
 # DEPLOYMENT — FeedSure CBG
 
+## Current v3 run path
+
+Cloud deployment has not been performed in this implementation session. SAM CLI was unavailable;
+route/CORS consistency was tested by parsing the template, not by a SAM build or AWS deployment.
+
+Install backend dev dependencies with `python -m pip install -e ".[dev]"`. For a local demo, start
+`docker compose up -d`, then set these environment variables in the same PowerShell window:
+
+```powershell
+$env:AWS_ENDPOINT_URL = "http://localhost:5000"
+$env:AWS_ACCESS_KEY_ID = "testing"
+$env:AWS_SECRET_ACCESS_KEY = "testing"
+$env:AWS_DEFAULT_REGION = "ap-south-1"
+$env:MOCK_LOCATION = "true"
+$env:ADMIN_TOKEN = "<your private random dispatcher token>"
+$env:DRIVER_TOKEN_SECRET = "<your private random secret of at least 32 characters>"
+python scripts/seed_data.py --local --v3-date 2026-10-12
+python -m uvicorn dev_server:app --app-dir backend --port 8787
+```
+
+The local seed creates ten fictional kitchens, including cancellations, unconfirmed suppliers and
+capacity/window conflicts. It preserves existing profiles and tokens; private links are appended
+to ignored `seed_links.local.txt`. Do not use `--reset` with v3. Choose the service date you will
+demo; existing seeded records are retained on rerun.
+
+In a separate frontend shell, set `VITE_API_BASE_URL=http://localhost:8787`, then run `npm ci` and
+`npm run dev` from `frontend/`. Use your private dispatcher token at `/plant`; kitchen links come
+from the local links file and the dispatched trip supplies driver access. Mock mode replaces AWS
+transport/routing, while real domain handlers, planner and persistence transactions still execute.
+
+The SAM template now has OperationsFunction and UploadsFunction, eight DynamoDB tables, and a
+private photo bucket. A future authorised deploy requires real AdminToken/DriverTokenSecret,
+AllowedOrigin and a globally unique bucket name. Do not commit secrets or local SAM config.
+
+The following early deployment instructions describe v1 and are preserved only for reference.
+
+> **Version note:** This is a legacy v1 reference; some described features remain unimplemented.
+> [PRD v3](PRD.md) governs the target workflows, calculations, contracts and build order.
+> Where these documents conflict, PRD v3 wins. Update this reference as each workflow is implemented.
+
 Default region: **ap-south-1 (Mumbai)**. On day 1, confirm that Bedrock (with the chosen model) and
 Amazon Location v2 are available there. If one is not, set `BEDROCK_REGION` or `LOCATION_REGION`
 separately; every client reads its own region from config.

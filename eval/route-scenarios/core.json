@@ -1,0 +1,159 @@
+{
+  "schemaVersion": 1,
+  "scenarios": [
+    {
+      "scenarioId": "all-ready-baseline-equality",
+      "description": "All suppliers ready; both tie on expected kg and km, with different stable route orders.",
+      "generators": [
+        {"generatorId": "a", "confirmedKg": 100},
+        {"generatorId": "b", "confirmedKg": 200}
+      ],
+      "params": {"targetKg": 200},
+      "km": [[0, 2, 4], [2, 0, 2], [4, 2, 0]],
+      "min": [[0, 6, 12], [6, 0, 6], [12, 6, 0]]
+    },
+    {
+      "scenarioId": "cancellation",
+      "description": "A NOT_READY cancellation stays visible and is not routed.",
+      "generators": [
+        {"generatorId": "a", "status": "NOT_READY"},
+        {"generatorId": "b", "confirmedKg": 200}
+      ],
+      "params": {"targetKg": 120},
+      "km": [[0, 2, 3], [2, 0, 1], [3, 1, 0]],
+      "min": [[0, 6, 9], [6, 0, 3], [9, 3, 0]]
+    },
+    {
+      "scenarioId": "no-confirmed-kitchens",
+      "description": "No READY confirmation produces an explicit empty route and target gap.",
+      "generators": [
+        {"generatorId": "a", "status": "UNCONFIRMED"},
+        {"generatorId": "b", "status": "UNCONFIRMED"}
+      ],
+      "params": {"targetKg": 200},
+      "km": [[0, 1, 2], [1, 0, 1], [2, 1, 0]],
+      "min": [[0, 3, 6], [3, 0, 3], [6, 3, 0]]
+    },
+    {
+      "scenarioId": "mandatory-small-supplier",
+      "description": "A distant small mandatory supplier is served before optional target choices.",
+      "generators": [
+        {"generatorId": "small", "confirmedKg": 20},
+        {"generatorId": "large", "confirmedKg": 300}
+      ],
+      "params": {"targetKg": 200, "mandatoryIds": ["small"]},
+      "km": [[0, 6, 1], [6, 0, 5], [1, 5, 0]],
+      "min": [[0, 18, 3], [18, 0, 15], [3, 15, 0]]
+    },
+    {
+      "scenarioId": "near-capacity",
+      "description": "Full reservations, not probability-weighted kg, block the third stop.",
+      "generators": [
+        {"generatorId": "a", "confirmedKg": 900},
+        {"generatorId": "b", "confirmedKg": 900},
+        {"generatorId": "c", "confirmedKg": 100}
+      ],
+      "params": {"targetKg": 1600, "truckCapacityKg": 2000},
+      "km": [[0, 1, 2, 3], [1, 0, 1, 2], [2, 1, 0, 1], [3, 2, 1, 0]],
+      "min": [[0, 3, 6, 9], [3, 0, 3, 6], [6, 3, 0, 3], [9, 6, 3, 0]]
+    },
+    {
+      "scenarioId": "mandatory-overload",
+      "description": "A 2000 kg mandatory confirmation cannot fit a 2000 kg truck with buffer.",
+      "generators": [
+        {"generatorId": "a", "confirmedKg": 2000}
+      ],
+      "params": {
+        "targetKg": 100,
+        "truckCapacityKg": 2000,
+        "mandatoryIds": ["a"]
+      },
+      "km": [[0, 1], [1, 0]],
+      "min": [[0, 3], [3, 0]]
+    },
+    {
+      "scenarioId": "tight-service-window",
+      "description": "Arrival before window end is insufficient when service finishes late.",
+      "generators": [
+        {
+          "generatorId": "a",
+          "confirmedKg": 100,
+          "window": {"start": "06:00", "end": "06:10"}
+        }
+      ],
+      "params": {"targetKg": 80},
+      "km": [[0, 1], [1, 0]],
+      "min": [[0, 5], [5, 0]]
+    },
+    {
+      "scenarioId": "return-shift-conflict",
+      "description": "The stop is reachable but depot return exceeds shift end.",
+      "generators": [
+        {"generatorId": "a", "confirmedKg": 100}
+      ],
+      "params": {"targetKg": 80, "shiftEnd": "06:35"},
+      "km": [[0, 5], [5, 0]],
+      "min": [[0, 15], [15, 0]]
+    },
+    {
+      "scenarioId": "unreachable-directed-edge",
+      "description": "A missing directed return leg remains infeasible rather than zero cost.",
+      "generators": [
+        {"generatorId": "a", "confirmedKg": 100}
+      ],
+      "params": {"targetKg": 80},
+      "km": [[0, 1], [null, 0]],
+      "min": [[0, 3], [null, 0]]
+    },
+    {
+      "scenarioId": "co-located-stops",
+      "description": "Zero-distance insertions use a bounded denominator and stable ID tie.",
+      "generators": [
+        {"generatorId": "a", "confirmedKg": 100},
+        {"generatorId": "b", "confirmedKg": 200}
+      ],
+      "params": {"targetKg": 80},
+      "km": [[0, 0, 0], [0, 0, 0], [0, 0, 0]],
+      "min": [[0, 0, 0], [0, 0, 0], [0, 0, 0]]
+    },
+    {
+      "scenarioId": "unmet-target",
+      "description": "All feasible supply is selected and the actual expected target gap remains.",
+      "generators": [
+        {"generatorId": "a", "confirmedKg": 100}
+      ],
+      "params": {"targetKg": 200},
+      "km": [[0, 2], [2, 0]],
+      "min": [[0, 6], [6, 0]]
+    },
+    {
+      "scenarioId": "no-feasible-optional-stops",
+      "description": "Every optional stop violates its service window.",
+      "generators": [
+        {
+          "generatorId": "a",
+          "confirmedKg": 100,
+          "window": {"start": "06:00", "end": "06:15"}
+        },
+        {
+          "generatorId": "b",
+          "confirmedKg": 100,
+          "window": {"start": "06:00", "end": "06:15"}
+        }
+      ],
+      "params": {"targetKg": 100},
+      "km": [[0, 4, 5], [4, 0, 1], [5, 1, 0]],
+      "min": [[0, 20, 25], [20, 0, 5], [25, 5, 0]]
+    },
+    {
+      "scenarioId": "new-supplier",
+      "description": "A READY cold-start supplier is usable with disclosed P0 assumptions.",
+      "generators": [
+        {"generatorId": "new-a", "confirmedKg": 150}
+      ],
+      "params": {"targetKg": 100},
+      "km": [[0, 2], [2, 0]],
+      "min": [[0, 6], [6, 0]]
+    }
+  ]
+}

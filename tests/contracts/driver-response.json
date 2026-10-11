@@ -1,0 +1,474 @@
+{
+  "plan": {
+    "collectionDate": "2026-10-11",
+    "inputRevision": 4,
+    "status": "FEASIBLE",
+    "params": {
+      "targetKg": 200,
+      "truckCapacityKg": 500,
+      "capacityBuffer": 0.1,
+      "readinessPrior": 0.8,
+      "shiftStart": "06:00",
+      "shiftEnd": "11:00",
+      "serviceMin": 10,
+      "maxRadiusKm": 15,
+      "mandatoryIds": []
+    },
+    "plan": {
+      "stops": [
+        {
+          "generatorId": "hotel-a",
+          "name": "Fictional hotel-a",
+          "address": "Synthetic address",
+          "lat": 12.690999999999999,
+          "lng": 77.474,
+          "simulated": true,
+          "window": {
+            "start": "06:00",
+            "end": "09:00"
+          },
+          "submissionId": "hotel-a#2026-10-10T13:00:00Z#example",
+          "confirmedKg": 100,
+          "weightSource": "SCALE",
+          "expectedCollectionKg": 80.0,
+          "reservedLoadKg": 110.0,
+          "mandatory": false,
+          "arrivalAt": "06:06",
+          "serviceStartAt": "06:06",
+          "serviceEndAt": "06:16"
+        },
+        {
+          "generatorId": "hostel-b",
+          "name": "Fictional hostel-b",
+          "address": "Synthetic address",
+          "lat": 12.700999999999999,
+          "lng": 77.474,
+          "simulated": true,
+          "window": {
+            "start": "06:00",
+            "end": "09:00"
+          },
+          "submissionId": "hostel-b#2026-10-10T13:00:00Z#example",
+          "confirmedKg": 200,
+          "weightSource": "SCALE",
+          "expectedCollectionKg": 160.0,
+          "reservedLoadKg": 220.0,
+          "mandatory": false,
+          "arrivalAt": "06:22",
+          "serviceStartAt": "06:22",
+          "serviceEndAt": "06:32"
+        }
+      ],
+      "startAt": "06:00",
+      "returnAt": "06:44",
+      "totals": {
+        "expectedCollectionKg": 240,
+        "reservedLoadKg": 330,
+        "totalKm": 8,
+        "totalMin": 44,
+        "serviceMin": 20,
+        "waitingMin": 0
+      }
+    },
+    "baseline": {
+      "stops": [
+        {
+          "generatorId": "hotel-a",
+          "name": "Fictional hotel-a",
+          "address": "Synthetic address",
+          "lat": 12.690999999999999,
+          "lng": 77.474,
+          "simulated": true,
+          "window": {
+            "start": "06:00",
+            "end": "09:00"
+          },
+          "submissionId": "hotel-a#2026-10-10T13:00:00Z#example",
+          "confirmedKg": 100,
+          "weightSource": "SCALE",
+          "expectedCollectionKg": 80.0,
+          "reservedLoadKg": 110.0,
+          "mandatory": false,
+          "arrivalAt": "06:06",
+          "serviceStartAt": "06:06",
+          "serviceEndAt": "06:16"
+        },
+        {
+          "generatorId": "hostel-b",
+          "name": "Fictional hostel-b",
+          "address": "Synthetic address",
+          "lat": 12.700999999999999,
+          "lng": 77.474,
+          "simulated": true,
+          "window": {
+            "start": "06:00",
+            "end": "09:00"
+          },
+          "submissionId": "hostel-b#2026-10-10T13:00:00Z#example",
+          "confirmedKg": 200,
+          "weightSource": "SCALE",
+          "expectedCollectionKg": 160.0,
+          "reservedLoadKg": 220.0,
+          "mandatory": false,
+          "arrivalAt": "06:22",
+          "serviceStartAt": "06:22",
+          "serviceEndAt": "06:32"
+        }
+      ],
+      "startAt": "06:00",
+      "returnAt": "06:44",
+      "totals": {
+        "expectedCollectionKg": 240,
+        "reservedLoadKg": 330,
+        "totalKm": 8,
+        "totalMin": 44,
+        "serviceMin": 20,
+        "waitingMin": 0
+      }
+    },
+    "excluded": [
+      {
+        "generatorId": "kitchen-c",
+        "reason": "UNCONFIRMED"
+      },
+      {
+        "generatorId": "kitchen-d",
+        "reason": "HAZARD_REVIEW"
+      }
+    ],
+    "shortfall": {
+      "kg": 0,
+      "reasons": []
+    },
+    "mandatoryConflicts": [],
+    "matrixSource": "fixture",
+    "simulated": true,
+    "assumptions": {
+      "readinessPrior": 0.8,
+      "volumeRatio": 1,
+      "capacityBuffer": 0.1
+    },
+    "schemaVersion": 3,
+    "planKey": "2026-10-11#p-example",
+    "planId": "2026-10-11#p-example",
+    "version": 2,
+    "state": "DISPATCHED",
+    "createdAt": "2026-10-10T13:00:00Z",
+    "dispatchedAt": "2026-10-11T00:20:00Z",
+    "inputIds": [
+      "hotel-a#2026-10-10T13:00:00Z#example",
+      "hostel-b#2026-10-10T13:00:00Z#example"
+    ],
+    "inputs": {
+      "collectionDate": "2026-10-11",
+      "inputRevision": 4,
+      "generators": [
+        {
+          "generatorId": "hotel-a",
+          "name": "Fictional hotel-a",
+          "type": "hotel",
+          "address": "Synthetic address",
+          "lat": 12.690999999999999,
+          "lng": 77.474,
+          "pickupWindow": {
+            "start": "06:00",
+            "end": "09:00"
+          },
+          "defaultLang": "en",
+          "supportedMaterial": true,
+          "simulated": true,
+          "readiness": {
+            "generatorId": "hotel-a",
+            "collectionDate": "2026-10-11",
+            "status": "READY",
+            "confirmedKg": 100,
+            "weightSource": "SCALE",
+            "window": {
+              "start": "06:00",
+              "end": "09:00"
+            },
+            "lang": "en",
+            "photoKeys": [],
+            "schemaVersion": 3,
+            "submissionId": "hotel-a#2026-10-10T13:00:00Z#example",
+            "recordedAt": "2026-10-10T13:00:00Z",
+            "actor": {
+              "type": "GENERATOR",
+              "id": "hotel-a"
+            },
+            "confirmedBy": null,
+            "reason": null,
+            "simulated": true,
+            "late": false,
+            "photoStatus": "NOT_CHECKED",
+            "inputRevision": 1
+          },
+          "readinessStatus": "READY",
+          "unresolvedHazards": []
+        },
+        {
+          "generatorId": "hostel-b",
+          "name": "Fictional hostel-b",
+          "type": "hotel",
+          "address": "Synthetic address",
+          "lat": 12.700999999999999,
+          "lng": 77.474,
+          "pickupWindow": {
+            "start": "06:00",
+            "end": "09:00"
+          },
+          "defaultLang": "en",
+          "supportedMaterial": true,
+          "simulated": true,
+          "readiness": {
+            "generatorId": "hostel-b",
+            "collectionDate": "2026-10-11",
+            "status": "READY",
+            "confirmedKg": 200,
+            "weightSource": "SCALE",
+            "window": {
+              "start": "06:00",
+              "end": "09:00"
+            },
+            "lang": "en",
+            "photoKeys": [],
+            "schemaVersion": 3,
+            "submissionId": "hostel-b#2026-10-10T13:00:00Z#example",
+            "recordedAt": "2026-10-10T13:00:00Z",
+            "actor": {
+              "type": "GENERATOR",
+              "id": "hostel-b"
+            },
+            "confirmedBy": null,
+            "reason": null,
+            "simulated": true,
+            "late": false,
+            "photoStatus": "NOT_CHECKED",
+            "inputRevision": 2
+          },
+          "readinessStatus": "READY",
+          "unresolvedHazards": []
+        },
+        {
+          "generatorId": "kitchen-c",
+          "name": "Fictional kitchen-c",
+          "type": "hotel",
+          "address": "Synthetic address",
+          "lat": 12.710999999999999,
+          "lng": 77.474,
+          "pickupWindow": {
+            "start": "06:00",
+            "end": "09:00"
+          },
+          "defaultLang": "en",
+          "supportedMaterial": true,
+          "simulated": true,
+          "readiness": null,
+          "readinessStatus": "UNCONFIRMED",
+          "unresolvedHazards": []
+        },
+        {
+          "generatorId": "kitchen-d",
+          "name": "Fictional kitchen-d",
+          "type": "hotel",
+          "address": "Synthetic address",
+          "lat": 12.720999999999998,
+          "lng": 77.474,
+          "pickupWindow": {
+            "start": "06:00",
+            "end": "09:00"
+          },
+          "defaultLang": "en",
+          "supportedMaterial": true,
+          "simulated": true,
+          "readiness": {
+            "generatorId": "kitchen-d",
+            "collectionDate": "2026-10-11",
+            "status": "READY",
+            "confirmedKg": 100,
+            "weightSource": "SCALE",
+            "window": {
+              "start": "06:00",
+              "end": "09:00"
+            },
+            "lang": "en",
+            "photoKeys": [],
+            "schemaVersion": 3,
+            "submissionId": "kitchen-d#example",
+            "recordedAt": "2026-10-10T13:00:00Z",
+            "actor": {
+              "type": "GENERATOR",
+              "id": "hotel-a"
+            },
+            "confirmedBy": null,
+            "reason": null,
+            "simulated": true,
+            "late": false,
+            "photoStatus": "NOT_CHECKED",
+            "inputRevision": 1
+          },
+          "readinessStatus": "READY",
+          "unresolvedHazards": [
+            {
+              "action": "ENTER",
+              "reason": "Human observed glass",
+              "generatorId": "kitchen-d",
+              "schemaVersion": 3,
+              "simulated": true
+            }
+          ]
+        }
+      ],
+      "history": {},
+      "depot": {
+        "id": "plant",
+        "lat": 12.681,
+        "lng": 77.474
+      },
+      "matrix": {
+        "pointIds": [
+          "plant",
+          "hotel-a",
+          "hostel-b",
+          "kitchen-c",
+          "kitchen-d"
+        ],
+        "km": [
+          [
+            0,
+            2,
+            4,
+            6,
+            8
+          ],
+          [
+            2,
+            0,
+            2,
+            4,
+            6
+          ],
+          [
+            4,
+            2,
+            0,
+            2,
+            4
+          ],
+          [
+            6,
+            4,
+            2,
+            0,
+            2
+          ],
+          [
+            8,
+            6,
+            4,
+            2,
+            0
+          ]
+        ],
+        "min": [
+          [
+            0,
+            6,
+            12,
+            18,
+            24
+          ],
+          [
+            6,
+            0,
+            6,
+            12,
+            18
+          ],
+          [
+            12,
+            6,
+            0,
+            6,
+            12
+          ],
+          [
+            18,
+            12,
+            6,
+            0,
+            6
+          ],
+          [
+            24,
+            18,
+            12,
+            6,
+            0
+          ]
+        ],
+        "source": "fixture"
+      },
+      "params": {
+        "targetKg": 200,
+        "truckCapacityKg": 500,
+        "capacityBuffer": 0.1,
+        "readinessPrior": 0.8,
+        "shiftStart": "06:00",
+        "shiftEnd": "11:00",
+        "serviceMin": 10,
+        "maxRadiusKm": 15,
+        "mandatoryIds": []
+      },
+      "simulated": true
+    },
+    "serviceMode": {
+      "database": "local",
+      "matrix": "fixture",
+      "screening": "not_used"
+    }
+  },
+  "pickups": [
+    {
+      "planKey": "2026-10-11#p-example",
+      "generatorId": "hotel-a",
+      "outcome": "COLLECTED",
+      "kg": 98,
+      "weightSource": "SCALE",
+      "reason": null,
+      "remainingKg": null,
+      "remainingUnknown": false,
+      "gps": null,
+      "schemaVersion": 3,
+      "revision": 1,
+      "recordedAt": "2026-10-11T01:00:00Z",
+      "actor": {
+        "type": "DRIVER",
+        "id": "2026-10-11#p-example"
+      },
+      "simulated": true,
+      "gpsStatus": "UNKNOWN",
+      "distanceM": null,
+      "gpsExpiresAt": null
+    }
+  ],
+  "gate": null,
+  "reconciliation": {
+    "status": "PENDING_GATE",
+    "pickedKg": 98,
+    "netGateKg": null,
+    "deltaKg": null,
+    "deltaPct": null,
+    "provisional": false,
+    "pendingStopIds": [
+      "hostel-b"
+    ],
+    "gpsFlags": [
+      {
+        "generatorId": "hotel-a",
+        "status": "UNKNOWN"
+      }
+    ]
+  },
+  "alerts": []
+}

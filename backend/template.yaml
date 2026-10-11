@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
-Description: FeedSure CBG M0 serverless skeleton
+Description: FeedSure CBG v3 operational backend
 
 Parameters:
   Stage:
@@ -69,7 +69,7 @@ Parameters:
     Default: 77.474
   TargetKg:
     Type: Number
-    Default: 1700
+    Default: 1200
   TruckCapacityKg:
     Type: Number
     Default: 2000
@@ -107,6 +107,53 @@ Parameters:
     Type: String
     Default: http://localhost:5173
 
+  OperationsTableName:
+    Type: String
+    Default: feedsure-dev-Operations
+  PickupsTableName:
+    Type: String
+    Default: feedsure-dev-Pickups
+  GateLogsTableName:
+    Type: String
+    Default: feedsure-dev-GateLogs
+  MutationLogTableName:
+    Type: String
+    Default: feedsure-dev-MutationLog
+  DriverTokenSecret:
+    Type: String
+    NoEcho: true
+    MinLength: 32
+  CapacityBuffer:
+    Type: Number
+    Default: 0.10
+  ReadinessPrior:
+    Type: Number
+    Default: 0.8
+  ReadyCutoff:
+    Type: String
+    Default: "20:00"
+  DriverTokenHours:
+    Type: Number
+    Default: 12
+  GpsRetentionDays:
+    Type: Number
+    Default: 30
+  GpsAccuracyM:
+    Type: Number
+    Default: 100
+  GeofenceM:
+    Type: Number
+    Default: 150
+  AbsoluteToleranceKg:
+    Type: Number
+    Default: 20
+  PercentageTolerancePct:
+    Type: Number
+    Default: 5
+  DedupRetentionDays:
+    Type: Number
+    Default: 7
+
 Globals:
   Function:
     Runtime: python3.12
@@ -125,6 +172,21 @@ Globals:
         HISTORY_TABLE: !Ref HistoryTable
         SUBMISSIONS_TABLE: !Ref SubmissionsTable
         PLANS_TABLE: !Ref PlansTable
+        OPERATIONS_TABLE: !Ref OperationsTable
+        PICKUPS_TABLE: !Ref PickupsTable
+        GATE_LOGS_TABLE: !Ref GateLogsTable
+        MUTATION_LOG_TABLE: !Ref MutationLogTable
+        DRIVER_TOKEN_SECRET: !Ref DriverTokenSecret
+        CAPACITY_BUFFER: !Ref CapacityBuffer
+        READINESS_PRIOR: !Ref ReadinessPrior
+        READY_CUTOFF: !Ref ReadyCutoff
+        DRIVER_TOKEN_HOURS: !Ref DriverTokenHours
+        GPS_RETENTION_DAYS: !Ref GpsRetentionDays
+        GPS_ACCURACY_M: !Ref GpsAccuracyM
+        GEOFENCE_M: !Ref GeofenceM
+        ABSOLUTE_TOLERANCE_KG: !Ref AbsoluteToleranceKg
+        PERCENTAGE_TOLERANCE_PCT: !Ref PercentageTolerancePct
+        DEDUP_RETENTION_DAYS: !Ref DedupRetentionDays
         PHOTOS_BUCKET: !Ref PhotosBucket
         UPLOAD_MIN_BYTES: !Ref UploadMinBytes
         UPLOAD_MAX_BYTES: !Ref UploadMaxBytes
@@ -159,6 +221,9 @@ Resources:
         AllowHeaders:
           - content-type
           - x-admin-token
+          - x-generator-token
+          - x-driver-token
+          - idempotency-key
         AllowMethods:
           - GET
           - POST
@@ -166,28 +231,6 @@ Resources:
       DefaultRouteSettings:
         ThrottlingBurstLimit: 40
         ThrottlingRateLimit: 20
-
-  GeneratorsFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub feedsure-${Stage}-generators
-      Handler: feedsure.handlers.generators.lambda_handler
-      Policies:
-        - DynamoDBReadPolicy:
-            TableName: !Ref GeneratorsTable
-      Events:
-        ListGenerators:
-          Type: HttpApi
-          Properties:
-            ApiId: !Ref HttpApi
-            Method: GET
-            Path: /generators
-        GetGenerator:
-          Type: HttpApi
-          Properties:
-            ApiId: !Ref HttpApi
-            Method: GET
-            Path: /generators/{generatorId}
 
   UploadsFunction:
     Type: AWS::Serverless::Function
@@ -197,8 +240,10 @@ Resources:
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref GeneratorsTable
-        - S3WritePolicy:
-            BucketName: !Ref PhotosBucket
+        - Statement:
+            - Effect: Allow
+              Action: s3:PutObject
+              Resource: !Sub ${PhotosBucket.Arn}/submissions/*
       Events:
         CreateUploads:
           Type: HttpApi
@@ -207,69 +252,128 @@ Resources:
             Method: POST
             Path: /uploads
 
-  SubmissionsFunction:
+  OperationsFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub feedsure-${Stage}-submissions
-      Handler: feedsure.handlers.submissions.lambda_handler
+      FunctionName: !Sub feedsure-${Stage}-operations
+      Handler: feedsure.handlers.operations.lambda_handler
       Policies:
-        - DynamoDBReadPolicy:
-            TableName: !Ref GeneratorsTable
-        - DynamoDBCrudPolicy:
-            TableName: !Ref SubmissionsTable
-        - S3ReadPolicy:
-            BucketName: !Ref PhotosBucket
         - Statement:
             - Effect: Allow
-              Action:
-                - bedrock:InvokeModel
-              Resource: !Sub arn:${AWS::Partition}:bedrock:${AWS::Region}:${AWS::AccountId}:inference-profile/${BedrockModelId}
+              Action: [dynamodb:GetItem, dynamodb:Scan]
+              Resource: !GetAtt GeneratorsTable.Arn
+            - Effect: Allow
+              Action: dynamodb:ConditionCheckItem
+              Resource: !GetAtt OperationsTable.Arn
+            - Effect: Allow
+              Action: dynamodb:Query
+              Resource: !GetAtt HistoryTable.Arn
+            - Effect: Allow
+              Action: dynamodb:PutItem
+              Resource: !GetAtt SubmissionsTable.Arn
+            - Effect: Allow
+              Action: [dynamodb:GetItem, dynamodb:Query, dynamodb:PutItem]
+              Resource:
+                - !GetAtt OperationsTable.Arn
+                - !GetAtt PlansTable.Arn
+                - !GetAtt PickupsTable.Arn
+                - !Sub ${PickupsTable.Arn}/index/byGenerator
+                - !GetAtt GateLogsTable.Arn
+                - !GetAtt MutationLogTable.Arn
+            - Effect: Allow
+              Action: geo-routes:CalculateRouteMatrix
+              Resource: "*"
       Events:
-        CreateSubmission:
+        Route0:
           Type: HttpApi
           Properties:
             ApiId: !Ref HttpApi
-            Method: POST
-            Path: /submissions
-        ListSubmissions:
+            Method: GET
+            Path: /generators
+        Route1:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Method: GET
+            Path: /generators/{generatorId}
+        Route2:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Method: GET
+            Path: /operations
+        Route3:
           Type: HttpApi
           Properties:
             ApiId: !Ref HttpApi
             Method: GET
             Path: /submissions
-
-  PlansFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub feedsure-${Stage}-plans
-      Handler: feedsure.handlers.plans.lambda_handler
-      Policies:
-        - DynamoDBReadPolicy:
-            TableName: !Ref GeneratorsTable
-        - DynamoDBReadPolicy:
-            TableName: !Ref HistoryTable
-        - DynamoDBReadPolicy:
-            TableName: !Ref SubmissionsTable
-        - DynamoDBCrudPolicy:
-            TableName: !Ref PlansTable
-        - Statement:
-            - Effect: Allow
-              Action:
-                - geo-routes:CalculateRouteMatrix
-              Resource: "*"
-      Events:
-        CreatePlan:
+        Route4:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Method: POST
+            Path: /submissions
+        Route5:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Method: POST
+            Path: /submissions/{submissionId}/screen
+        Route6:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Method: POST
+            Path: /generators/{generatorId}/hazard-reviews
+        Route7:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Method: GET
+            Path: /generators/{generatorId}/receipts
+        Route8:
           Type: HttpApi
           Properties:
             ApiId: !Ref HttpApi
             Method: POST
             Path: /plans
-        GetPlan:
+        Route9:
           Type: HttpApi
           Properties:
             ApiId: !Ref HttpApi
             Method: GET
             Path: /plans/{date}
+        Route10:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Method: GET
+            Path: /plans/{planKey}/details
+        Route11:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Method: POST
+            Path: /plans/{planKey}/dispatch
+        Route12:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Method: GET
+            Path: /plans/{planKey}/driver
+        Route13:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Method: POST
+            Path: /pickups
+        Route14:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Method: POST
+            Path: /gate-logs
 
   GeneratorsTable:
     Type: AWS::DynamoDB::Table
@@ -340,6 +444,92 @@ Resources:
         - AttributeName: date
           KeyType: HASH
         - AttributeName: planId
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+
+  OperationsTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: !Ref OperationsTableName
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: collectionDate
+          AttributeType: S
+        - AttributeName: recordKey
+          AttributeType: S
+      KeySchema:
+        - AttributeName: collectionDate
+          KeyType: HASH
+        - AttributeName: recordKey
+          KeyType: RANGE
+
+  PickupsTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: !Ref PickupsTableName
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: planKey
+          AttributeType: S
+        - AttributeName: generatorId
+          AttributeType: S
+        - AttributeName: recordKey
+          AttributeType: S
+      KeySchema:
+        - AttributeName: planKey
+          KeyType: HASH
+        - AttributeName: generatorId
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: byGenerator
+          KeySchema:
+            - AttributeName: generatorId
+              KeyType: HASH
+            - AttributeName: recordKey
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+
+  GateLogsTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: !Ref GateLogsTableName
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: date
+          AttributeType: S
+        - AttributeName: planId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: date
+          KeyType: HASH
+        - AttributeName: planId
+          KeyType: RANGE
+
+  MutationLogTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: !Ref MutationLogTableName
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: scopeKey
+          AttributeType: S
+        - AttributeName: idempotencyKey
+          AttributeType: S
+      KeySchema:
+        - AttributeName: scopeKey
+          KeyType: HASH
+        - AttributeName: idempotencyKey
           KeyType: RANGE
       TimeToLiveSpecification:
         AttributeName: ttl

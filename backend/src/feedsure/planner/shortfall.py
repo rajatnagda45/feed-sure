@@ -1,30 +1,35 @@
-"""Pure intake shortfall attribution."""
+"""Pure target gap calculation without counterfactual mass attribution."""
 
 from __future__ import annotations
 
 from typing import Any
 
+from feedsure.planner.greedy import present
+from feedsure.planner.validation import number
+
+REASON_CODES = (
+    "NOT_READY",
+    "UNCONFIRMED",
+    "HAZARD_REVIEW",
+    "UNSUPPORTED_MATERIAL",
+    "OUT_OF_RADIUS",
+    "CAPACITY",
+    "WINDOW",
+    "SHIFT",
+    "MANDATORY_CONFLICT",
+    "TARGET_REACHED",
+    "NOT_SELECTED_BY_HEURISTIC",
+)
+
 
 def explain_shortfall(
     target_kg: float,
-    usable_kg: float,
-    contributions: list[dict[str, Any]] | None = None,
+    expected_kg: float,
+    exclusions: list[dict[str, str]] | None = None,
 ) -> dict[str, Any]:
-    """Aggregate lost kilograms by documented reason code."""
-    missing = round(max(0.0, float(target_kg) - float(usable_kg)), 1)
-    if missing == 0:
-        return {"kg": 0.0, "targetMet": True, "reasons": []}
-    grouped: dict[str, dict[str, Any]] = {}
-    for contribution in contributions or []:
-        kilograms = round(max(0.0, float(contribution.get("kg", 0))), 1)
-        if kilograms == 0:
-            continue
-        code = str(contribution["code"])
-        row = grouped.setdefault(code, {"code": code, "kg": 0.0, "generatorIds": []})
-        row["kg"] = round(row["kg"] + kilograms, 1)
-        row["generatorIds"].append(str(contribution["generatorId"]))
-    reasons = list(grouped.values())
-    for reason in reasons:
-        reason["generatorIds"] = sorted(set(reason["generatorIds"]))
-    reasons.sort(key=lambda reason: (-reason["kg"], reason["code"]))
-    return {"kg": missing, "targetMet": False, "reasons": reasons}
+    """Return the exact target gap and unique contextual codes, never summed losses."""
+    gap = max(0.0, number(target_kg, "targetKg") - number(expected_kg, "expectedKg"))
+    codes = {item["reason"] for item in exclusions or []}
+    if codes - set(REASON_CODES):
+        raise ValueError("unknown exclusion reason")
+    return {"kg": present(gap), "reasons": [code for code in REASON_CODES if gap and code in codes]}

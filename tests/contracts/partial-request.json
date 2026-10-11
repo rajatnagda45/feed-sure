@@ -1,0 +1,12 @@
+{
+  "planKey": "2026-10-11#p-example",
+  "generatorId": "hostel-b",
+  "outcome": "PARTIAL",
+  "kg": 150,
+  "weightSource": "ESTIMATE",
+  "reason": "Truck capacity constraint",
+  "remainingKg": 40,
+  "remainingUnknown": false,
+  "gps": null,
+  "expectedRevision": 0
+}

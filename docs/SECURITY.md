@@ -1,5 +1,35 @@
 # SECURITY — FeedSure CBG
 
+## Shipped v3 controls and limits
+
+Admin, generator and driver credentials travel in separate headers. Blank/placeholder admin
+configuration fails closed. Driver access is scoped to one dispatched trip, expires after 12 hours
+by default, and requires a dedicated `DRIVER_TOKEN_SECRET` of at least 32 characters. Storage keeps
+only the token hash/expiry; authenticated dispatch retries regenerate access using server HMAC
+fields without storing raw tokens in dedup responses or audit entries. Secret rotation invalidates
+existing driver access.
+
+Revision conditions, scoped idempotency keys and transactions protect dispatch, capacity, pickup
+corrections and gate intake. Positive pickup checks the current hazard flag atomically. Kitchen
+receipts query only their own index partition. API errors omit provider details, and reads omit
+credential hashes. Bodies are bounded to 16 KB and numeric inputs must be finite.
+
+SAM exposes the three auth headers plus Idempotency-Key in CORS. The operational function gets
+only required DynamoDB actions/table/index resources and route-matrix access; no Bedrock invocation
+is granted to the deferred P1 screen. Optional S3 uploads are private JPEG/PNG presigned POSTs,
+1,024–3,500,000 bytes, five-minute expiry. S3 photos expire after 30 days.
+
+Production hardening remains: managed identity/token revocation, dedicated actor accounts, abuse
+monitoring, retention governance and a job to remove precise GPS fields after 30 days. Whole-record
+TTL must not delete operational evidence. Browser sessionStorage credentials remain susceptible to
+XSS; bootstrap links need private sharing and removal from browser history.
+
+The following v1 screening policies are historical; they do not describe the active P0 endpoints.
+
+> **Version note:** This is a legacy v1 reference; some described features remain unimplemented.
+> [PRD v3](PRD.md) governs the target workflows, calculations, contracts and build order.
+> Where these documents conflict, PRD v3 wins. Update this reference as each workflow is implemented.
+
 This is a hackathon demo, but it is deployed on a public URL with a public repo. These rules are mandatory.
 
 ## 1. Secrets

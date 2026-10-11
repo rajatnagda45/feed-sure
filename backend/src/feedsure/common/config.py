@@ -75,6 +75,21 @@ class Config:
     vite_api_base_url: str
     vite_aws_region: str
     vite_location_api_key: str
+    operations_table: str
+    pickups_table: str
+    gate_logs_table: str
+    mutation_log_table: str
+    capacity_buffer: float
+    readiness_prior: float
+    ready_cutoff: str
+    driver_token_secret: str
+    driver_token_hours: int
+    gps_retention_days: int
+    gps_accuracy_m: float
+    geofence_m: float
+    absolute_tolerance_kg: float
+    percentage_tolerance_pct: float
+    dedup_retention_days: int
 
 
 def get_config() -> Config:
@@ -110,7 +125,7 @@ def get_config() -> Config:
         default_prior_contam_pct=_number("DEFAULT_PRIOR_CONTAM_PCT", 2),
         plant_lat=_number("PLANT_LAT", 12.681),
         plant_lng=_number("PLANT_LNG", 77.474),
-        target_kg=_number("TARGET_KG", 1700),
+        target_kg=_number("TARGET_KG", 1200),
         truck_capacity_kg=_number("TRUCK_CAPACITY_KG", 2000),
         shift_start=_string("SHIFT_START", "06:00"),
         shift_end=_string("SHIFT_END", "11:00"),
@@ -126,4 +141,19 @@ def get_config() -> Config:
         vite_api_base_url=_string("VITE_API_BASE_URL", "http://localhost:8787"),
         vite_aws_region=_string("VITE_AWS_REGION", "ap-south-1"),
         vite_location_api_key=_string("VITE_LOCATION_API_KEY", "CHANGE_ME"),
+        operations_table=_string("OPERATIONS_TABLE", f"feedsure-{stage}-Operations"),
+        pickups_table=_string("PICKUPS_TABLE", f"feedsure-{stage}-Pickups"),
+        gate_logs_table=_string("GATE_LOGS_TABLE", f"feedsure-{stage}-GateLogs"),
+        mutation_log_table=_string("MUTATION_LOG_TABLE", f"feedsure-{stage}-MutationLog"),
+        capacity_buffer=_number("CAPACITY_BUFFER", 0.10),
+        readiness_prior=_number("READINESS_PRIOR", 0.8),
+        ready_cutoff=_string("READY_CUTOFF", "20:00"),
+        driver_token_secret=_string("DRIVER_TOKEN_SECRET", ""),
+        driver_token_hours=_integer("DRIVER_TOKEN_HOURS", 12),
+        gps_retention_days=_integer("GPS_RETENTION_DAYS", 30),
+        gps_accuracy_m=_number("GPS_ACCURACY_M", 100),
+        geofence_m=_number("GEOFENCE_M", 150),
+        absolute_tolerance_kg=_number("ABSOLUTE_TOLERANCE_KG", 20),
+        percentage_tolerance_pct=_number("PERCENTAGE_TOLERANCE_PCT", 5),
+        dedup_retention_days=_integer("DEDUP_RETENTION_DAYS", 7),
     )

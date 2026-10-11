@@ -1,0 +1,4834 @@
+{
+  "baselineUnmetTargets": 9,
+  "command": "python scripts/eval_routes.py --scenarios eval/route-scenarios --json-output eval/route-results.json --report-output eval/route-results.md",
+  "dataProvenance": "synthetic deterministic fixtures; no AWS calls",
+  "emptyPrimaryRoutes": 6,
+  "limitations": [
+    "Fixtures are not field measurements or evidence of environmental savings.",
+    "No realised-weight replay is reported; expected kilograms are not ground truth.",
+    "The insertion and 2-opt heuristics do not prove global optimality."
+  ],
+  "mandatoryConflictScenarios": 1,
+  "metricDefinitions": {
+    "comparison": "distance comparison only when expected kg tie; otherwise TRADE_OFF",
+    "expectedCollectionKg": "sum of P0 confirmedKg * readinessPrior for selected stops",
+    "expectedKgPerKm": "expectedCollectionKg / totalKm, null if totalKm is zero",
+    "reservedLoadKg": "sum of full-load reservations including capacity buffer",
+    "shortfallKg": "max(0, targetKg - primary expectedCollectionKg)",
+    "totalKm": "sum of directed fixture-matrix legs including depot return",
+    "totalMin": "travel, waiting and service from shift start through depot return"
+  },
+  "primaryUnmetTargets": 10,
+  "results": [
+    {
+      "assumptions": {
+        "capacityBuffer": 0.1,
+        "readinessPrior": 0.8,
+        "volumeRatio": 1
+      },
+      "baseline": {
+        "excluded": [],
+        "expectedCollectionKg": 240,
+        "expectedKgPerKm": 30.0,
+        "order": [
+          "a",
+          "b"
+        ],
+        "reservedLoadKg": 330,
+        "serviceMin": 20,
+        "shortfallKg": 0,
+        "totalKm": 8,
+        "totalMin": 44,
+        "waitingMin": 0
+      },
+      "calculation": {
+        "assumptions": {
+          "capacityBuffer": 0.1,
+          "readinessPrior": 0.8,
+          "volumeRatio": 1
+        },
+        "baseline": {
+          "returnAt": "06:44",
+          "startAt": "06:00",
+          "stops": [
+            {
+              "address": "Synthetic evaluation address",
+              "arrivalAt": "06:06",
+              "confirmedKg": 100,
+              "expectedCollectionKg": 80,
+              "generatorId": "a",
+              "lat": 12.690999999999999,
+              "lng": 77.474,
+              "mandatory": false,
+              "name": "Synthetic a",
+              "reservedLoadKg": 110,
+              "serviceEndAt": "06:16",
+              "serviceStartAt": "06:06",
+              "simulated": true,
+              "submissionId": "a#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            },
+            {
+              "address": "Synthetic evaluation address",
+              "arrivalAt": "06:22",
+              "confirmedKg": 200,
+              "expectedCollectionKg": 160,
+              "generatorId": "b",
+              "lat": 12.690999999999999,
+              "lng": 77.474,
+              "mandatory": false,
+              "name": "Synthetic b",
+              "reservedLoadKg": 220,
+              "serviceEndAt": "06:32",
+              "serviceStartAt": "06:22",
+              "simulated": true,
+              "submissionId": "b#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            }
+          ],
+          "totals": {
+            "expectedCollectionKg": 240,
+            "reservedLoadKg": 330,
+            "serviceMin": 20,
+            "totalKm": 8,
+            "totalMin": 44,
+            "waitingMin": 0
+          }
+        },
+        "collectionDate": "2026-10-11",
+        "excluded": [],
+        "inputRevision": 1,
+        "mandatoryConflicts": [],
+        "matrixSource": "fixture",
+        "params": {
+          "capacityBuffer": 0.1,
+          "mandatoryIds": [],
+          "maxRadiusKm": 15.0,
+          "readinessPrior": 0.8,
+          "serviceMin": 10.0,
+          "shiftEnd": "11:00",
+          "shiftStart": "06:00",
+          "targetKg": 200.0,
+          "truckCapacityKg": 500.0
+        },
+        "plan": {
+          "returnAt": "06:44",
+          "startAt": "06:00",
+          "stops": [
+            {
+              "address": "Synthetic evaluation address",
+              "arrivalAt": "06:12",
+              "confirmedKg": 200,
+              "expectedCollectionKg": 160,
+              "generatorId": "b",
+              "lat": 12.690999999999999,
+              "lng": 77.474,
+              "mandatory": false,
+              "name": "Synthetic b",
+              "reservedLoadKg": 220,
+              "serviceEndAt": "06:22",
+              "serviceStartAt": "06:12",
+              "simulated": true,
+              "submissionId": "b#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            },
+            {
+              "address": "Synthetic evaluation address",
+              "arrivalAt": "06:28",
+              "confirmedKg": 100,
+              "expectedCollectionKg": 80,
+              "generatorId": "a",
+              "lat": 12.690999999999999,
+              "lng": 77.474,
+              "mandatory": false,
+              "name": "Synthetic a",
+              "reservedLoadKg": 110,
+              "serviceEndAt": "06:38",
+              "serviceStartAt": "06:28",
+              "simulated": true,
+              "submissionId": "a#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            }
+          ],
+          "totals": {
+            "expectedCollectionKg": 240,
+            "reservedLoadKg": 330,
+            "serviceMin": 20,
+            "totalKm": 8,
+            "totalMin": 44,
+            "waitingMin": 0
+          }
+        },
+        "shortfall": {
+          "kg": 0,
+          "reasons": []
+        },
+        "simulated": true,
+        "status": "FEASIBLE"
+      },
+      "comparison": "TIE",
+      "description": "All suppliers ready; both tie on expected kg and km, with different stable route orders.",
+      "excluded": [],
+      "fixtureFile": "core.json",
+      "inputSha256": "c5aaa4785e9e10a80e0620925426e7f32621079984e3ca29a75b36c844cf9dfb",
+      "inputs": {
+        "collectionDate": "2026-10-11",
+        "depot": {
+          "id": "plant",
+          "lat": 12.681,
+          "lng": 77.474
+        },
+        "generators": [
+          {
+            "address": "Synthetic evaluation address",
+            "generatorId": "a",
+            "lat": 12.690999999999999,
+            "lng": 77.474,
+            "name": "Synthetic a",
+            "readiness": {
+              "collectionDate": "2026-10-11",
+              "confirmedKg": 100,
+              "generatorId": "a",
+              "schemaVersion": 3,
+              "status": "READY",
+              "submissionId": "a#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            },
+            "readinessStatus": "READY",
+            "simulated": true,
+            "supportedMaterial": true,
+            "unresolvedHazards": []
+          },
+          {
+            "address": "Synthetic evaluation address",
+            "generatorId": "b",
+            "lat": 12.690999999999999,
+            "lng": 77.474,
+            "name": "Synthetic b",
+            "readiness": {
+              "collectionDate": "2026-10-11",
+              "confirmedKg": 200,
+              "generatorId": "b",
+              "schemaVersion": 3,
+              "status": "READY",
+              "submissionId": "b#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            },
+            "readinessStatus": "READY",
+            "simulated": true,
+            "supportedMaterial": true,
+            "unresolvedHazards": []
+          }
+        ],
+        "history": {},
+        "inputRevision": 1,
+        "matrix": {
+          "km": [
+            [
+              0,
+              2,
+              4
+            ],
+            [
+              2,
+              0,
+              2
+            ],
+            [
+              4,
+              2,
+              0
+            ]
+          ],
+          "min": [
+            [
+              0,
+              6,
+              12
+            ],
+            [
+              6,
+              0,
+              6
+            ],
+            [
+              12,
+              6,
+              0
+            ]
+          ],
+          "pointIds": [
+            "plant",
+            "a",
+            "b"
+          ],
+          "source": "fixture"
+        },
+        "params": {
+          "capacityBuffer": 0.1,
+          "mandatoryIds": [],
+          "maxRadiusKm": 15,
+          "readinessPrior": 0.8,
+          "serviceMin": 10,
+          "shiftEnd": "11:00",
+          "shiftStart": "06:00",
+          "targetKg": 200,
+          "truckCapacityKg": 500
+        },
+        "simulated": true
+      },
+      "mandatoryConflicts": [],
+      "matrixSource": "fixture",
+      "primary": {
+        "expectedCollectionKg": 240,
+        "expectedKgPerKm": 30.0,
+        "order": [
+          "b",
+          "a"
+        ],
+        "reservedLoadKg": 330,
+        "serviceMin": 20,
+        "totalKm": 8,
+        "totalMin": 44,
+        "waitingMin": 0
+      },
+      "scenarioId": "all-ready-baseline-equality",
+      "shortfallKg": 0,
+      "shortfallReasons": [],
+      "status": "FEASIBLE"
+    },
+    {
+      "assumptions": {
+        "capacityBuffer": 0.1,
+        "readinessPrior": 0.8,
+        "volumeRatio": 1
+      },
+      "baseline": {
+        "excluded": [
+          {
+            "generatorId": "a",
+            "reason": "NOT_READY"
+          }
+        ],
+        "expectedCollectionKg": 160,
+        "expectedKgPerKm": 26.666666666666668,
+        "order": [
+          "b"
+        ],
+        "reservedLoadKg": 220,
+        "serviceMin": 10,
+        "shortfallKg": 0,
+        "totalKm": 6,
+        "totalMin": 28,
+        "waitingMin": 0
+      },
+      "calculation": {
+        "assumptions": {
+          "capacityBuffer": 0.1,
+          "readinessPrior": 0.8,
+          "volumeRatio": 1
+        },
+        "baseline": {
+          "returnAt": "06:28",
+          "startAt": "06:00",
+          "stops": [
+            {
+              "address": "Synthetic evaluation address",
+              "arrivalAt": "06:09",
+              "confirmedKg": 200,
+              "expectedCollectionKg": 160,
+              "generatorId": "b",
+              "lat": 12.690999999999999,
+              "lng": 77.474,
+              "mandatory": false,
+              "name": "Synthetic b",
+              "reservedLoadKg": 220,
+              "serviceEndAt": "06:19",
+              "serviceStartAt": "06:09",
+              "simulated": true,
+              "submissionId": "b#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            }
+          ],
+          "totals": {
+            "expectedCollectionKg": 160,
+            "reservedLoadKg": 220,
+            "serviceMin": 10,
+            "totalKm": 6,
+            "totalMin": 28,
+            "waitingMin": 0
+          }
+        },
+        "collectionDate": "2026-10-11",
+        "excluded": [
+          {
+            "generatorId": "a",
+            "reason": "NOT_READY"
+          }
+        ],
+        "inputRevision": 1,
+        "mandatoryConflicts": [],
+        "matrixSource": "fixture",
+        "params": {
+          "capacityBuffer": 0.1,
+          "mandatoryIds": [],
+          "maxRadiusKm": 15.0,
+          "readinessPrior": 0.8,
+          "serviceMin": 10.0,
+          "shiftEnd": "11:00",
+          "shiftStart": "06:00",
+          "targetKg": 120.0,
+          "truckCapacityKg": 500.0
+        },
+        "plan": {
+          "returnAt": "06:28",
+          "startAt": "06:00",
+          "stops": [
+            {
+              "address": "Synthetic evaluation address",
+              "arrivalAt": "06:09",
+              "confirmedKg": 200,
+              "expectedCollectionKg": 160,
+              "generatorId": "b",
+              "lat": 12.690999999999999,
+              "lng": 77.474,
+              "mandatory": false,
+              "name": "Synthetic b",
+              "reservedLoadKg": 220,
+              "serviceEndAt": "06:19",
+              "serviceStartAt": "06:09",
+              "simulated": true,
+              "submissionId": "b#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            }
+          ],
+          "totals": {
+            "expectedCollectionKg": 160,
+            "reservedLoadKg": 220,
+            "serviceMin": 10,
+            "totalKm": 6,
+            "totalMin": 28,
+            "waitingMin": 0
+          }
+        },
+        "shortfall": {
+          "kg": 0,
+          "reasons": []
+        },
+        "simulated": true,
+        "status": "FEASIBLE"
+      },
+      "comparison": "TIE",
+      "description": "A NOT_READY cancellation stays visible and is not routed.",
+      "excluded": [
+        {
+          "generatorId": "a",
+          "reason": "NOT_READY"
+        }
+      ],
+      "fixtureFile": "core.json",
+      "inputSha256": "03201ed6d1941383c96a81b2656c754e7e951308563e0f66fb2588f9894781e1",
+      "inputs": {
+        "collectionDate": "2026-10-11",
+        "depot": {
+          "id": "plant",
+          "lat": 12.681,
+          "lng": 77.474
+        },
+        "generators": [
+          {
+            "address": "Synthetic evaluation address",
+            "generatorId": "a",
+            "lat": 12.690999999999999,
+            "lng": 77.474,
+            "name": "Synthetic a",
+            "readiness": {
+              "collectionDate": "2026-10-11",
+              "confirmedKg": 0,
+              "generatorId": "a",
+              "schemaVersion": 3,
+              "status": "NOT_READY",
+              "submissionId": "a#fixture",
+              "weightSource": null,
+              "window": null
+            },
+            "readinessStatus": "NOT_READY",
+            "simulated": true,
+            "supportedMaterial": true,
+            "unresolvedHazards": []
+          },
+          {
+            "address": "Synthetic evaluation address",
+            "generatorId": "b",
+            "lat": 12.690999999999999,
+            "lng": 77.474,
+            "name": "Synthetic b",
+            "readiness": {
+              "collectionDate": "2026-10-11",
+              "confirmedKg": 200,
+              "generatorId": "b",
+              "schemaVersion": 3,
+              "status": "READY",
+              "submissionId": "b#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            },
+            "readinessStatus": "READY",
+            "simulated": true,
+            "supportedMaterial": true,
+            "unresolvedHazards": []
+          }
+        ],
+        "history": {},
+        "inputRevision": 1,
+        "matrix": {
+          "km": [
+            [
+              0,
+              2,
+              3
+            ],
+            [
+              2,
+              0,
+              1
+            ],
+            [
+              3,
+              1,
+              0
+            ]
+          ],
+          "min": [
+            [
+              0,
+              6,
+              9
+            ],
+            [
+              6,
+              0,
+              3
+            ],
+            [
+              9,
+              3,
+              0
+            ]
+          ],
+          "pointIds": [
+            "plant",
+            "a",
+            "b"
+          ],
+          "source": "fixture"
+        },
+        "params": {
+          "capacityBuffer": 0.1,
+          "mandatoryIds": [],
+          "maxRadiusKm": 15,
+          "readinessPrior": 0.8,
+          "serviceMin": 10,
+          "shiftEnd": "11:00",
+          "shiftStart": "06:00",
+          "targetKg": 120,
+          "truckCapacityKg": 500
+        },
+        "simulated": true
+      },
+      "mandatoryConflicts": [],
+      "matrixSource": "fixture",
+      "primary": {
+        "expectedCollectionKg": 160,
+        "expectedKgPerKm": 26.666666666666668,
+        "order": [
+          "b"
+        ],
+        "reservedLoadKg": 220,
+        "serviceMin": 10,
+        "totalKm": 6,
+        "totalMin": 28,
+        "waitingMin": 0
+      },
+      "scenarioId": "cancellation",
+      "shortfallKg": 0,
+      "shortfallReasons": [],
+      "status": "FEASIBLE"
+    },
+    {
+      "assumptions": {
+        "capacityBuffer": 0.1,
+        "readinessPrior": 0.8,
+        "volumeRatio": 1
+      },
+      "baseline": {
+        "excluded": [
+          {
+            "generatorId": "a",
+            "reason": "UNCONFIRMED"
+          },
+          {
+            "generatorId": "b",
+            "reason": "UNCONFIRMED"
+          }
+        ],
+        "expectedCollectionKg": 0,
+        "expectedKgPerKm": null,
+        "order": [],
+        "reservedLoadKg": 0,
+        "serviceMin": 0,
+        "shortfallKg": 200,
+        "totalKm": 0,
+        "totalMin": 0,
+        "waitingMin": 0
+      },
+      "calculation": {
+        "assumptions": {
+          "capacityBuffer": 0.1,
+          "readinessPrior": 0.8,
+          "volumeRatio": 1
+        },
+        "baseline": {
+          "returnAt": "06:00",
+          "startAt": "06:00",
+          "stops": [],
+          "totals": {
+            "expectedCollectionKg": 0,
+            "reservedLoadKg": 0,
+            "serviceMin": 0,
+            "totalKm": 0,
+            "totalMin": 0,
+            "waitingMin": 0
+          }
+        },
+        "collectionDate": "2026-10-11",
+        "excluded": [
+          {
+            "generatorId": "a",
+            "reason": "UNCONFIRMED"
+          },
+          {
+            "generatorId": "b",
+            "reason": "UNCONFIRMED"
+          }
+        ],
+        "inputRevision": 1,
+        "mandatoryConflicts": [],
+        "matrixSource": "fixture",
+        "params": {
+          "capacityBuffer": 0.1,
+          "mandatoryIds": [],
+          "maxRadiusKm": 15.0,
+          "readinessPrior": 0.8,
+          "serviceMin": 10.0,
+          "shiftEnd": "11:00",
+          "shiftStart": "06:00",
+          "targetKg": 200.0,
+          "truckCapacityKg": 500.0
+        },
+        "plan": {
+          "returnAt": "06:00",
+          "startAt": "06:00",
+          "stops": [],
+          "totals": {
+            "expectedCollectionKg": 0,
+            "reservedLoadKg": 0,
+            "serviceMin": 0,
+            "totalKm": 0,
+            "totalMin": 0,
+            "waitingMin": 0
+          }
+        },
+        "shortfall": {
+          "kg": 200,
+          "reasons": [
+            "UNCONFIRMED"
+          ]
+        },
+        "simulated": true,
+        "status": "FEASIBLE"
+      },
+      "comparison": "TIE",
+      "description": "No READY confirmation produces an explicit empty route and target gap.",
+      "excluded": [
+        {
+          "generatorId": "a",
+          "reason": "UNCONFIRMED"
+        },
+        {
+          "generatorId": "b",
+          "reason": "UNCONFIRMED"
+        }
+      ],
+      "fixtureFile": "core.json",
+      "inputSha256": "94395f06d3d0619c2fc46719ef8fe9f2c1c841f9eea273375f8182e400ae78f7",
+      "inputs": {
+        "collectionDate": "2026-10-11",
+        "depot": {
+          "id": "plant",
+          "lat": 12.681,
+          "lng": 77.474
+        },
+        "generators": [
+          {
+            "address": "Synthetic evaluation address",
+            "generatorId": "a",
+            "lat": 12.690999999999999,
+            "lng": 77.474,
+            "name": "Synthetic a",
+            "readiness": null,
+            "readinessStatus": "UNCONFIRMED",
+            "simulated": true,
+            "supportedMaterial": true,
+            "unresolvedHazards": []
+          },
+          {
+            "address": "Synthetic evaluation address",
+            "generatorId": "b",
+            "lat": 12.690999999999999,
+            "lng": 77.474,
+            "name": "Synthetic b",
+            "readiness": null,
+            "readinessStatus": "UNCONFIRMED",
+            "simulated": true,
+            "supportedMaterial": true,
+            "unresolvedHazards": []
+          }
+        ],
+        "history": {},
+        "inputRevision": 1,
+        "matrix": {
+          "km": [
+            [
+              0,
+              1,
+              2
+            ],
+            [
+              1,
+              0,
+              1
+            ],
+            [
+              2,
+              1,
+              0
+            ]
+          ],
+          "min": [
+            [
+              0,
+              3,
+              6
+            ],
+            [
+              3,
+              0,
+              3
+            ],
+            [
+              6,
+              3,
+              0
+            ]
+          ],
+          "pointIds": [
+            "plant",
+            "a",
+            "b"
+          ],
+          "source": "fixture"
+        },
+        "params": {
+          "capacityBuffer": 0.1,
+          "mandatoryIds": [],
+          "maxRadiusKm": 15,
+          "readinessPrior": 0.8,
+          "serviceMin": 10,
+          "shiftEnd": "11:00",
+          "shiftStart": "06:00",
+          "targetKg": 200,
+          "truckCapacityKg": 500
+        },
+        "simulated": true
+      },
+      "mandatoryConflicts": [],
+      "matrixSource": "fixture",
+      "primary": {
+        "expectedCollectionKg": 0,
+        "expectedKgPerKm": null,
+        "order": [],
+        "reservedLoadKg": 0,
+        "serviceMin": 0,
+        "totalKm": 0,
+        "totalMin": 0,
+        "waitingMin": 0
+      },
+      "scenarioId": "no-confirmed-kitchens",
+      "shortfallKg": 200,
+      "shortfallReasons": [
+        "UNCONFIRMED"
+      ],
+      "status": "FEASIBLE"
+    },
+    {
+      "assumptions": {
+        "capacityBuffer": 0.1,
+        "readinessPrior": 0.8,
+        "volumeRatio": 1
+      },
+      "baseline": {
+        "excluded": [],
+        "expectedCollectionKg": 256,
+        "expectedKgPerKm": 21.333333333333332,
+        "order": [
+          "small",
+          "large"
+        ],
+        "reservedLoadKg": 352,
+        "serviceMin": 20,
+        "shortfallKg": 0,
+        "totalKm": 12,
+        "totalMin": 56,
+        "waitingMin": 0
+      },
+      "calculation": {
+        "assumptions": {
+          "capacityBuffer": 0.1,
+          "readinessPrior": 0.8,
+          "volumeRatio": 1
+        },
+        "baseline": {
+          "returnAt": "06:56",
+          "startAt": "06:00",
+          "stops": [
+            {
+              "address": "Synthetic evaluation address",
+              "arrivalAt": "06:18",
+              "confirmedKg": 20,
+              "expectedCollectionKg": 16,
+              "generatorId": "small",
+              "lat": 12.690999999999999,
+              "lng": 77.474,
+              "mandatory": true,
+              "name": "Synthetic small",
+              "reservedLoadKg": 22,
+              "serviceEndAt": "06:28",
+              "serviceStartAt": "06:18",
+              "simulated": true,
+              "submissionId": "small#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            },
+            {
+              "address": "Synthetic evaluation address",
+              "arrivalAt": "06:43",
+              "confirmedKg": 300,
+              "expectedCollectionKg": 240,
+              "generatorId": "large",
+              "lat": 12.690999999999999,
+              "lng": 77.474,
+              "mandatory": false,
+              "name": "Synthetic large",
+              "reservedLoadKg": 330,
+              "serviceEndAt": "06:53",
+              "serviceStartAt": "06:43",
+              "simulated": true,
+              "submissionId": "large#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            }
+          ],
+          "totals": {
+            "expectedCollectionKg": 256,
+            "reservedLoadKg": 352,
+            "serviceMin": 20,
+            "totalKm": 12,
+            "totalMin": 56,
+            "waitingMin": 0
+          }
+        },
+        "collectionDate": "2026-10-11",
+        "excluded": [],
+        "inputRevision": 1,
+        "mandatoryConflicts": [],
+        "matrixSource": "fixture",
+        "params": {
+          "capacityBuffer": 0.1,
+          "mandatoryIds": [
+            "small"
+          ],
+          "maxRadiusKm": 15.0,
+          "readinessPrior": 0.8,
+          "serviceMin": 10.0,
+          "shiftEnd": "11:00",
+          "shiftStart": "06:00",
+          "targetKg": 200.0,
+          "truckCapacityKg": 500.0
+        },
+        "plan": {
+          "returnAt": "06:56",
+          "startAt": "06:00",
+          "stops": [
+            {
+              "address": "Synthetic evaluation address",
+              "arrivalAt": "06:03",
+              "confirmedKg": 300,
+              "expectedCollectionKg": 240,
+              "generatorId": "large",
+              "lat": 12.690999999999999,
+              "lng": 77.474,
+              "mandatory": false,
+              "name": "Synthetic large",
+              "reservedLoadKg": 330,
+              "serviceEndAt": "06:13",
+              "serviceStartAt": "06:03",
+              "simulated": true,
+              "submissionId": "large#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            },
+            {
+              "address": "Synthetic evaluation address",
+              "arrivalAt": "06:28",
+              "confirmedKg": 20,
+              "expectedCollectionKg": 16,
+              "generatorId": "small",
+              "lat": 12.690999999999999,
+              "lng": 77.474,
+              "mandatory": true,
+              "name": "Synthetic small",
+              "reservedLoadKg": 22,
+              "serviceEndAt": "06:38",
+              "serviceStartAt": "06:28",
+              "simulated": true,
+              "submissionId": "small#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            }
+          ],
+          "totals": {
+            "expectedCollectionKg": 256,
+            "reservedLoadKg": 352,
+            "serviceMin": 20,
+            "totalKm": 12,
+            "totalMin": 56,
+            "waitingMin": 0
+          }
+        },
+        "shortfall": {
+          "kg": 0,
+          "reasons": []
+        },
+        "simulated": true,
+        "status": "FEASIBLE"
+      },
+      "comparison": "TIE",
+      "description": "A distant small mandatory supplier is served before optional target choices.",
+      "excluded": [],
+      "fixtureFile": "core.json",
+      "inputSha256": "a452c613b6ccd9039929397fbab4a9862ad7483a0b890b83721a6b0d94b8d409",
+      "inputs": {
+        "collectionDate": "2026-10-11",
+        "depot": {
+          "id": "plant",
+          "lat": 12.681,
+          "lng": 77.474
+        },
+        "generators": [
+          {
+            "address": "Synthetic evaluation address",
+            "generatorId": "small",
+            "lat": 12.690999999999999,
+            "lng": 77.474,
+            "name": "Synthetic small",
+            "readiness": {
+              "collectionDate": "2026-10-11",
+              "confirmedKg": 20,
+              "generatorId": "small",
+              "schemaVersion": 3,
+              "status": "READY",
+              "submissionId": "small#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            },
+            "readinessStatus": "READY",
+            "simulated": true,
+            "supportedMaterial": true,
+            "unresolvedHazards": []
+          },
+          {
+            "address": "Synthetic evaluation address",
+            "generatorId": "large",
+            "lat": 12.690999999999999,
+            "lng": 77.474,
+            "name": "Synthetic large",
+            "readiness": {
+              "collectionDate": "2026-10-11",
+              "confirmedKg": 300,
+              "generatorId": "large",
+              "schemaVersion": 3,
+              "status": "READY",
+              "submissionId": "large#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            },
+            "readinessStatus": "READY",
+            "simulated": true,
+            "supportedMaterial": true,
+            "unresolvedHazards": []
+          }
+        ],
+        "history": {},
+        "inputRevision": 1,
+        "matrix": {
+          "km": [
+            [
+              0,
+              6,
+              1
+            ],
+            [
+              6,
+              0,
+              5
+            ],
+            [
+              1,
+              5,
+              0
+            ]
+          ],
+          "min": [
+            [
+              0,
+              18,
+              3
+            ],
+            [
+              18,
+              0,
+              15
+            ],
+            [
+              3,
+              15,
+              0
+            ]
+          ],
+          "pointIds": [
+            "plant",
+            "small",
+            "large"
+          ],
+          "source": "fixture"
+        },
+        "params": {
+          "capacityBuffer": 0.1,
+          "mandatoryIds": [
+            "small"
+          ],
+          "maxRadiusKm": 15,
+          "readinessPrior": 0.8,
+          "serviceMin": 10,
+          "shiftEnd": "11:00",
+          "shiftStart": "06:00",
+          "targetKg": 200,
+          "truckCapacityKg": 500
+        },
+        "simulated": true
+      },
+      "mandatoryConflicts": [],
+      "matrixSource": "fixture",
+      "primary": {
+        "expectedCollectionKg": 256,
+        "expectedKgPerKm": 21.333333333333332,
+        "order": [
+          "large",
+          "small"
+        ],
+        "reservedLoadKg": 352,
+        "serviceMin": 20,
+        "totalKm": 12,
+        "totalMin": 56,
+        "waitingMin": 0
+      },
+      "scenarioId": "mandatory-small-supplier",
+      "shortfallKg": 0,
+      "shortfallReasons": [],
+      "status": "FEASIBLE"
+    },
+    {
+      "assumptions": {
+        "capacityBuffer": 0.1,
+        "readinessPrior": 0.8,
+        "volumeRatio": 1
+      },
+      "baseline": {
+        "excluded": [
+          {
+            "generatorId": "c",
+            "reason": "CAPACITY"
+          }
+        ],
+        "expectedCollectionKg": 1440,
+        "expectedKgPerKm": 360.0,
+        "order": [
+          "a",
+          "b"
+        ],
+        "reservedLoadKg": 1980,
+        "serviceMin": 20,
+        "shortfallKg": 160,
+        "totalKm": 4,
+        "totalMin": 32,
+        "waitingMin": 0
+      },
+      "calculation": {
+        "assumptions": {
+          "capacityBuffer": 0.1,
+          "readinessPrior": 0.8,
+          "volumeRatio": 1
+        },
+        "baseline": {
+          "returnAt": "06:32",
+          "startAt": "06:00",
+          "stops": [
+            {
+              "address": "Synthetic evaluation address",
+              "arrivalAt": "06:03",
+              "confirmedKg": 900,
+              "expectedCollectionKg": 720,
+              "generatorId": "a",
+              "lat": 12.690999999999999,
+              "lng": 77.474,
+              "mandatory": false,
+              "name": "Synthetic a",
+              "reservedLoadKg": 990,
+              "serviceEndAt": "06:13",
+              "serviceStartAt": "06:03",
+              "simulated": true,
+              "submissionId": "a#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            },
+            {
+              "address": "Synthetic evaluation address",
+              "arrivalAt": "06:16",
+              "confirmedKg": 900,
+              "expectedCollectionKg": 720,
+              "generatorId": "b",
+              "lat": 12.690999999999999,
+              "lng": 77.474,
+              "mandatory": false,
+              "name": "Synthetic b",
+              "reservedLoadKg": 990,
+              "serviceEndAt": "06:26",
+              "serviceStartAt": "06:16",
+              "simulated": true,
+              "submissionId": "b#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            }
+          ],
+          "totals": {
+            "expectedCollectionKg": 1440,
+            "reservedLoadKg": 1980,
+            "serviceMin": 20,
+            "totalKm": 4,
+            "totalMin": 32,
+            "waitingMin": 0
+          }
+        },
+        "collectionDate": "2026-10-11",
+        "excluded": [
+          {
+            "generatorId": "c",
+            "reason": "CAPACITY"
+          }
+        ],
+        "inputRevision": 1,
+        "mandatoryConflicts": [],
+        "matrixSource": "fixture",
+        "params": {
+          "capacityBuffer": 0.1,
+          "mandatoryIds": [],
+          "maxRadiusKm": 15.0,
+          "readinessPrior": 0.8,
+          "serviceMin": 10.0,
+          "shiftEnd": "11:00",
+          "shiftStart": "06:00",
+          "targetKg": 1600.0,
+          "truckCapacityKg": 2000.0
+        },
+        "plan": {
+          "returnAt": "06:32",
+          "startAt": "06:00",
+          "stops": [
+            {
+              "address": "Synthetic evaluation address",
+              "arrivalAt": "06:06",
+              "confirmedKg": 900,
+              "expectedCollectionKg": 720,
+              "generatorId": "b",
+              "lat": 12.690999999999999,
+              "lng": 77.474,
+              "mandatory": false,
+              "name": "Synthetic b",
+              "reservedLoadKg": 990,
+              "serviceEndAt": "06:16",
+              "serviceStartAt": "06:06",
+              "simulated": true,
+              "submissionId": "b#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            },
+            {
+              "address": "Synthetic evaluation address",
+              "arrivalAt": "06:19",
+              "confirmedKg": 900,
+              "expectedCollectionKg": 720,
+              "generatorId": "a",
+              "lat": 12.690999999999999,
+              "lng": 77.474,
+              "mandatory": false,
+              "name": "Synthetic a",
+              "reservedLoadKg": 990,
+              "serviceEndAt": "06:29",
+              "serviceStartAt": "06:19",
+              "simulated": true,
+              "submissionId": "a#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            }
+          ],
+          "totals": {
+            "expectedCollectionKg": 1440,
+            "reservedLoadKg": 1980,
+            "serviceMin": 20,
+            "totalKm": 4,
+            "totalMin": 32,
+            "waitingMin": 0
+          }
+        },
+        "shortfall": {
+          "kg": 160,
+          "reasons": [
+            "CAPACITY"
+          ]
+        },
+        "simulated": true,
+        "status": "FEASIBLE"
+      },
+      "comparison": "TIE",
+      "description": "Full reservations, not probability-weighted kg, block the third stop.",
+      "excluded": [
+        {
+          "generatorId": "c",
+          "reason": "CAPACITY"
+        }
+      ],
+      "fixtureFile": "core.json",
+      "inputSha256": "2cfd9953378291d942061146c5db96c28e60adec7810e54f2e183b84cef7cd41",
+      "inputs": {
+        "collectionDate": "2026-10-11",
+        "depot": {
+          "id": "plant",
+          "lat": 12.681,
+          "lng": 77.474
+        },
+        "generators": [
+          {
+            "address": "Synthetic evaluation address",
+            "generatorId": "a",
+            "lat": 12.690999999999999,
+            "lng": 77.474,
+            "name": "Synthetic a",
+            "readiness": {
+              "collectionDate": "2026-10-11",
+              "confirmedKg": 900,
+              "generatorId": "a",
+              "schemaVersion": 3,
+              "status": "READY",
+              "submissionId": "a#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            },
+            "readinessStatus": "READY",
+            "simulated": true,
+            "supportedMaterial": true,
+            "unresolvedHazards": []
+          },
+          {
+            "address": "Synthetic evaluation address",
+            "generatorId": "b",
+            "lat": 12.690999999999999,
+            "lng": 77.474,
+            "name": "Synthetic b",
+            "readiness": {
+              "collectionDate": "2026-10-11",
+              "confirmedKg": 900,
+              "generatorId": "b",
+              "schemaVersion": 3,
+              "status": "READY",
+              "submissionId": "b#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            },
+            "readinessStatus": "READY",
+            "simulated": true,
+            "supportedMaterial": true,
+            "unresolvedHazards": []
+          },
+          {
+            "address": "Synthetic evaluation address",
+            "generatorId": "c",
+            "lat": 12.690999999999999,
+            "lng": 77.474,
+            "name": "Synthetic c",
+            "readiness": {
+              "collectionDate": "2026-10-11",
+              "confirmedKg": 100,
+              "generatorId": "c",
+              "schemaVersion": 3,
+              "status": "READY",
+              "submissionId": "c#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            },
+            "readinessStatus": "READY",
+            "simulated": true,
+            "supportedMaterial": true,
+            "unresolvedHazards": []
+          }
+        ],
+        "history": {},
+        "inputRevision": 1,
+        "matrix": {
+          "km": [
+            [
+              0,
+              1,
+              2,
+              3
+            ],
+            [
+              1,
+              0,
+              1,
+              2
+            ],
+            [
+              2,
+              1,
+              0,
+              1
+            ],
+            [
+              3,
+              2,
+              1,
+              0
+            ]
+          ],
+          "min": [
+            [
+              0,
+              3,
+              6,
+              9
+            ],
+            [
+              3,
+              0,
+              3,
+              6
+            ],
+            [
+              6,
+              3,
+              0,
+              3
+            ],
+            [
+              9,
+              6,
+              3,
+              0
+            ]
+          ],
+          "pointIds": [
+            "plant",
+            "a",
+            "b",
+            "c"
+          ],
+          "source": "fixture"
+        },
+        "params": {
+          "capacityBuffer": 0.1,
+          "mandatoryIds": [],
+          "maxRadiusKm": 15,
+          "readinessPrior": 0.8,
+          "serviceMin": 10,
+          "shiftEnd": "11:00",
+          "shiftStart": "06:00",
+          "targetKg": 1600,
+          "truckCapacityKg": 2000
+        },
+        "simulated": true
+      },
+      "mandatoryConflicts": [],
+      "matrixSource": "fixture",
+      "primary": {
+        "expectedCollectionKg": 1440,
+        "expectedKgPerKm": 360.0,
+        "order": [
+          "b",
+          "a"
+        ],
+        "reservedLoadKg": 1980,
+        "serviceMin": 20,
+        "totalKm": 4,
+        "totalMin": 32,
+        "waitingMin": 0
+      },
+      "scenarioId": "near-capacity",
+      "shortfallKg": 160,
+      "shortfallReasons": [
+        "CAPACITY"
+      ],
+      "status": "FEASIBLE"
+    },
+    {
+      "assumptions": {
+        "capacityBuffer": 0.1,
+        "readinessPrior": 0.8,
+        "volumeRatio": 1
+      },
+      "baseline": {
+        "excluded": [
+          {
+            "generatorId": "a",
+            "reason": "CAPACITY"
+          }
+        ],
+        "expectedCollectionKg": 0,
+        "expectedKgPerKm": null,
+        "order": [],
+        "reservedLoadKg": 0,
+        "serviceMin": 0,
+        "shortfallKg": 100,
+        "totalKm": 0,
+        "totalMin": 0,
+        "waitingMin": 0
+      },
+      "calculation": {
+        "assumptions": {
+          "capacityBuffer": 0.1,
+          "readinessPrior": 0.8,
+          "volumeRatio": 1
+        },
+        "baseline": {
+          "returnAt": "06:00",
+          "startAt": "06:00",
+          "stops": [],
+          "totals": {
+            "expectedCollectionKg": 0,
+            "reservedLoadKg": 0,
+            "serviceMin": 0,
+            "totalKm": 0,
+            "totalMin": 0,
+            "waitingMin": 0
+          }
+        },
+        "collectionDate": "2026-10-11",
+        "excluded": [
+          {
+            "generatorId": "a",
+            "reason": "CAPACITY"
+          }
+        ],
+        "inputRevision": 1,
+        "mandatoryConflicts": [
+          {
+            "generatorId": "a",
+            "reason": "CAPACITY"
+          }
+        ],
+        "matrixSource": "fixture",
+        "params": {
+          "capacityBuffer": 0.1,
+          "mandatoryIds": [
+            "a"
+          ],
+          "maxRadiusKm": 15.0,
+          "readinessPrior": 0.8,
+          "serviceMin": 10.0,
+          "shiftEnd": "11:00",
+          "shiftStart": "06:00",
+          "targetKg": 100.0,
+          "truckCapacityKg": 2000.0
+        },
+        "plan": {
+          "returnAt": "06:00",
+          "startAt": "06:00",
+          "stops": [],
+          "totals": {
+            "expectedCollectionKg": 0,
+            "reservedLoadKg": 0,
+            "serviceMin": 0,
+            "totalKm": 0,
+            "totalMin": 0,
+            "waitingMin": 0
+          }
+        },
+        "shortfall": {
+          "kg": 100,
+          "reasons": [
+            "CAPACITY"
+          ]
+        },
+        "simulated": true,
+        "status": "MANDATORY_CONFLICT"
+      },
+      "comparison": "TIE",
+      "description": "A 2000 kg mandatory confirmation cannot fit a 2000 kg truck with buffer.",
+      "excluded": [
+        {
+          "generatorId": "a",
+          "reason": "CAPACITY"
+        }
+      ],
+      "fixtureFile": "core.json",
+      "inputSha256": "a0d19c819c360c2aad0747f60cb0d2d4fc842faab5ff1313b4541f5f597445b7",
+      "inputs": {
+        "collectionDate": "2026-10-11",
+        "depot": {
+          "id": "plant",
+          "lat": 12.681,
+          "lng": 77.474
+        },
+        "generators": [
+          {
+            "address": "Synthetic evaluation address",
+            "generatorId": "a",
+            "lat": 12.690999999999999,
+            "lng": 77.474,
+            "name": "Synthetic a",
+            "readiness": {
+              "collectionDate": "2026-10-11",
+              "confirmedKg": 2000,
+              "generatorId": "a",
+              "schemaVersion": 3,
+              "status": "READY",
+              "submissionId": "a#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            },
+            "readinessStatus": "READY",
+            "simulated": true,
+            "supportedMaterial": true,
+            "unresolvedHazards": []
+          }
+        ],
+        "history": {},
+        "inputRevision": 1,
+        "matrix": {
+          "km": [
+            [
+              0,
+              1
+            ],
+            [
+              1,
+              0
+            ]
+          ],
+          "min": [
+            [
+              0,
+              3
+            ],
+            [
+              3,
+              0
+            ]
+          ],
+          "pointIds": [
+            "plant",
+            "a"
+          ],
+          "source": "fixture"
+        },
+        "params": {
+          "capacityBuffer": 0.1,
+          "mandatoryIds": [
+            "a"
+          ],
+          "maxRadiusKm": 15,
+          "readinessPrior": 0.8,
+          "serviceMin": 10,
+          "shiftEnd": "11:00",
+          "shiftStart": "06:00",
+          "targetKg": 100,
+          "truckCapacityKg": 2000
+        },
+        "simulated": true
+      },
+      "mandatoryConflicts": [
+        {
+          "generatorId": "a",
+          "reason": "CAPACITY"
+        }
+      ],
+      "matrixSource": "fixture",
+      "primary": {
+        "expectedCollectionKg": 0,
+        "expectedKgPerKm": null,
+        "order": [],
+        "reservedLoadKg": 0,
+        "serviceMin": 0,
+        "totalKm": 0,
+        "totalMin": 0,
+        "waitingMin": 0
+      },
+      "scenarioId": "mandatory-overload",
+      "shortfallKg": 100,
+      "shortfallReasons": [
+        "CAPACITY"
+      ],
+      "status": "MANDATORY_CONFLICT"
+    },
+    {
+      "assumptions": {
+        "capacityBuffer": 0.1,
+        "readinessPrior": 0.8,
+        "volumeRatio": 1
+      },
+      "baseline": {
+        "excluded": [
+          {
+            "generatorId": "a",
+            "reason": "WINDOW"
+          }
+        ],
+        "expectedCollectionKg": 0,
+        "expectedKgPerKm": null,
+        "order": [],
+        "reservedLoadKg": 0,
+        "serviceMin": 0,
+        "shortfallKg": 80,
+        "totalKm": 0,
+        "totalMin": 0,
+        "waitingMin": 0
+      },
+      "calculation": {
+        "assumptions": {
+          "capacityBuffer": 0.1,
+          "readinessPrior": 0.8,
+          "volumeRatio": 1
+        },
+        "baseline": {
+          "returnAt": "06:00",
+          "startAt": "06:00",
+          "stops": [],
+          "totals": {
+            "expectedCollectionKg": 0,
+            "reservedLoadKg": 0,
+            "serviceMin": 0,
+            "totalKm": 0,
+            "totalMin": 0,
+            "waitingMin": 0
+          }
+        },
+        "collectionDate": "2026-10-11",
+        "excluded": [
+          {
+            "generatorId": "a",
+            "reason": "WINDOW"
+          }
+        ],
+        "inputRevision": 1,
+        "mandatoryConflicts": [],
+        "matrixSource": "fixture",
+        "params": {
+          "capacityBuffer": 0.1,
+          "mandatoryIds": [],
+          "maxRadiusKm": 15.0,
+          "readinessPrior": 0.8,
+          "serviceMin": 10.0,
+          "shiftEnd": "11:00",
+          "shiftStart": "06:00",
+          "targetKg": 80.0,
+          "truckCapacityKg": 500.0
+        },
+        "plan": {
+          "returnAt": "06:00",
+          "startAt": "06:00",
+          "stops": [],
+          "totals": {
+            "expectedCollectionKg": 0,
+            "reservedLoadKg": 0,
+            "serviceMin": 0,
+            "totalKm": 0,
+            "totalMin": 0,
+            "waitingMin": 0
+          }
+        },
+        "shortfall": {
+          "kg": 80,
+          "reasons": [
+            "WINDOW"
+          ]
+        },
+        "simulated": true,
+        "status": "FEASIBLE"
+      },
+      "comparison": "TIE",
+      "description": "Arrival before window end is insufficient when service finishes late.",
+      "excluded": [
+        {
+          "generatorId": "a",
+          "reason": "WINDOW"
+        }
+      ],
+      "fixtureFile": "core.json",
+      "inputSha256": "e0ab6d5fb6fe7f4610892ec4d67162c0d758e7db48e298490155718734d21a37",
+      "inputs": {
+        "collectionDate": "2026-10-11",
+        "depot": {
+          "id": "plant",
+          "lat": 12.681,
+          "lng": 77.474
+        },
+        "generators": [
+          {
+            "address": "Synthetic evaluation address",
+            "generatorId": "a",
+            "lat": 12.690999999999999,
+            "lng": 77.474,
+            "name": "Synthetic a",
+            "readiness": {
+              "collectionDate": "2026-10-11",
+              "confirmedKg": 100,
+              "generatorId": "a",
+              "schemaVersion": 3,
+              "status": "READY",
+              "submissionId": "a#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "06:10",
+                "start": "06:00"
+              }
+            },
+            "readinessStatus": "READY",
+            "simulated": true,
+            "supportedMaterial": true,
+            "unresolvedHazards": []
+          }
+        ],
+        "history": {},
+        "inputRevision": 1,
+        "matrix": {
+          "km": [
+            [
+              0,
+              1
+            ],
+            [
+              1,
+              0
+            ]
+          ],
+          "min": [
+            [
+              0,
+              5
+            ],
+            [
+              5,
+              0
+            ]
+          ],
+          "pointIds": [
+            "plant",
+            "a"
+          ],
+          "source": "fixture"
+        },
+        "params": {
+          "capacityBuffer": 0.1,
+          "mandatoryIds": [],
+          "maxRadiusKm": 15,
+          "readinessPrior": 0.8,
+          "serviceMin": 10,
+          "shiftEnd": "11:00",
+          "shiftStart": "06:00",
+          "targetKg": 80,
+          "truckCapacityKg": 500
+        },
+        "simulated": true
+      },
+      "mandatoryConflicts": [],
+      "matrixSource": "fixture",
+      "primary": {
+        "expectedCollectionKg": 0,
+        "expectedKgPerKm": null,
+        "order": [],
+        "reservedLoadKg": 0,
+        "serviceMin": 0,
+        "totalKm": 0,
+        "totalMin": 0,
+        "waitingMin": 0
+      },
+      "scenarioId": "tight-service-window",
+      "shortfallKg": 80,
+      "shortfallReasons": [
+        "WINDOW"
+      ],
+      "status": "FEASIBLE"
+    },
+    {
+      "assumptions": {
+        "capacityBuffer": 0.1,
+        "readinessPrior": 0.8,
+        "volumeRatio": 1
+      },
+      "baseline": {
+        "excluded": [
+          {
+            "generatorId": "a",
+            "reason": "SHIFT"
+          }
+        ],
+        "expectedCollectionKg": 0,
+        "expectedKgPerKm": null,
+        "order": [],
+        "reservedLoadKg": 0,
+        "serviceMin": 0,
+        "shortfallKg": 80,
+        "totalKm": 0,
+        "totalMin": 0,
+        "waitingMin": 0
+      },
+      "calculation": {
+        "assumptions": {
+          "capacityBuffer": 0.1,
+          "readinessPrior": 0.8,
+          "volumeRatio": 1
+        },
+        "baseline": {
+          "returnAt": "06:00",
+          "startAt": "06:00",
+          "stops": [],
+          "totals": {
+            "expectedCollectionKg": 0,
+            "reservedLoadKg": 0,
+            "serviceMin": 0,
+            "totalKm": 0,
+            "totalMin": 0,
+            "waitingMin": 0
+          }
+        },
+        "collectionDate": "2026-10-11",
+        "excluded": [
+          {
+            "generatorId": "a",
+            "reason": "SHIFT"
+          }
+        ],
+        "inputRevision": 1,
+        "mandatoryConflicts": [],
+        "matrixSource": "fixture",
+        "params": {
+          "capacityBuffer": 0.1,
+          "mandatoryIds": [],
+          "maxRadiusKm": 15.0,
+          "readinessPrior": 0.8,
+          "serviceMin": 10.0,
+          "shiftEnd": "06:35",
+          "shiftStart": "06:00",
+          "targetKg": 80.0,
+          "truckCapacityKg": 500.0
+        },
+        "plan": {
+          "returnAt": "06:00",
+          "startAt": "06:00",
+          "stops": [],
+          "totals": {
+            "expectedCollectionKg": 0,
+            "reservedLoadKg": 0,
+            "serviceMin": 0,
+            "totalKm": 0,
+            "totalMin": 0,
+            "waitingMin": 0
+          }
+        },
+        "shortfall": {
+          "kg": 80,
+          "reasons": [
+            "SHIFT"
+          ]
+        },
+        "simulated": true,
+        "status": "FEASIBLE"
+      },
+      "comparison": "TIE",
+      "description": "The stop is reachable but depot return exceeds shift end.",
+      "excluded": [
+        {
+          "generatorId": "a",
+          "reason": "SHIFT"
+        }
+      ],
+      "fixtureFile": "core.json",
+      "inputSha256": "49dfb28e470b0f40e141723da4ff01b31475fa7050a90f6dd118716d72f1f8dd",
+      "inputs": {
+        "collectionDate": "2026-10-11",
+        "depot": {
+          "id": "plant",
+          "lat": 12.681,
+          "lng": 77.474
+        },
+        "generators": [
+          {
+            "address": "Synthetic evaluation address",
+            "generatorId": "a",
+            "lat": 12.690999999999999,
+            "lng": 77.474,
+            "name": "Synthetic a",
+            "readiness": {
+              "collectionDate": "2026-10-11",
+              "confirmedKg": 100,
+              "generatorId": "a",
+              "schemaVersion": 3,
+              "status": "READY",
+              "submissionId": "a#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            },
+            "readinessStatus": "READY",
+            "simulated": true,
+            "supportedMaterial": true,
+            "unresolvedHazards": []
+          }
+        ],
+        "history": {},
+        "inputRevision": 1,
+        "matrix": {
+          "km": [
+            [
+              0,
+              5
+            ],
+            [
+              5,
+              0
+            ]
+          ],
+          "min": [
+            [
+              0,
+              15
+            ],
+            [
+              15,
+              0
+            ]
+          ],
+          "pointIds": [
+            "plant",
+            "a"
+          ],
+          "source": "fixture"
+        },
+        "params": {
+          "capacityBuffer": 0.1,
+          "mandatoryIds": [],
+          "maxRadiusKm": 15,
+          "readinessPrior": 0.8,
+          "serviceMin": 10,
+          "shiftEnd": "06:35",
+          "shiftStart": "06:00",
+          "targetKg": 80,
+          "truckCapacityKg": 500
+        },
+        "simulated": true
+      },
+      "mandatoryConflicts": [],
+      "matrixSource": "fixture",
+      "primary": {
+        "expectedCollectionKg": 0,
+        "expectedKgPerKm": null,
+        "order": [],
+        "reservedLoadKg": 0,
+        "serviceMin": 0,
+        "totalKm": 0,
+        "totalMin": 0,
+        "waitingMin": 0
+      },
+      "scenarioId": "return-shift-conflict",
+      "shortfallKg": 80,
+      "shortfallReasons": [
+        "SHIFT"
+      ],
+      "status": "FEASIBLE"
+    },
+    {
+      "assumptions": {
+        "capacityBuffer": 0.1,
+        "readinessPrior": 0.8,
+        "volumeRatio": 1
+      },
+      "baseline": {
+        "excluded": [
+          {
+            "generatorId": "a",
+            "reason": "NOT_SELECTED_BY_HEURISTIC"
+          }
+        ],
+        "expectedCollectionKg": 0,
+        "expectedKgPerKm": null,
+        "order": [],
+        "reservedLoadKg": 0,
+        "serviceMin": 0,
+        "shortfallKg": 80,
+        "totalKm": 0,
+        "totalMin": 0,
+        "waitingMin": 0
+      },
+      "calculation": {
+        "assumptions": {
+          "capacityBuffer": 0.1,
+          "readinessPrior": 0.8,
+          "volumeRatio": 1
+        },
+        "baseline": {
+          "returnAt": "06:00",
+          "startAt": "06:00",
+          "stops": [],
+          "totals": {
+            "expectedCollectionKg": 0,
+            "reservedLoadKg": 0,
+            "serviceMin": 0,
+            "totalKm": 0,
+            "totalMin": 0,
+            "waitingMin": 0
+          }
+        },
+        "collectionDate": "2026-10-11",
+        "excluded": [
+          {
+            "generatorId": "a",
+            "reason": "NOT_SELECTED_BY_HEURISTIC"
+          }
+        ],
+        "inputRevision": 1,
+        "mandatoryConflicts": [],
+        "matrixSource": "fixture",
+        "params": {
+          "capacityBuffer": 0.1,
+          "mandatoryIds": [],
+          "maxRadiusKm": 15.0,
+          "readinessPrior": 0.8,
+          "serviceMin": 10.0,
+          "shiftEnd": "11:00",
+          "shiftStart": "06:00",
+          "targetKg": 80.0,
+          "truckCapacityKg": 500.0
+        },
+        "plan": {
+          "returnAt": "06:00",
+          "startAt": "06:00",
+          "stops": [],
+          "totals": {
+            "expectedCollectionKg": 0,
+            "reservedLoadKg": 0,
+            "serviceMin": 0,
+            "totalKm": 0,
+            "totalMin": 0,
+            "waitingMin": 0
+          }
+        },
+        "shortfall": {
+          "kg": 80,
+          "reasons": [
+            "NOT_SELECTED_BY_HEURISTIC"
+          ]
+        },
+        "simulated": true,
+        "status": "FEASIBLE"
+      },
+      "comparison": "TIE",
+      "description": "A missing directed return leg remains infeasible rather than zero cost.",
+      "excluded": [
+        {
+          "generatorId": "a",
+          "reason": "NOT_SELECTED_BY_HEURISTIC"
+        }
+      ],
+      "fixtureFile": "core.json",
+      "inputSha256": "19718a6d793905606aebef48cc9772c7092da79b59720872d5337771c6c40328",
+      "inputs": {
+        "collectionDate": "2026-10-11",
+        "depot": {
+          "id": "plant",
+          "lat": 12.681,
+          "lng": 77.474
+        },
+        "generators": [
+          {
+            "address": "Synthetic evaluation address",
+            "generatorId": "a",
+            "lat": 12.690999999999999,
+            "lng": 77.474,
+            "name": "Synthetic a",
+            "readiness": {
+              "collectionDate": "2026-10-11",
+              "confirmedKg": 100,
+              "generatorId": "a",
+              "schemaVersion": 3,
+              "status": "READY",
+              "submissionId": "a#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            },
+            "readinessStatus": "READY",
+            "simulated": true,
+            "supportedMaterial": true,
+            "unresolvedHazards": []
+          }
+        ],
+        "history": {},
+        "inputRevision": 1,
+        "matrix": {
+          "km": [
+            [
+              0,
+              1
+            ],
+            [
+              null,
+              0
+            ]
+          ],
+          "min": [
+            [
+              0,
+              3
+            ],
+            [
+              null,
+              0
+            ]
+          ],
+          "pointIds": [
+            "plant",
+            "a"
+          ],
+          "source": "fixture"
+        },
+        "params": {
+          "capacityBuffer": 0.1,
+          "mandatoryIds": [],
+          "maxRadiusKm": 15,
+          "readinessPrior": 0.8,
+          "serviceMin": 10,
+          "shiftEnd": "11:00",
+          "shiftStart": "06:00",
+          "targetKg": 80,
+          "truckCapacityKg": 500
+        },
+        "simulated": true
+      },
+      "mandatoryConflicts": [],
+      "matrixSource": "fixture",
+      "primary": {
+        "expectedCollectionKg": 0,
+        "expectedKgPerKm": null,
+        "order": [],
+        "reservedLoadKg": 0,
+        "serviceMin": 0,
+        "totalKm": 0,
+        "totalMin": 0,
+        "waitingMin": 0
+      },
+      "scenarioId": "unreachable-directed-edge",
+      "shortfallKg": 80,
+      "shortfallReasons": [
+        "NOT_SELECTED_BY_HEURISTIC"
+      ],
+      "status": "FEASIBLE"
+    },
+    {
+      "assumptions": {
+        "capacityBuffer": 0.1,
+        "readinessPrior": 0.8,
+        "volumeRatio": 1
+      },
+      "baseline": {
+        "excluded": [
+          {
+            "generatorId": "b",
+            "reason": "TARGET_REACHED"
+          }
+        ],
+        "expectedCollectionKg": 80,
+        "expectedKgPerKm": null,
+        "order": [
+          "a"
+        ],
+        "reservedLoadKg": 110,
+        "serviceMin": 10,
+        "shortfallKg": 0,
+        "totalKm": 0,
+        "totalMin": 10,
+        "waitingMin": 0
+      },
+      "calculation": {
+        "assumptions": {
+          "capacityBuffer": 0.1,
+          "readinessPrior": 0.8,
+          "volumeRatio": 1
+        },
+        "baseline": {
+          "returnAt": "06:10",
+          "startAt": "06:00",
+          "stops": [
+            {
+              "address": "Synthetic evaluation address",
+              "arrivalAt": "06:00",
+              "confirmedKg": 100,
+              "expectedCollectionKg": 80,
+              "generatorId": "a",
+              "lat": 12.690999999999999,
+              "lng": 77.474,
+              "mandatory": false,
+              "name": "Synthetic a",
+              "reservedLoadKg": 110,
+              "serviceEndAt": "06:10",
+              "serviceStartAt": "06:00",
+              "simulated": true,
+              "submissionId": "a#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            }
+          ],
+          "totals": {
+            "expectedCollectionKg": 80,
+            "reservedLoadKg": 110,
+            "serviceMin": 10,
+            "totalKm": 0,
+            "totalMin": 10,
+            "waitingMin": 0
+          }
+        },
+        "collectionDate": "2026-10-11",
+        "excluded": [
+          {
+            "generatorId": "b",
+            "reason": "TARGET_REACHED"
+          }
+        ],
+        "inputRevision": 1,
+        "mandatoryConflicts": [],
+        "matrixSource": "fixture",
+        "params": {
+          "capacityBuffer": 0.1,
+          "mandatoryIds": [],
+          "maxRadiusKm": 15.0,
+          "readinessPrior": 0.8,
+          "serviceMin": 10.0,
+          "shiftEnd": "11:00",
+          "shiftStart": "06:00",
+          "targetKg": 80.0,
+          "truckCapacityKg": 500.0
+        },
+        "plan": {
+          "returnAt": "06:10",
+          "startAt": "06:00",
+          "stops": [
+            {
+              "address": "Synthetic evaluation address",
+              "arrivalAt": "06:00",
+              "confirmedKg": 100,
+              "expectedCollectionKg": 80,
+              "generatorId": "a",
+              "lat": 12.690999999999999,
+              "lng": 77.474,
+              "mandatory": false,
+              "name": "Synthetic a",
+              "reservedLoadKg": 110,
+              "serviceEndAt": "06:10",
+              "serviceStartAt": "06:00",
+              "simulated": true,
+              "submissionId": "a#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            }
+          ],
+          "totals": {
+            "expectedCollectionKg": 80,
+            "reservedLoadKg": 110,
+            "serviceMin": 10,
+            "totalKm": 0,
+            "totalMin": 10,
+            "waitingMin": 0
+          }
+        },
+        "shortfall": {
+          "kg": 0,
+          "reasons": []
+        },
+        "simulated": true,
+        "status": "FEASIBLE"
+      },
+      "comparison": "TIE",
+      "description": "Zero-distance insertions use a bounded denominator and stable ID tie.",
+      "excluded": [
+        {
+          "generatorId": "b",
+          "reason": "TARGET_REACHED"
+        }
+      ],
+      "fixtureFile": "core.json",
+      "inputSha256": "1509a9b95bae9da3f2d4a4750725a6bde26353c3afe7eb713be9fcfe007e7c23",
+      "inputs": {
+        "collectionDate": "2026-10-11",
+        "depot": {
+          "id": "plant",
+          "lat": 12.681,
+          "lng": 77.474
+        },
+        "generators": [
+          {
+            "address": "Synthetic evaluation address",
+            "generatorId": "a",
+            "lat": 12.690999999999999,
+            "lng": 77.474,
+            "name": "Synthetic a",
+            "readiness": {
+              "collectionDate": "2026-10-11",
+              "confirmedKg": 100,
+              "generatorId": "a",
+              "schemaVersion": 3,
+              "status": "READY",
+              "submissionId": "a#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            },
+            "readinessStatus": "READY",
+            "simulated": true,
+            "supportedMaterial": true,
+            "unresolvedHazards": []
+          },
+          {
+            "address": "Synthetic evaluation address",
+            "generatorId": "b",
+            "lat": 12.690999999999999,
+            "lng": 77.474,
+            "name": "Synthetic b",
+            "readiness": {
+              "collectionDate": "2026-10-11",
+              "confirmedKg": 200,
+              "generatorId": "b",
+              "schemaVersion": 3,
+              "status": "READY",
+              "submissionId": "b#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            },
+            "readinessStatus": "READY",
+            "simulated": true,
+            "supportedMaterial": true,
+            "unresolvedHazards": []
+          }
+        ],
+        "history": {},
+        "inputRevision": 1,
+        "matrix": {
+          "km": [
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0
+            ]
+          ],
+          "min": [
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0
+            ]
+          ],
+          "pointIds": [
+            "plant",
+            "a",
+            "b"
+          ],
+          "source": "fixture"
+        },
+        "params": {
+          "capacityBuffer": 0.1,
+          "mandatoryIds": [],
+          "maxRadiusKm": 15,
+          "readinessPrior": 0.8,
+          "serviceMin": 10,
+          "shiftEnd": "11:00",
+          "shiftStart": "06:00",
+          "targetKg": 80,
+          "truckCapacityKg": 500
+        },
+        "simulated": true
+      },
+      "mandatoryConflicts": [],
+      "matrixSource": "fixture",
+      "primary": {
+        "expectedCollectionKg": 80,
+        "expectedKgPerKm": null,
+        "order": [
+          "a"
+        ],
+        "reservedLoadKg": 110,
+        "serviceMin": 10,
+        "totalKm": 0,
+        "totalMin": 10,
+        "waitingMin": 0
+      },
+      "scenarioId": "co-located-stops",
+      "shortfallKg": 0,
+      "shortfallReasons": [],
+      "status": "FEASIBLE"
+    },
+    {
+      "assumptions": {
+        "capacityBuffer": 0.1,
+        "readinessPrior": 0.8,
+        "volumeRatio": 1
+      },
+      "baseline": {
+        "excluded": [],
+        "expectedCollectionKg": 80,
+        "expectedKgPerKm": 20.0,
+        "order": [
+          "a"
+        ],
+        "reservedLoadKg": 110,
+        "serviceMin": 10,
+        "shortfallKg": 120,
+        "totalKm": 4,
+        "totalMin": 22,
+        "waitingMin": 0
+      },
+      "calculation": {
+        "assumptions": {
+          "capacityBuffer": 0.1,
+          "readinessPrior": 0.8,
+          "volumeRatio": 1
+        },
+        "baseline": {
+          "returnAt": "06:22",
+          "startAt": "06:00",
+          "stops": [
+            {
+              "address": "Synthetic evaluation address",
+              "arrivalAt": "06:06",
+              "confirmedKg": 100,
+              "expectedCollectionKg": 80,
+              "generatorId": "a",
+              "lat": 12.690999999999999,
+              "lng": 77.474,
+              "mandatory": false,
+              "name": "Synthetic a",
+              "reservedLoadKg": 110,
+              "serviceEndAt": "06:16",
+              "serviceStartAt": "06:06",
+              "simulated": true,
+              "submissionId": "a#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            }
+          ],
+          "totals": {
+            "expectedCollectionKg": 80,
+            "reservedLoadKg": 110,
+            "serviceMin": 10,
+            "totalKm": 4,
+            "totalMin": 22,
+            "waitingMin": 0
+          }
+        },
+        "collectionDate": "2026-10-11",
+        "excluded": [],
+        "inputRevision": 1,
+        "mandatoryConflicts": [],
+        "matrixSource": "fixture",
+        "params": {
+          "capacityBuffer": 0.1,
+          "mandatoryIds": [],
+          "maxRadiusKm": 15.0,
+          "readinessPrior": 0.8,
+          "serviceMin": 10.0,
+          "shiftEnd": "11:00",
+          "shiftStart": "06:00",
+          "targetKg": 200.0,
+          "truckCapacityKg": 500.0
+        },
+        "plan": {
+          "returnAt": "06:22",
+          "startAt": "06:00",
+          "stops": [
+            {
+              "address": "Synthetic evaluation address",
+              "arrivalAt": "06:06",
+              "confirmedKg": 100,
+              "expectedCollectionKg": 80,
+              "generatorId": "a",
+              "lat": 12.690999999999999,
+              "lng": 77.474,
+              "mandatory": false,
+              "name": "Synthetic a",
+              "reservedLoadKg": 110,
+              "serviceEndAt": "06:16",
+              "serviceStartAt": "06:06",
+              "simulated": true,
+              "submissionId": "a#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            }
+          ],
+          "totals": {
+            "expectedCollectionKg": 80,
+            "reservedLoadKg": 110,
+            "serviceMin": 10,
+            "totalKm": 4,
+            "totalMin": 22,
+            "waitingMin": 0
+          }
+        },
+        "shortfall": {
+          "kg": 120,
+          "reasons": []
+        },
+        "simulated": true,
+        "status": "FEASIBLE"
+      },
+      "comparison": "TIE",
+      "description": "All feasible supply is selected and the actual expected target gap remains.",
+      "excluded": [],
+      "fixtureFile": "core.json",
+      "inputSha256": "24a47e0e58d90ed27324760d99a264a01fc21447e160744251b0de810af80a93",
+      "inputs": {
+        "collectionDate": "2026-10-11",
+        "depot": {
+          "id": "plant",
+          "lat": 12.681,
+          "lng": 77.474
+        },
+        "generators": [
+          {
+            "address": "Synthetic evaluation address",
+            "generatorId": "a",
+            "lat": 12.690999999999999,
+            "lng": 77.474,
+            "name": "Synthetic a",
+            "readiness": {
+              "collectionDate": "2026-10-11",
+              "confirmedKg": 100,
+              "generatorId": "a",
+              "schemaVersion": 3,
+              "status": "READY",
+              "submissionId": "a#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            },
+            "readinessStatus": "READY",
+            "simulated": true,
+            "supportedMaterial": true,
+            "unresolvedHazards": []
+          }
+        ],
+        "history": {},
+        "inputRevision": 1,
+        "matrix": {
+          "km": [
+            [
+              0,
+              2
+            ],
+            [
+              2,
+              0
+            ]
+          ],
+          "min": [
+            [
+              0,
+              6
+            ],
+            [
+              6,
+              0
+            ]
+          ],
+          "pointIds": [
+            "plant",
+            "a"
+          ],
+          "source": "fixture"
+        },
+        "params": {
+          "capacityBuffer": 0.1,
+          "mandatoryIds": [],
+          "maxRadiusKm": 15,
+          "readinessPrior": 0.8,
+          "serviceMin": 10,
+          "shiftEnd": "11:00",
+          "shiftStart": "06:00",
+          "targetKg": 200,
+          "truckCapacityKg": 500
+        },
+        "simulated": true
+      },
+      "mandatoryConflicts": [],
+      "matrixSource": "fixture",
+      "primary": {
+        "expectedCollectionKg": 80,
+        "expectedKgPerKm": 20.0,
+        "order": [
+          "a"
+        ],
+        "reservedLoadKg": 110,
+        "serviceMin": 10,
+        "totalKm": 4,
+        "totalMin": 22,
+        "waitingMin": 0
+      },
+      "scenarioId": "unmet-target",
+      "shortfallKg": 120,
+      "shortfallReasons": [],
+      "status": "FEASIBLE"
+    },
+    {
+      "assumptions": {
+        "capacityBuffer": 0.1,
+        "readinessPrior": 0.8,
+        "volumeRatio": 1
+      },
+      "baseline": {
+        "excluded": [
+          {
+            "generatorId": "a",
+            "reason": "WINDOW"
+          },
+          {
+            "generatorId": "b",
+            "reason": "WINDOW"
+          }
+        ],
+        "expectedCollectionKg": 0,
+        "expectedKgPerKm": null,
+        "order": [],
+        "reservedLoadKg": 0,
+        "serviceMin": 0,
+        "shortfallKg": 100,
+        "totalKm": 0,
+        "totalMin": 0,
+        "waitingMin": 0
+      },
+      "calculation": {
+        "assumptions": {
+          "capacityBuffer": 0.1,
+          "readinessPrior": 0.8,
+          "volumeRatio": 1
+        },
+        "baseline": {
+          "returnAt": "06:00",
+          "startAt": "06:00",
+          "stops": [],
+          "totals": {
+            "expectedCollectionKg": 0,
+            "reservedLoadKg": 0,
+            "serviceMin": 0,
+            "totalKm": 0,
+            "totalMin": 0,
+            "waitingMin": 0
+          }
+        },
+        "collectionDate": "2026-10-11",
+        "excluded": [
+          {
+            "generatorId": "a",
+            "reason": "WINDOW"
+          },
+          {
+            "generatorId": "b",
+            "reason": "WINDOW"
+          }
+        ],
+        "inputRevision": 1,
+        "mandatoryConflicts": [],
+        "matrixSource": "fixture",
+        "params": {
+          "capacityBuffer": 0.1,
+          "mandatoryIds": [],
+          "maxRadiusKm": 15.0,
+          "readinessPrior": 0.8,
+          "serviceMin": 10.0,
+          "shiftEnd": "11:00",
+          "shiftStart": "06:00",
+          "targetKg": 100.0,
+          "truckCapacityKg": 500.0
+        },
+        "plan": {
+          "returnAt": "06:00",
+          "startAt": "06:00",
+          "stops": [],
+          "totals": {
+            "expectedCollectionKg": 0,
+            "reservedLoadKg": 0,
+            "serviceMin": 0,
+            "totalKm": 0,
+            "totalMin": 0,
+            "waitingMin": 0
+          }
+        },
+        "shortfall": {
+          "kg": 100,
+          "reasons": [
+            "WINDOW"
+          ]
+        },
+        "simulated": true,
+        "status": "FEASIBLE"
+      },
+      "comparison": "TIE",
+      "description": "Every optional stop violates its service window.",
+      "excluded": [
+        {
+          "generatorId": "a",
+          "reason": "WINDOW"
+        },
+        {
+          "generatorId": "b",
+          "reason": "WINDOW"
+        }
+      ],
+      "fixtureFile": "core.json",
+      "inputSha256": "85534539f1b81422edaa6e1ebec6d7847f3907c3355a50f24075ed6bbb359b2c",
+      "inputs": {
+        "collectionDate": "2026-10-11",
+        "depot": {
+          "id": "plant",
+          "lat": 12.681,
+          "lng": 77.474
+        },
+        "generators": [
+          {
+            "address": "Synthetic evaluation address",
+            "generatorId": "a",
+            "lat": 12.690999999999999,
+            "lng": 77.474,
+            "name": "Synthetic a",
+            "readiness": {
+              "collectionDate": "2026-10-11",
+              "confirmedKg": 100,
+              "generatorId": "a",
+              "schemaVersion": 3,
+              "status": "READY",
+              "submissionId": "a#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "06:15",
+                "start": "06:00"
+              }
+            },
+            "readinessStatus": "READY",
+            "simulated": true,
+            "supportedMaterial": true,
+            "unresolvedHazards": []
+          },
+          {
+            "address": "Synthetic evaluation address",
+            "generatorId": "b",
+            "lat": 12.690999999999999,
+            "lng": 77.474,
+            "name": "Synthetic b",
+            "readiness": {
+              "collectionDate": "2026-10-11",
+              "confirmedKg": 100,
+              "generatorId": "b",
+              "schemaVersion": 3,
+              "status": "READY",
+              "submissionId": "b#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "06:15",
+                "start": "06:00"
+              }
+            },
+            "readinessStatus": "READY",
+            "simulated": true,
+            "supportedMaterial": true,
+            "unresolvedHazards": []
+          }
+        ],
+        "history": {},
+        "inputRevision": 1,
+        "matrix": {
+          "km": [
+            [
+              0,
+              4,
+              5
+            ],
+            [
+              4,
+              0,
+              1
+            ],
+            [
+              5,
+              1,
+              0
+            ]
+          ],
+          "min": [
+            [
+              0,
+              20,
+              25
+            ],
+            [
+              20,
+              0,
+              5
+            ],
+            [
+              25,
+              5,
+              0
+            ]
+          ],
+          "pointIds": [
+            "plant",
+            "a",
+            "b"
+          ],
+          "source": "fixture"
+        },
+        "params": {
+          "capacityBuffer": 0.1,
+          "mandatoryIds": [],
+          "maxRadiusKm": 15,
+          "readinessPrior": 0.8,
+          "serviceMin": 10,
+          "shiftEnd": "11:00",
+          "shiftStart": "06:00",
+          "targetKg": 100,
+          "truckCapacityKg": 500
+        },
+        "simulated": true
+      },
+      "mandatoryConflicts": [],
+      "matrixSource": "fixture",
+      "primary": {
+        "expectedCollectionKg": 0,
+        "expectedKgPerKm": null,
+        "order": [],
+        "reservedLoadKg": 0,
+        "serviceMin": 0,
+        "totalKm": 0,
+        "totalMin": 0,
+        "waitingMin": 0
+      },
+      "scenarioId": "no-feasible-optional-stops",
+      "shortfallKg": 100,
+      "shortfallReasons": [
+        "WINDOW"
+      ],
+      "status": "FEASIBLE"
+    },
+    {
+      "assumptions": {
+        "capacityBuffer": 0.1,
+        "readinessPrior": 0.8,
+        "volumeRatio": 1
+      },
+      "baseline": {
+        "excluded": [],
+        "expectedCollectionKg": 120,
+        "expectedKgPerKm": 30.0,
+        "order": [
+          "new-a"
+        ],
+        "reservedLoadKg": 165,
+        "serviceMin": 10,
+        "shortfallKg": 0,
+        "totalKm": 4,
+        "totalMin": 22,
+        "waitingMin": 0
+      },
+      "calculation": {
+        "assumptions": {
+          "capacityBuffer": 0.1,
+          "readinessPrior": 0.8,
+          "volumeRatio": 1
+        },
+        "baseline": {
+          "returnAt": "06:22",
+          "startAt": "06:00",
+          "stops": [
+            {
+              "address": "Synthetic evaluation address",
+              "arrivalAt": "06:06",
+              "confirmedKg": 150,
+              "expectedCollectionKg": 120,
+              "generatorId": "new-a",
+              "lat": 12.690999999999999,
+              "lng": 77.474,
+              "mandatory": false,
+              "name": "Synthetic new-a",
+              "reservedLoadKg": 165,
+              "serviceEndAt": "06:16",
+              "serviceStartAt": "06:06",
+              "simulated": true,
+              "submissionId": "new-a#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            }
+          ],
+          "totals": {
+            "expectedCollectionKg": 120,
+            "reservedLoadKg": 165,
+            "serviceMin": 10,
+            "totalKm": 4,
+            "totalMin": 22,
+            "waitingMin": 0
+          }
+        },
+        "collectionDate": "2026-10-11",
+        "excluded": [],
+        "inputRevision": 1,
+        "mandatoryConflicts": [],
+        "matrixSource": "fixture",
+        "params": {
+          "capacityBuffer": 0.1,
+          "mandatoryIds": [],
+          "maxRadiusKm": 15.0,
+          "readinessPrior": 0.8,
+          "serviceMin": 10.0,
+          "shiftEnd": "11:00",
+          "shiftStart": "06:00",
+          "targetKg": 100.0,
+          "truckCapacityKg": 500.0
+        },
+        "plan": {
+          "returnAt": "06:22",
+          "startAt": "06:00",
+          "stops": [
+            {
+              "address": "Synthetic evaluation address",
+              "arrivalAt": "06:06",
+              "confirmedKg": 150,
+              "expectedCollectionKg": 120,
+              "generatorId": "new-a",
+              "lat": 12.690999999999999,
+              "lng": 77.474,
+              "mandatory": false,
+              "name": "Synthetic new-a",
+              "reservedLoadKg": 165,
+              "serviceEndAt": "06:16",
+              "serviceStartAt": "06:06",
+              "simulated": true,
+              "submissionId": "new-a#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            }
+          ],
+          "totals": {
+            "expectedCollectionKg": 120,
+            "reservedLoadKg": 165,
+            "serviceMin": 10,
+            "totalKm": 4,
+            "totalMin": 22,
+            "waitingMin": 0
+          }
+        },
+        "shortfall": {
+          "kg": 0,
+          "reasons": []
+        },
+        "simulated": true,
+        "status": "FEASIBLE"
+      },
+      "comparison": "TIE",
+      "description": "A READY cold-start supplier is usable with disclosed P0 assumptions.",
+      "excluded": [],
+      "fixtureFile": "core.json",
+      "inputSha256": "45b86bd1989e0f694d567b8cce47cb48bec5fe119c33591fb652968d1954a871",
+      "inputs": {
+        "collectionDate": "2026-10-11",
+        "depot": {
+          "id": "plant",
+          "lat": 12.681,
+          "lng": 77.474
+        },
+        "generators": [
+          {
+            "address": "Synthetic evaluation address",
+            "generatorId": "new-a",
+            "lat": 12.690999999999999,
+            "lng": 77.474,
+            "name": "Synthetic new-a",
+            "readiness": {
+              "collectionDate": "2026-10-11",
+              "confirmedKg": 150,
+              "generatorId": "new-a",
+              "schemaVersion": 3,
+              "status": "READY",
+              "submissionId": "new-a#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            },
+            "readinessStatus": "READY",
+            "simulated": true,
+            "supportedMaterial": true,
+            "unresolvedHazards": []
+          }
+        ],
+        "history": {},
+        "inputRevision": 1,
+        "matrix": {
+          "km": [
+            [
+              0,
+              2
+            ],
+            [
+              2,
+              0
+            ]
+          ],
+          "min": [
+            [
+              0,
+              6
+            ],
+            [
+              6,
+              0
+            ]
+          ],
+          "pointIds": [
+            "plant",
+            "new-a"
+          ],
+          "source": "fixture"
+        },
+        "params": {
+          "capacityBuffer": 0.1,
+          "mandatoryIds": [],
+          "maxRadiusKm": 15,
+          "readinessPrior": 0.8,
+          "serviceMin": 10,
+          "shiftEnd": "11:00",
+          "shiftStart": "06:00",
+          "targetKg": 100,
+          "truckCapacityKg": 500
+        },
+        "simulated": true
+      },
+      "mandatoryConflicts": [],
+      "matrixSource": "fixture",
+      "primary": {
+        "expectedCollectionKg": 120,
+        "expectedKgPerKm": 30.0,
+        "order": [
+          "new-a"
+        ],
+        "reservedLoadKg": 165,
+        "serviceMin": 10,
+        "totalKm": 4,
+        "totalMin": 22,
+        "waitingMin": 0
+      },
+      "scenarioId": "new-supplier",
+      "shortfallKg": 0,
+      "shortfallReasons": [],
+      "status": "FEASIBLE"
+    },
+    {
+      "assumptions": {
+        "capacityBuffer": 0.1,
+        "readinessPrior": 0.8,
+        "volumeRatio": 1
+      },
+      "baseline": {
+        "excluded": [],
+        "expectedCollectionKg": 240,
+        "expectedKgPerKm": 24.0,
+        "order": [
+          "a",
+          "b",
+          "c"
+        ],
+        "reservedLoadKg": 330,
+        "serviceMin": 30,
+        "shortfallKg": 0,
+        "totalKm": 10,
+        "totalMin": 60,
+        "waitingMin": 0
+      },
+      "calculation": {
+        "assumptions": {
+          "capacityBuffer": 0.1,
+          "readinessPrior": 0.8,
+          "volumeRatio": 1
+        },
+        "baseline": {
+          "returnAt": "07:00",
+          "startAt": "06:00",
+          "stops": [
+            {
+              "address": "Synthetic evaluation address",
+              "arrivalAt": "06:03",
+              "confirmedKg": 100,
+              "expectedCollectionKg": 80,
+              "generatorId": "a",
+              "lat": 12.690999999999999,
+              "lng": 77.474,
+              "mandatory": false,
+              "name": "Synthetic a",
+              "reservedLoadKg": 110,
+              "serviceEndAt": "06:13",
+              "serviceStartAt": "06:03",
+              "simulated": true,
+              "submissionId": "a#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            },
+            {
+              "address": "Synthetic evaluation address",
+              "arrivalAt": "06:16",
+              "confirmedKg": 100,
+              "expectedCollectionKg": 80,
+              "generatorId": "b",
+              "lat": 12.690999999999999,
+              "lng": 77.474,
+              "mandatory": false,
+              "name": "Synthetic b",
+              "reservedLoadKg": 110,
+              "serviceEndAt": "06:26",
+              "serviceStartAt": "06:16",
+              "simulated": true,
+              "submissionId": "b#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            },
+            {
+              "address": "Synthetic evaluation address",
+              "arrivalAt": "06:41",
+              "confirmedKg": 100,
+              "expectedCollectionKg": 80,
+              "generatorId": "c",
+              "lat": 12.690999999999999,
+              "lng": 77.474,
+              "mandatory": false,
+              "name": "Synthetic c",
+              "reservedLoadKg": 110,
+              "serviceEndAt": "06:51",
+              "serviceStartAt": "06:41",
+              "simulated": true,
+              "submissionId": "c#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            }
+          ],
+          "totals": {
+            "expectedCollectionKg": 240,
+            "reservedLoadKg": 330,
+            "serviceMin": 30,
+            "totalKm": 10,
+            "totalMin": 60,
+            "waitingMin": 0
+          }
+        },
+        "collectionDate": "2026-10-11",
+        "excluded": [],
+        "inputRevision": 1,
+        "mandatoryConflicts": [],
+        "matrixSource": "fixture",
+        "params": {
+          "capacityBuffer": 0.1,
+          "mandatoryIds": [],
+          "maxRadiusKm": 15.0,
+          "readinessPrior": 0.8,
+          "serviceMin": 10.0,
+          "shiftEnd": "11:00",
+          "shiftStart": "06:00",
+          "targetKg": 240.0,
+          "truckCapacityKg": 500.0
+        },
+        "plan": {
+          "returnAt": "06:48",
+          "startAt": "06:00",
+          "stops": [
+            {
+              "address": "Synthetic evaluation address",
+              "arrivalAt": "06:09",
+              "confirmedKg": 100,
+              "expectedCollectionKg": 80,
+              "generatorId": "c",
+              "lat": 12.690999999999999,
+              "lng": 77.474,
+              "mandatory": false,
+              "name": "Synthetic c",
+              "reservedLoadKg": 110,
+              "serviceEndAt": "06:19",
+              "serviceStartAt": "06:09",
+              "simulated": true,
+              "submissionId": "c#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            },
+            {
+              "address": "Synthetic evaluation address",
+              "arrivalAt": "06:22",
+              "confirmedKg": 100,
+              "expectedCollectionKg": 80,
+              "generatorId": "b",
+              "lat": 12.690999999999999,
+              "lng": 77.474,
+              "mandatory": false,
+              "name": "Synthetic b",
+              "reservedLoadKg": 110,
+              "serviceEndAt": "06:32",
+              "serviceStartAt": "06:22",
+              "simulated": true,
+              "submissionId": "b#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            },
+            {
+              "address": "Synthetic evaluation address",
+              "arrivalAt": "06:35",
+              "confirmedKg": 100,
+              "expectedCollectionKg": 80,
+              "generatorId": "a",
+              "lat": 12.690999999999999,
+              "lng": 77.474,
+              "mandatory": false,
+              "name": "Synthetic a",
+              "reservedLoadKg": 110,
+              "serviceEndAt": "06:45",
+              "serviceStartAt": "06:35",
+              "simulated": true,
+              "submissionId": "a#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            }
+          ],
+          "totals": {
+            "expectedCollectionKg": 240,
+            "reservedLoadKg": 330,
+            "serviceMin": 30,
+            "totalKm": 6,
+            "totalMin": 48,
+            "waitingMin": 0
+          }
+        },
+        "shortfall": {
+          "kg": 0,
+          "reasons": []
+        },
+        "simulated": true,
+        "status": "FEASIBLE"
+      },
+      "comparison": "PRIMARY_LOWER_KM",
+      "description": "All three stops needed; nearest-first chooses a longer directed order.",
+      "excluded": [],
+      "fixtureFile": "quality.json",
+      "inputSha256": "75853995cf62e6e3c383e9d047220aef2197cecddb9f28323bde4e525ba9228c",
+      "inputs": {
+        "collectionDate": "2026-10-11",
+        "depot": {
+          "id": "plant",
+          "lat": 12.681,
+          "lng": 77.474
+        },
+        "generators": [
+          {
+            "address": "Synthetic evaluation address",
+            "generatorId": "a",
+            "lat": 12.690999999999999,
+            "lng": 77.474,
+            "name": "Synthetic a",
+            "readiness": {
+              "collectionDate": "2026-10-11",
+              "confirmedKg": 100,
+              "generatorId": "a",
+              "schemaVersion": 3,
+              "status": "READY",
+              "submissionId": "a#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            },
+            "readinessStatus": "READY",
+            "simulated": true,
+            "supportedMaterial": true,
+            "unresolvedHazards": []
+          },
+          {
+            "address": "Synthetic evaluation address",
+            "generatorId": "b",
+            "lat": 12.690999999999999,
+            "lng": 77.474,
+            "name": "Synthetic b",
+            "readiness": {
+              "collectionDate": "2026-10-11",
+              "confirmedKg": 100,
+              "generatorId": "b",
+              "schemaVersion": 3,
+              "status": "READY",
+              "submissionId": "b#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            },
+            "readinessStatus": "READY",
+            "simulated": true,
+            "supportedMaterial": true,
+            "unresolvedHazards": []
+          },
+          {
+            "address": "Synthetic evaluation address",
+            "generatorId": "c",
+            "lat": 12.690999999999999,
+            "lng": 77.474,
+            "name": "Synthetic c",
+            "readiness": {
+              "collectionDate": "2026-10-11",
+              "confirmedKg": 100,
+              "generatorId": "c",
+              "schemaVersion": 3,
+              "status": "READY",
+              "submissionId": "c#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            },
+            "readinessStatus": "READY",
+            "simulated": true,
+            "supportedMaterial": true,
+            "unresolvedHazards": []
+          }
+        ],
+        "history": {},
+        "inputRevision": 1,
+        "matrix": {
+          "km": [
+            [
+              0,
+              1,
+              2,
+              3
+            ],
+            [
+              1,
+              0,
+              1,
+              4
+            ],
+            [
+              2,
+              1,
+              0,
+              5
+            ],
+            [
+              3,
+              2,
+              1,
+              0
+            ]
+          ],
+          "min": [
+            [
+              0,
+              3,
+              6,
+              9
+            ],
+            [
+              3,
+              0,
+              3,
+              12
+            ],
+            [
+              6,
+              3,
+              0,
+              15
+            ],
+            [
+              9,
+              6,
+              3,
+              0
+            ]
+          ],
+          "pointIds": [
+            "plant",
+            "a",
+            "b",
+            "c"
+          ],
+          "source": "fixture"
+        },
+        "params": {
+          "capacityBuffer": 0.1,
+          "mandatoryIds": [],
+          "maxRadiusKm": 15,
+          "readinessPrior": 0.8,
+          "serviceMin": 10,
+          "shiftEnd": "11:00",
+          "shiftStart": "06:00",
+          "targetKg": 240,
+          "truckCapacityKg": 500
+        },
+        "simulated": true
+      },
+      "mandatoryConflicts": [],
+      "matrixSource": "fixture",
+      "primary": {
+        "expectedCollectionKg": 240,
+        "expectedKgPerKm": 40.0,
+        "order": [
+          "c",
+          "b",
+          "a"
+        ],
+        "reservedLoadKg": 330,
+        "serviceMin": 30,
+        "totalKm": 6,
+        "totalMin": 48,
+        "waitingMin": 0
+      },
+      "scenarioId": "primary-distance-improvement",
+      "shortfallKg": 0,
+      "shortfallReasons": [],
+      "status": "FEASIBLE"
+    },
+    {
+      "assumptions": {
+        "capacityBuffer": 0.1,
+        "readinessPrior": 0.8,
+        "volumeRatio": 1
+      },
+      "baseline": {
+        "excluded": [
+          {
+            "generatorId": "a",
+            "reason": "TARGET_REACHED"
+          }
+        ],
+        "expectedCollectionKg": 240,
+        "expectedKgPerKm": 109.09090909090908,
+        "order": [
+          "b",
+          "c"
+        ],
+        "reservedLoadKg": 330,
+        "serviceMin": 20,
+        "shortfallKg": 0,
+        "totalKm": 2.2,
+        "totalMin": 26.6,
+        "waitingMin": 0
+      },
+      "calculation": {
+        "assumptions": {
+          "capacityBuffer": 0.1,
+          "readinessPrior": 0.8,
+          "volumeRatio": 1
+        },
+        "baseline": {
+          "returnAt": "06:26:36",
+          "startAt": "06:00",
+          "stops": [
+            {
+              "address": "Synthetic evaluation address",
+              "arrivalAt": "06:02:42",
+              "confirmedKg": 150,
+              "expectedCollectionKg": 120,
+              "generatorId": "b",
+              "lat": 12.690999999999999,
+              "lng": 77.474,
+              "mandatory": false,
+              "name": "Synthetic b",
+              "reservedLoadKg": 165,
+              "serviceEndAt": "06:12:42",
+              "serviceStartAt": "06:02:42",
+              "simulated": true,
+              "submissionId": "b#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            },
+            {
+              "address": "Synthetic evaluation address",
+              "arrivalAt": "06:13:18",
+              "confirmedKg": 150,
+              "expectedCollectionKg": 120,
+              "generatorId": "c",
+              "lat": 12.690999999999999,
+              "lng": 77.474,
+              "mandatory": false,
+              "name": "Synthetic c",
+              "reservedLoadKg": 165,
+              "serviceEndAt": "06:23:18",
+              "serviceStartAt": "06:13:18",
+              "simulated": true,
+              "submissionId": "c#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            }
+          ],
+          "totals": {
+            "expectedCollectionKg": 240,
+            "reservedLoadKg": 330,
+            "serviceMin": 20,
+            "totalKm": 2.2,
+            "totalMin": 26.6,
+            "waitingMin": 0
+          }
+        },
+        "collectionDate": "2026-10-11",
+        "excluded": [
+          {
+            "generatorId": "b",
+            "reason": "CAPACITY"
+          },
+          {
+            "generatorId": "c",
+            "reason": "CAPACITY"
+          }
+        ],
+        "inputRevision": 1,
+        "mandatoryConflicts": [],
+        "matrixSource": "fixture",
+        "params": {
+          "capacityBuffer": 0.1,
+          "mandatoryIds": [],
+          "maxRadiusKm": 15.0,
+          "readinessPrior": 0.8,
+          "serviceMin": 10.0,
+          "shiftEnd": "11:00",
+          "shiftStart": "06:00",
+          "targetKg": 240.0,
+          "truckCapacityKg": 330.0
+        },
+        "plan": {
+          "returnAt": "06:16",
+          "startAt": "06:00",
+          "stops": [
+            {
+              "address": "Synthetic evaluation address",
+              "arrivalAt": "06:03",
+              "confirmedKg": 220,
+              "expectedCollectionKg": 176,
+              "generatorId": "a",
+              "lat": 12.690999999999999,
+              "lng": 77.474,
+              "mandatory": false,
+              "name": "Synthetic a",
+              "reservedLoadKg": 242,
+              "serviceEndAt": "06:13",
+              "serviceStartAt": "06:03",
+              "simulated": true,
+              "submissionId": "a#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            }
+          ],
+          "totals": {
+            "expectedCollectionKg": 176,
+            "reservedLoadKg": 242,
+            "serviceMin": 10,
+            "totalKm": 2,
+            "totalMin": 16,
+            "waitingMin": 0
+          }
+        },
+        "shortfall": {
+          "kg": 64,
+          "reasons": [
+            "CAPACITY"
+          ]
+        },
+        "simulated": true,
+        "status": "FEASIBLE"
+      },
+      "comparison": "TRADE_OFF",
+      "description": "An efficient first choice can prevent a larger two-stop load; no universal kg winner.",
+      "excluded": [
+        {
+          "generatorId": "b",
+          "reason": "CAPACITY"
+        },
+        {
+          "generatorId": "c",
+          "reason": "CAPACITY"
+        }
+      ],
+      "fixtureFile": "quality.json",
+      "inputSha256": "4a2a7917c3be8d4e3c0c12b3e1abeda31c1d0ba3d8e06940d2df9019ec4a5b79",
+      "inputs": {
+        "collectionDate": "2026-10-11",
+        "depot": {
+          "id": "plant",
+          "lat": 12.681,
+          "lng": 77.474
+        },
+        "generators": [
+          {
+            "address": "Synthetic evaluation address",
+            "generatorId": "a",
+            "lat": 12.690999999999999,
+            "lng": 77.474,
+            "name": "Synthetic a",
+            "readiness": {
+              "collectionDate": "2026-10-11",
+              "confirmedKg": 220,
+              "generatorId": "a",
+              "schemaVersion": 3,
+              "status": "READY",
+              "submissionId": "a#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            },
+            "readinessStatus": "READY",
+            "simulated": true,
+            "supportedMaterial": true,
+            "unresolvedHazards": []
+          },
+          {
+            "address": "Synthetic evaluation address",
+            "generatorId": "b",
+            "lat": 12.690999999999999,
+            "lng": 77.474,
+            "name": "Synthetic b",
+            "readiness": {
+              "collectionDate": "2026-10-11",
+              "confirmedKg": 150,
+              "generatorId": "b",
+              "schemaVersion": 3,
+              "status": "READY",
+              "submissionId": "b#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            },
+            "readinessStatus": "READY",
+            "simulated": true,
+            "supportedMaterial": true,
+            "unresolvedHazards": []
+          },
+          {
+            "address": "Synthetic evaluation address",
+            "generatorId": "c",
+            "lat": 12.690999999999999,
+            "lng": 77.474,
+            "name": "Synthetic c",
+            "readiness": {
+              "collectionDate": "2026-10-11",
+              "confirmedKg": 150,
+              "generatorId": "c",
+              "schemaVersion": 3,
+              "status": "READY",
+              "submissionId": "c#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            },
+            "readinessStatus": "READY",
+            "simulated": true,
+            "supportedMaterial": true,
+            "unresolvedHazards": []
+          }
+        ],
+        "history": {},
+        "inputRevision": 1,
+        "matrix": {
+          "km": [
+            [
+              0,
+              1,
+              0.9,
+              1.1
+            ],
+            [
+              1,
+              0,
+              1.9,
+              2.1
+            ],
+            [
+              0.9,
+              1.9,
+              0,
+              0.2
+            ],
+            [
+              1.1,
+              2.1,
+              0.2,
+              0
+            ]
+          ],
+          "min": [
+            [
+              0,
+              3,
+              2.7,
+              3.3
+            ],
+            [
+              3,
+              0,
+              5.7,
+              6.3
+            ],
+            [
+              2.7,
+              5.7,
+              0,
+              0.6
+            ],
+            [
+              3.3,
+              6.3,
+              0.6,
+              0
+            ]
+          ],
+          "pointIds": [
+            "plant",
+            "a",
+            "b",
+            "c"
+          ],
+          "source": "fixture"
+        },
+        "params": {
+          "capacityBuffer": 0.1,
+          "mandatoryIds": [],
+          "maxRadiusKm": 15,
+          "readinessPrior": 0.8,
+          "serviceMin": 10,
+          "shiftEnd": "11:00",
+          "shiftStart": "06:00",
+          "targetKg": 240,
+          "truckCapacityKg": 330
+        },
+        "simulated": true
+      },
+      "mandatoryConflicts": [],
+      "matrixSource": "fixture",
+      "primary": {
+        "expectedCollectionKg": 176,
+        "expectedKgPerKm": 88.0,
+        "order": [
+          "a"
+        ],
+        "reservedLoadKg": 242,
+        "serviceMin": 10,
+        "totalKm": 2,
+        "totalMin": 16,
+        "waitingMin": 0
+      },
+      "scenarioId": "primary-capacity-tradeoff",
+      "shortfallKg": 64,
+      "shortfallReasons": [
+        "CAPACITY"
+      ],
+      "status": "FEASIBLE"
+    },
+    {
+      "assumptions": {
+        "capacityBuffer": 0.1,
+        "readinessPrior": 0.8,
+        "volumeRatio": 1
+      },
+      "baseline": {
+        "excluded": [
+          {
+            "generatorId": "far",
+            "reason": "OUT_OF_RADIUS"
+          },
+          {
+            "generatorId": "hazard",
+            "reason": "HAZARD_REVIEW"
+          },
+          {
+            "generatorId": "unsupported",
+            "reason": "UNSUPPORTED_MATERIAL"
+          }
+        ],
+        "expectedCollectionKg": 40,
+        "expectedKgPerKm": 6.666666666666667,
+        "order": [
+          "ready"
+        ],
+        "reservedLoadKg": 55,
+        "serviceMin": 10,
+        "shortfallKg": 60,
+        "totalKm": 6,
+        "totalMin": 28,
+        "waitingMin": 0
+      },
+      "calculation": {
+        "assumptions": {
+          "capacityBuffer": 0.1,
+          "readinessPrior": 0.8,
+          "volumeRatio": 1
+        },
+        "baseline": {
+          "returnAt": "06:28",
+          "startAt": "06:00",
+          "stops": [
+            {
+              "address": "Synthetic evaluation address",
+              "arrivalAt": "06:09",
+              "confirmedKg": 50,
+              "expectedCollectionKg": 40,
+              "generatorId": "ready",
+              "lat": 12.690999999999999,
+              "lng": 77.474,
+              "mandatory": false,
+              "name": "Synthetic ready",
+              "reservedLoadKg": 55,
+              "serviceEndAt": "06:19",
+              "serviceStartAt": "06:09",
+              "simulated": true,
+              "submissionId": "ready#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            }
+          ],
+          "totals": {
+            "expectedCollectionKg": 40,
+            "reservedLoadKg": 55,
+            "serviceMin": 10,
+            "totalKm": 6,
+            "totalMin": 28,
+            "waitingMin": 0
+          }
+        },
+        "collectionDate": "2026-10-11",
+        "excluded": [
+          {
+            "generatorId": "far",
+            "reason": "OUT_OF_RADIUS"
+          },
+          {
+            "generatorId": "hazard",
+            "reason": "HAZARD_REVIEW"
+          },
+          {
+            "generatorId": "unsupported",
+            "reason": "UNSUPPORTED_MATERIAL"
+          }
+        ],
+        "inputRevision": 1,
+        "mandatoryConflicts": [],
+        "matrixSource": "fixture",
+        "params": {
+          "capacityBuffer": 0.1,
+          "mandatoryIds": [],
+          "maxRadiusKm": 15.0,
+          "readinessPrior": 0.8,
+          "serviceMin": 10.0,
+          "shiftEnd": "11:00",
+          "shiftStart": "06:00",
+          "targetKg": 100.0,
+          "truckCapacityKg": 500.0
+        },
+        "plan": {
+          "returnAt": "06:28",
+          "startAt": "06:00",
+          "stops": [
+            {
+              "address": "Synthetic evaluation address",
+              "arrivalAt": "06:09",
+              "confirmedKg": 50,
+              "expectedCollectionKg": 40,
+              "generatorId": "ready",
+              "lat": 12.690999999999999,
+              "lng": 77.474,
+              "mandatory": false,
+              "name": "Synthetic ready",
+              "reservedLoadKg": 55,
+              "serviceEndAt": "06:19",
+              "serviceStartAt": "06:09",
+              "simulated": true,
+              "submissionId": "ready#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            }
+          ],
+          "totals": {
+            "expectedCollectionKg": 40,
+            "reservedLoadKg": 55,
+            "serviceMin": 10,
+            "totalKm": 6,
+            "totalMin": 28,
+            "waitingMin": 0
+          }
+        },
+        "shortfall": {
+          "kg": 60,
+          "reasons": [
+            "HAZARD_REVIEW",
+            "UNSUPPORTED_MATERIAL",
+            "OUT_OF_RADIUS"
+          ]
+        },
+        "simulated": true,
+        "status": "FEASIBLE"
+      },
+      "comparison": "TIE",
+      "description": "Hazards, unsupported material and outbound radius apply to both planners.",
+      "excluded": [
+        {
+          "generatorId": "far",
+          "reason": "OUT_OF_RADIUS"
+        },
+        {
+          "generatorId": "hazard",
+          "reason": "HAZARD_REVIEW"
+        },
+        {
+          "generatorId": "unsupported",
+          "reason": "UNSUPPORTED_MATERIAL"
+        }
+      ],
+      "fixtureFile": "quality.json",
+      "inputSha256": "ae3a0897a2591642f260a7e93e8c42ffdc95bd0e83bee7c0b9ec4e5aa3aec672",
+      "inputs": {
+        "collectionDate": "2026-10-11",
+        "depot": {
+          "id": "plant",
+          "lat": 12.681,
+          "lng": 77.474
+        },
+        "generators": [
+          {
+            "address": "Synthetic evaluation address",
+            "generatorId": "hazard",
+            "lat": 12.690999999999999,
+            "lng": 77.474,
+            "name": "Synthetic hazard",
+            "readiness": {
+              "collectionDate": "2026-10-11",
+              "confirmedKg": 100,
+              "generatorId": "hazard",
+              "schemaVersion": 3,
+              "status": "READY",
+              "submissionId": "hazard#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            },
+            "readinessStatus": "READY",
+            "simulated": true,
+            "supportedMaterial": true,
+            "unresolvedHazards": [
+              {
+                "action": "ENTER",
+                "reason": "Synthetic hazard"
+              }
+            ]
+          },
+          {
+            "address": "Synthetic evaluation address",
+            "generatorId": "unsupported",
+            "lat": 12.690999999999999,
+            "lng": 77.474,
+            "name": "Synthetic unsupported",
+            "readiness": {
+              "collectionDate": "2026-10-11",
+              "confirmedKg": 100,
+              "generatorId": "unsupported",
+              "schemaVersion": 3,
+              "status": "READY",
+              "submissionId": "unsupported#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            },
+            "readinessStatus": "READY",
+            "simulated": true,
+            "supportedMaterial": false,
+            "unresolvedHazards": []
+          },
+          {
+            "address": "Synthetic evaluation address",
+            "generatorId": "far",
+            "lat": 12.690999999999999,
+            "lng": 77.474,
+            "name": "Synthetic far",
+            "readiness": {
+              "collectionDate": "2026-10-11",
+              "confirmedKg": 100,
+              "generatorId": "far",
+              "schemaVersion": 3,
+              "status": "READY",
+              "submissionId": "far#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            },
+            "readinessStatus": "READY",
+            "simulated": true,
+            "supportedMaterial": true,
+            "unresolvedHazards": []
+          },
+          {
+            "address": "Synthetic evaluation address",
+            "generatorId": "ready",
+            "lat": 12.690999999999999,
+            "lng": 77.474,
+            "name": "Synthetic ready",
+            "readiness": {
+              "collectionDate": "2026-10-11",
+              "confirmedKg": 50,
+              "generatorId": "ready",
+              "schemaVersion": 3,
+              "status": "READY",
+              "submissionId": "ready#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            },
+            "readinessStatus": "READY",
+            "simulated": true,
+            "supportedMaterial": true,
+            "unresolvedHazards": []
+          }
+        ],
+        "history": {},
+        "inputRevision": 1,
+        "matrix": {
+          "km": [
+            [
+              0,
+              1,
+              2,
+              16,
+              3
+            ],
+            [
+              1,
+              0,
+              1,
+              15,
+              2
+            ],
+            [
+              2,
+              1,
+              0,
+              14,
+              1
+            ],
+            [
+              16,
+              15,
+              14,
+              0,
+              13
+            ],
+            [
+              3,
+              2,
+              1,
+              13,
+              0
+            ]
+          ],
+          "min": [
+            [
+              0,
+              3,
+              6,
+              48,
+              9
+            ],
+            [
+              3,
+              0,
+              3,
+              45,
+              6
+            ],
+            [
+              6,
+              3,
+              0,
+              42,
+              3
+            ],
+            [
+              48,
+              45,
+              42,
+              0,
+              39
+            ],
+            [
+              9,
+              6,
+              3,
+              39,
+              0
+            ]
+          ],
+          "pointIds": [
+            "plant",
+            "hazard",
+            "unsupported",
+            "far",
+            "ready"
+          ],
+          "source": "fixture"
+        },
+        "params": {
+          "capacityBuffer": 0.1,
+          "mandatoryIds": [],
+          "maxRadiusKm": 15,
+          "readinessPrior": 0.8,
+          "serviceMin": 10,
+          "shiftEnd": "11:00",
+          "shiftStart": "06:00",
+          "targetKg": 100,
+          "truckCapacityKg": 500
+        },
+        "simulated": true
+      },
+      "mandatoryConflicts": [],
+      "matrixSource": "fixture",
+      "primary": {
+        "expectedCollectionKg": 40,
+        "expectedKgPerKm": 6.666666666666667,
+        "order": [
+          "ready"
+        ],
+        "reservedLoadKg": 55,
+        "serviceMin": 10,
+        "totalKm": 6,
+        "totalMin": 28,
+        "waitingMin": 0
+      },
+      "scenarioId": "hazard-and-material-eligibility",
+      "shortfallKg": 60,
+      "shortfallReasons": [
+        "HAZARD_REVIEW",
+        "UNSUPPORTED_MATERIAL",
+        "OUT_OF_RADIUS"
+      ],
+      "status": "FEASIBLE"
+    },
+    {
+      "assumptions": {
+        "capacityBuffer": 0.1,
+        "readinessPrior": 0.8,
+        "volumeRatio": 1
+      },
+      "baseline": {
+        "excluded": [],
+        "expectedCollectionKg": 80,
+        "expectedKgPerKm": 40.0,
+        "order": [
+          "a"
+        ],
+        "reservedLoadKg": 110,
+        "serviceMin": 10,
+        "shortfallKg": 0,
+        "totalKm": 2,
+        "totalMin": 35,
+        "waitingMin": 15
+      },
+      "calculation": {
+        "assumptions": {
+          "capacityBuffer": 0.1,
+          "readinessPrior": 0.8,
+          "volumeRatio": 1
+        },
+        "baseline": {
+          "returnAt": "06:35",
+          "startAt": "06:00",
+          "stops": [
+            {
+              "address": "Synthetic evaluation address",
+              "arrivalAt": "06:05",
+              "confirmedKg": 100,
+              "expectedCollectionKg": 80,
+              "generatorId": "a",
+              "lat": 12.690999999999999,
+              "lng": 77.474,
+              "mandatory": false,
+              "name": "Synthetic a",
+              "reservedLoadKg": 110,
+              "serviceEndAt": "06:30",
+              "serviceStartAt": "06:20",
+              "simulated": true,
+              "submissionId": "a#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "06:30",
+                "start": "06:20"
+              }
+            }
+          ],
+          "totals": {
+            "expectedCollectionKg": 80,
+            "reservedLoadKg": 110,
+            "serviceMin": 10,
+            "totalKm": 2,
+            "totalMin": 35,
+            "waitingMin": 15
+          }
+        },
+        "collectionDate": "2026-10-11",
+        "excluded": [],
+        "inputRevision": 1,
+        "mandatoryConflicts": [],
+        "matrixSource": "fixture",
+        "params": {
+          "capacityBuffer": 0.1,
+          "mandatoryIds": [],
+          "maxRadiusKm": 15.0,
+          "readinessPrior": 0.8,
+          "serviceMin": 10.0,
+          "shiftEnd": "06:35",
+          "shiftStart": "06:00",
+          "targetKg": 80.0,
+          "truckCapacityKg": 500.0
+        },
+        "plan": {
+          "returnAt": "06:35",
+          "startAt": "06:00",
+          "stops": [
+            {
+              "address": "Synthetic evaluation address",
+              "arrivalAt": "06:05",
+              "confirmedKg": 100,
+              "expectedCollectionKg": 80,
+              "generatorId": "a",
+              "lat": 12.690999999999999,
+              "lng": 77.474,
+              "mandatory": false,
+              "name": "Synthetic a",
+              "reservedLoadKg": 110,
+              "serviceEndAt": "06:30",
+              "serviceStartAt": "06:20",
+              "simulated": true,
+              "submissionId": "a#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "06:30",
+                "start": "06:20"
+              }
+            }
+          ],
+          "totals": {
+            "expectedCollectionKg": 80,
+            "reservedLoadKg": 110,
+            "serviceMin": 10,
+            "totalKm": 2,
+            "totalMin": 35,
+            "waitingMin": 15
+          }
+        },
+        "shortfall": {
+          "kg": 0,
+          "reasons": []
+        },
+        "simulated": true,
+        "status": "FEASIBLE"
+      },
+      "comparison": "TIE",
+      "description": "Wait for opening, finish exactly at closing, and return exactly at shift end.",
+      "excluded": [],
+      "fixtureFile": "quality.json",
+      "inputSha256": "3d30d4d7cf8321be4d4bb3f82c236b0ba545a421b141630862b461735a6300ee",
+      "inputs": {
+        "collectionDate": "2026-10-11",
+        "depot": {
+          "id": "plant",
+          "lat": 12.681,
+          "lng": 77.474
+        },
+        "generators": [
+          {
+            "address": "Synthetic evaluation address",
+            "generatorId": "a",
+            "lat": 12.690999999999999,
+            "lng": 77.474,
+            "name": "Synthetic a",
+            "readiness": {
+              "collectionDate": "2026-10-11",
+              "confirmedKg": 100,
+              "generatorId": "a",
+              "schemaVersion": 3,
+              "status": "READY",
+              "submissionId": "a#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "06:30",
+                "start": "06:20"
+              }
+            },
+            "readinessStatus": "READY",
+            "simulated": true,
+            "supportedMaterial": true,
+            "unresolvedHazards": []
+          }
+        ],
+        "history": {},
+        "inputRevision": 1,
+        "matrix": {
+          "km": [
+            [
+              0,
+              1
+            ],
+            [
+              1,
+              0
+            ]
+          ],
+          "min": [
+            [
+              0,
+              5
+            ],
+            [
+              5,
+              0
+            ]
+          ],
+          "pointIds": [
+            "plant",
+            "a"
+          ],
+          "source": "fixture"
+        },
+        "params": {
+          "capacityBuffer": 0.1,
+          "mandatoryIds": [],
+          "maxRadiusKm": 15,
+          "readinessPrior": 0.8,
+          "serviceMin": 10,
+          "shiftEnd": "06:35",
+          "shiftStart": "06:00",
+          "targetKg": 80,
+          "truckCapacityKg": 500
+        },
+        "simulated": true
+      },
+      "mandatoryConflicts": [],
+      "matrixSource": "fixture",
+      "primary": {
+        "expectedCollectionKg": 80,
+        "expectedKgPerKm": 40.0,
+        "order": [
+          "a"
+        ],
+        "reservedLoadKg": 110,
+        "serviceMin": 10,
+        "totalKm": 2,
+        "totalMin": 35,
+        "waitingMin": 15
+      },
+      "scenarioId": "waiting-and-window-boundary",
+      "shortfallKg": 0,
+      "shortfallReasons": [],
+      "status": "FEASIBLE"
+    },
+    {
+      "assumptions": {
+        "capacityBuffer": 0.1,
+        "readinessPrior": 0.8,
+        "volumeRatio": 1
+      },
+      "baseline": {
+        "excluded": [
+          {
+            "generatorId": "optional",
+            "reason": "TARGET_REACHED"
+          }
+        ],
+        "expectedCollectionKg": 16,
+        "expectedKgPerKm": 8.0,
+        "order": [
+          "small"
+        ],
+        "reservedLoadKg": 22,
+        "serviceMin": 10,
+        "shortfallKg": 0,
+        "totalKm": 2,
+        "totalMin": 16,
+        "waitingMin": 0
+      },
+      "calculation": {
+        "assumptions": {
+          "capacityBuffer": 0.1,
+          "readinessPrior": 0.8,
+          "volumeRatio": 1
+        },
+        "baseline": {
+          "returnAt": "06:16",
+          "startAt": "06:00",
+          "stops": [
+            {
+              "address": "Synthetic evaluation address",
+              "arrivalAt": "06:03",
+              "confirmedKg": 20,
+              "expectedCollectionKg": 16,
+              "generatorId": "small",
+              "lat": 12.690999999999999,
+              "lng": 77.474,
+              "mandatory": true,
+              "name": "Synthetic small",
+              "reservedLoadKg": 22,
+              "serviceEndAt": "06:13",
+              "serviceStartAt": "06:03",
+              "simulated": true,
+              "submissionId": "small#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            }
+          ],
+          "totals": {
+            "expectedCollectionKg": 16,
+            "reservedLoadKg": 22,
+            "serviceMin": 10,
+            "totalKm": 2,
+            "totalMin": 16,
+            "waitingMin": 0
+          }
+        },
+        "collectionDate": "2026-10-11",
+        "excluded": [
+          {
+            "generatorId": "optional",
+            "reason": "TARGET_REACHED"
+          }
+        ],
+        "inputRevision": 1,
+        "mandatoryConflicts": [],
+        "matrixSource": "fixture",
+        "params": {
+          "capacityBuffer": 0.1,
+          "mandatoryIds": [
+            "small"
+          ],
+          "maxRadiusKm": 15.0,
+          "readinessPrior": 0.8,
+          "serviceMin": 10.0,
+          "shiftEnd": "11:00",
+          "shiftStart": "06:00",
+          "targetKg": 0.0,
+          "truckCapacityKg": 500.0
+        },
+        "plan": {
+          "returnAt": "06:16",
+          "startAt": "06:00",
+          "stops": [
+            {
+              "address": "Synthetic evaluation address",
+              "arrivalAt": "06:03",
+              "confirmedKg": 20,
+              "expectedCollectionKg": 16,
+              "generatorId": "small",
+              "lat": 12.690999999999999,
+              "lng": 77.474,
+              "mandatory": true,
+              "name": "Synthetic small",
+              "reservedLoadKg": 22,
+              "serviceEndAt": "06:13",
+              "serviceStartAt": "06:03",
+              "simulated": true,
+              "submissionId": "small#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            }
+          ],
+          "totals": {
+            "expectedCollectionKg": 16,
+            "reservedLoadKg": 22,
+            "serviceMin": 10,
+            "totalKm": 2,
+            "totalMin": 16,
+            "waitingMin": 0
+          }
+        },
+        "shortfall": {
+          "kg": 0,
+          "reasons": []
+        },
+        "simulated": true,
+        "status": "FEASIBLE"
+      },
+      "comparison": "TIE",
+      "description": "A zero optional target never suppresses a promised pickup.",
+      "excluded": [
+        {
+          "generatorId": "optional",
+          "reason": "TARGET_REACHED"
+        }
+      ],
+      "fixtureFile": "quality.json",
+      "inputSha256": "f8319597e692fa3b598450e343465ec1c67ef3cb5c4cad74564d629fd859e79b",
+      "inputs": {
+        "collectionDate": "2026-10-11",
+        "depot": {
+          "id": "plant",
+          "lat": 12.681,
+          "lng": 77.474
+        },
+        "generators": [
+          {
+            "address": "Synthetic evaluation address",
+            "generatorId": "small",
+            "lat": 12.690999999999999,
+            "lng": 77.474,
+            "name": "Synthetic small",
+            "readiness": {
+              "collectionDate": "2026-10-11",
+              "confirmedKg": 20,
+              "generatorId": "small",
+              "schemaVersion": 3,
+              "status": "READY",
+              "submissionId": "small#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            },
+            "readinessStatus": "READY",
+            "simulated": true,
+            "supportedMaterial": true,
+            "unresolvedHazards": []
+          },
+          {
+            "address": "Synthetic evaluation address",
+            "generatorId": "optional",
+            "lat": 12.690999999999999,
+            "lng": 77.474,
+            "name": "Synthetic optional",
+            "readiness": {
+              "collectionDate": "2026-10-11",
+              "confirmedKg": 300,
+              "generatorId": "optional",
+              "schemaVersion": 3,
+              "status": "READY",
+              "submissionId": "optional#fixture",
+              "weightSource": "SCALE",
+              "window": {
+                "end": "09:00",
+                "start": "06:00"
+              }
+            },
+            "readinessStatus": "READY",
+            "simulated": true,
+            "supportedMaterial": true,
+            "unresolvedHazards": []
+          }
+        ],
+        "history": {},
+        "inputRevision": 1,
+        "matrix": {
+          "km": [
+            [
+              0,
+              1,
+              2
+            ],
+            [
+              1,
+              0,
+              1
+            ],
+            [
+              2,
+              1,
+              0
+            ]
+          ],
+          "min": [
+            [
+              0,
+              3,
+              6
+            ],
+            [
+              3,
+              0,
+              3
+            ],
+            [
+              6,
+              3,
+              0
+            ]
+          ],
+          "pointIds": [
+            "plant",
+            "small",
+            "optional"
+          ],
+          "source": "fixture"
+        },
+        "params": {
+          "capacityBuffer": 0.1,
+          "mandatoryIds": [
+            "small"
+          ],
+          "maxRadiusKm": 15,
+          "readinessPrior": 0.8,
+          "serviceMin": 10,
+          "shiftEnd": "11:00",
+          "shiftStart": "06:00",
+          "targetKg": 0,
+          "truckCapacityKg": 500
+        },
+        "simulated": true
+      },
+      "mandatoryConflicts": [],
+      "matrixSource": "fixture",
+      "primary": {
+        "expectedCollectionKg": 16,
+        "expectedKgPerKm": 8.0,
+        "order": [
+          "small"
+        ],
+        "reservedLoadKg": 22,
+        "serviceMin": 10,
+        "totalKm": 2,
+        "totalMin": 16,
+        "waitingMin": 0
+      },
+      "scenarioId": "mandatory-after-target",
+      "shortfallKg": 0,
+      "shortfallReasons": [],
+      "status": "FEASIBLE"
+    }
+  ],
+  "scenarioCount": 18,
+  "schemaVersion": 1,
+  "seed": null,
+  "summary": {
+    "PRIMARY_LOWER_KM": 1,
+    "TIE": 16,
+    "TRADE_OFF": 1
+  }
+}

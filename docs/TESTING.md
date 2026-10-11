@@ -1,5 +1,28 @@
 # TESTING — FeedSure CBG
 
+## Current v3 checks
+
+`python -m pytest -q -p no:cacheprovider` runs backend tests. The v3 persistence/auth tests use moto
+with real DynamoDB adapters and transactions; their injected planner fixtures prove storage only.
+`test_v3_routes.py` additionally drives the local HTTP shim and real planner/reconciliation through
+readiness → draft → dispatch → pickup → gate → kitchen receipt and refreshes saved reads.
+
+Cases include encoded plan IDs, stale revisions, duplicate retries, rollback, corrections, generator
+isolation, cancellation, mandatory conflicts, changed hazards, partial pickups, missing/zero gate
+and unmatched intake. Contract JSON examples are parsed and checked against actual pure outputs.
+These checks do not establish a browser walkthrough, deployed AWS operation or field savings.
+
+From `frontend/`, run `npm run test` and `npm run build`. Evaluate saved synthetic route scenarios
+with `python scripts/eval_routes.py`; definitions and recorded results are committed under `eval/`.
+Report ties and tradeoffs as well as wins. SAM validation/build requires the separately installed
+SAM CLI, unavailable in this backend implementation session.
+
+The following earlier test plan is historical; screening evaluation remains deferred P1 evidence.
+
+> **Version note:** This is a legacy v1 reference; some described features remain unimplemented.
+> [PRD v3](PRD.md) governs the target workflows, calculations, contracts and build order.
+> Where these documents conflict, PRD v3 wins. Update this reference as each workflow is implemented.
+
 Test what can break the demo: the decision rules, the planner's feasibility, and the handler wiring.
 Don't chase coverage numbers.
 

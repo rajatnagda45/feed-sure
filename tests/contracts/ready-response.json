@@ -1,0 +1,29 @@
+{
+  "submission": {
+    "generatorId": "hotel-a",
+    "collectionDate": "2026-10-11",
+    "status": "READY",
+    "confirmedKg": 100,
+    "weightSource": "SCALE",
+    "window": {
+      "start": "06:00",
+      "end": "09:00"
+    },
+    "lang": "en",
+    "photoKeys": [],
+    "schemaVersion": 3,
+    "submissionId": "hotel-a#2026-10-10T13:00:00Z#example",
+    "recordedAt": "2026-10-10T13:00:00Z",
+    "actor": {
+      "type": "GENERATOR",
+      "id": "hotel-a"
+    },
+    "confirmedBy": null,
+    "reason": null,
+    "simulated": true,
+    "late": false,
+    "photoStatus": "NOT_CHECKED",
+    "inputRevision": 1
+  },
+  "inputRevision": 1
+}

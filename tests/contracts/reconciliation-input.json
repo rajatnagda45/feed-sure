@@ -1,0 +1,55 @@
+{
+  "stops": [
+    {
+      "generatorId": "hotel-a",
+      "pickup": {
+        "planKey": "2026-10-11#p-example",
+        "generatorId": "hotel-a",
+        "outcome": "COLLECTED",
+        "kg": 98,
+        "weightSource": "SCALE",
+        "reason": null,
+        "remainingKg": null,
+        "remainingUnknown": false,
+        "gps": null,
+        "schemaVersion": 3,
+        "revision": 1,
+        "recordedAt": "2026-10-11T01:00:00Z",
+        "actor": {
+          "type": "DRIVER",
+          "id": "2026-10-11#p-example"
+        },
+        "simulated": true,
+        "gpsStatus": "UNKNOWN",
+        "distanceM": null,
+        "gpsExpiresAt": null
+      }
+    },
+    {
+      "generatorId": "hostel-b",
+      "pickup": {
+        "planKey": "2026-10-11#p-example",
+        "generatorId": "hostel-b",
+        "outcome": "PARTIAL",
+        "kg": 150,
+        "weightSource": "ESTIMATE",
+        "reason": "Truck capacity constraint",
+        "remainingKg": 40,
+        "remainingUnknown": false,
+        "gps": null,
+        "revision": 1,
+        "gpsStatus": "UNKNOWN",
+        "simulated": true
+      }
+    }
+  ],
+  "gate": {
+    "planKey": "2026-10-11#p-example",
+    "netKg": 240,
+    "weightSource": "SCALE",
+    "reference": "synthetic-weighbridge-1",
+    "expectedRevision": 0
+  },
+  "absoluteToleranceKg": 20,
+  "percentageTolerancePct": 5
+}

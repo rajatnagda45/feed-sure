@@ -170,6 +170,32 @@ def handle_upload_request(
 
 
 def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
-    """Handle upload API requests."""
+    """Issue one optional v3 photo upload, with tokens exclusively in request headers."""
     del context
-    return handle_upload_request(event)
+    from feedsure.common.v3 import ApiError, body, fields
+    from feedsure.handlers.operations import Service
+
+    try:
+        request = body(event)
+        fields(request, {"generatorId", "contentType"})
+        config = get_config()
+        service = Service(event, config, None, None)
+        generator_id = request.get("generatorId")
+        if not isinstance(generator_id, str):
+            raise ApiError(400, "INVALID_INPUT", "generatorId is required.")
+        service.generator(generator_id)
+        content_type = request.get("contentType")
+        if content_type not in ("image/jpeg", "image/png"):
+            raise ApiError(400, "INVALID_INPUT", "contentType must be JPEG or PNG.")
+        keys = build_upload_keys(
+            generator_id,
+            content_type,
+            _current_time(config.timezone_name).date().isoformat(),
+            secrets.token_hex(8),
+        )[:1]
+        uploads = create_presigned_uploads(config, _s3_client(config), keys, content_type)
+        return json_response(200, {"uploads": uploads})
+    except ApiError as error:
+        return error_response(error.status, error.code, error.message)
+    except (BotoCoreError, ClientError):
+        return error_response(502, "UPSTREAM_FAILED", "Could not prepare photo upload.")

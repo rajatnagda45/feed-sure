@@ -18,3 +18,14 @@ frontend/.vite/
 seed_links.local.txt
 eval/results.local.*
 .DS_Store
+
+# Private implementation instructions and working notes (not submission artifacts).
+/AGENTS.md
+/docs/PRD*.md
+/docs/RESEARCH.md
+/docs/HACKATHON-REVIEW.md
+/docs/IMPLEMENTATION-SESSIONS.md
+/docs/SESSION-*.md
+/docs/handoffs/
+/docs/UI.md
+*.egg-info/

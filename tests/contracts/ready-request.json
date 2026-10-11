@@ -1,0 +1,13 @@
+{
+  "generatorId": "hotel-a",
+  "collectionDate": "2026-10-11",
+  "status": "READY",
+  "confirmedKg": 100,
+  "weightSource": "SCALE",
+  "window": {
+    "start": "06:00",
+    "end": "09:00"
+  },
+  "lang": "en",
+  "photoKeys": []
+}

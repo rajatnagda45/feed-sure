@@ -1,5 +1,24 @@
 # API — FeedSure CBG
 
+## Shipped v3 API
+
+Use [V3-CONTRACT.md](V3-CONTRACT.md) for the active payloads, headers, route table, revisions and
+JSON examples. Generator credentials use `X-Generator-Token`; driver access uses `X-Driver-Token`;
+dispatch, pickup and gate mutations also require `Idempotency-Key`. Tokens in request bodies or
+query strings are not accepted by active v3 routes.
+
+`POST /submissions` saves readiness with zero photos. Plan requests use `collectionDate`, and
+latest-plan reads return `{plan:null}` when absent. Public plan keys contain `#` and must be URL
+encoded. A dispatch freezes the reviewed version/input revision. Pickups and gate logs are shipped
+P0 endpoints with corrections and reconciliation, not stretch features. `POST /uploads` optionally
+presigns one JPEG/PNG; authenticated photo screening currently returns 503 (P1 deferred).
+
+The following v1 descriptions are preserved as historical reference and are not active contracts.
+
+> **Version note:** This is a legacy v1 reference; some described features remain unimplemented.
+> [PRD v3](PRD.md) governs the target workflows, calculations, contracts and build order.
+> Where these documents conflict, PRD v3 wins. Update this reference as each workflow is implemented.
+
 Base URL: `${VITE_API_BASE_URL}` (API Gateway HTTP API). All bodies are JSON. Dates are
 `YYYY-MM-DD` in Asia/Kolkata. Weights are kg (numbers). Distances are km and times are minutes.
 

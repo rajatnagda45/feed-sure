@@ -246,7 +246,7 @@ def handle_submission(
     return json_response(
         200,
         {
-            "submissionId": f'{request["generatorId"]}#{timestamp}',
+            "submissionId": f"{request['generatorId']}#{timestamp}",
             "date": record["date"],
             **decision,
             "observations": api_observations,
@@ -257,6 +257,8 @@ def handle_submission(
 
 
 def lambda_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
-    """Handle POST /submissions requests."""
+    """Handle v3 readiness routes; legacy helpers remain historical test references."""
     del context
-    return handle_submission(event)
+    from feedsure.handlers.operations import handle_request
+
+    return handle_request(event)

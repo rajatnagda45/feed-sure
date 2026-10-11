@@ -1,0 +1,7 @@
+{
+  "planKey": "2026-10-11#p-example",
+  "netKg": 240,
+  "weightSource": "SCALE",
+  "reference": "synthetic-weighbridge-1",
+  "expectedRevision": 0
+}

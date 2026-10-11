@@ -1,0 +1,26 @@
+{
+  "submission": {
+    "generatorId": "hostel-b",
+    "collectionDate": "2026-10-11",
+    "status": "NOT_READY",
+    "confirmedKg": 0,
+    "weightSource": null,
+    "window": null,
+    "lang": "en",
+    "photoKeys": [],
+    "schemaVersion": 3,
+    "submissionId": "hostel-b#2026-10-10T13:00:00Z#example",
+    "recordedAt": "2026-10-10T13:00:00Z",
+    "actor": {
+      "type": "GENERATOR",
+      "id": "hostel-b"
+    },
+    "confirmedBy": null,
+    "reason": "Kitchen closed",
+    "simulated": true,
+    "late": false,
+    "photoStatus": "NOT_CHECKED",
+    "inputRevision": 2
+  },
+  "inputRevision": 2
+}

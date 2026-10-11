@@ -1,5 +1,29 @@
 # ARCHITECTURE — FeedSure CBG
 
+## Shipped v3 architecture
+
+Kitchen/dispatcher/driver React views call the common header-authenticated HTTP contract.
+API Gateway routes fifteen operational endpoints to `handlers/operations.py`; optional upload
+presigning remains in `handlers/uploads.py`. The local FastAPI shim invokes those same handlers,
+including encoded plan-key paths. No production FastAPI dependency is deployed.
+
+The operational service reads authoritative date revisions/readiness/hazards, obtains a matrix,
+calls pure `planner.plan.build_plan`, and saves its inputs and route as an immutable draft.
+Dispatch conditionally binds the current date revision and freezes the trip. Pickup/gate writes
+use current-record and trip execution revisions, separate audit/dedup records and transactions.
+Reads recompute `planner.reconcile.reconcile_trip` from latest stop outcomes and trip gate intake.
+
+The planner reserves confirmed kg plus a buffer and applies the readiness prior only to expected
+collection. Human hazard flags block selection/loading. Photo screening is deferred and no image
+percentage modifies weight. Matrix fallback is disclosed as estimated routing. See the shared
+[contract](V3-CONTRACT.md) and [planner implementation](PLANNER-V3.md).
+
+The following component diagram, screening rules and formulas describe the preserved v1 concept.
+
+> **Version note:** This is a legacy v1 reference; some described features remain unimplemented.
+> [PRD v3](PRD.md) governs the target workflows, calculations, contracts and build order.
+> Where these documents conflict, PRD v3 wins. Update this reference as each workflow is implemented.
+
 ## 1. Overview
 
 ```mermaid

@@ -1,0 +1,150 @@
+{
+  "collectionDate": "2026-10-11",
+  "inputRevision": 4,
+  "status": "FEASIBLE",
+  "params": {
+    "targetKg": 200,
+    "truckCapacityKg": 500,
+    "capacityBuffer": 0.1,
+    "readinessPrior": 0.8,
+    "shiftStart": "06:00",
+    "shiftEnd": "11:00",
+    "serviceMin": 10,
+    "maxRadiusKm": 15,
+    "mandatoryIds": []
+  },
+  "plan": {
+    "stops": [
+      {
+        "generatorId": "hotel-a",
+        "name": "Fictional hotel-a",
+        "address": "Synthetic address",
+        "lat": 12.690999999999999,
+        "lng": 77.474,
+        "simulated": true,
+        "window": {
+          "start": "06:00",
+          "end": "09:00"
+        },
+        "submissionId": "hotel-a#2026-10-10T13:00:00Z#example",
+        "confirmedKg": 100,
+        "weightSource": "SCALE",
+        "expectedCollectionKg": 80.0,
+        "reservedLoadKg": 110.0,
+        "mandatory": false,
+        "arrivalAt": "06:06",
+        "serviceStartAt": "06:06",
+        "serviceEndAt": "06:16"
+      },
+      {
+        "generatorId": "hostel-b",
+        "name": "Fictional hostel-b",
+        "address": "Synthetic address",
+        "lat": 12.700999999999999,
+        "lng": 77.474,
+        "simulated": true,
+        "window": {
+          "start": "06:00",
+          "end": "09:00"
+        },
+        "submissionId": "hostel-b#2026-10-10T13:00:00Z#example",
+        "confirmedKg": 200,
+        "weightSource": "SCALE",
+        "expectedCollectionKg": 160.0,
+        "reservedLoadKg": 220.0,
+        "mandatory": false,
+        "arrivalAt": "06:22",
+        "serviceStartAt": "06:22",
+        "serviceEndAt": "06:32"
+      }
+    ],
+    "startAt": "06:00",
+    "returnAt": "06:44",
+    "totals": {
+      "expectedCollectionKg": 240,
+      "reservedLoadKg": 330,
+      "totalKm": 8,
+      "totalMin": 44,
+      "serviceMin": 20,
+      "waitingMin": 0
+    }
+  },
+  "baseline": {
+    "stops": [
+      {
+        "generatorId": "hotel-a",
+        "name": "Fictional hotel-a",
+        "address": "Synthetic address",
+        "lat": 12.690999999999999,
+        "lng": 77.474,
+        "simulated": true,
+        "window": {
+          "start": "06:00",
+          "end": "09:00"
+        },
+        "submissionId": "hotel-a#2026-10-10T13:00:00Z#example",
+        "confirmedKg": 100,
+        "weightSource": "SCALE",
+        "expectedCollectionKg": 80.0,
+        "reservedLoadKg": 110.0,
+        "mandatory": false,
+        "arrivalAt": "06:06",
+        "serviceStartAt": "06:06",
+        "serviceEndAt": "06:16"
+      },
+      {
+        "generatorId": "hostel-b",
+        "name": "Fictional hostel-b",
+        "address": "Synthetic address",
+        "lat": 12.700999999999999,
+        "lng": 77.474,
+        "simulated": true,
+        "window": {
+          "start": "06:00",
+          "end": "09:00"
+        },
+        "submissionId": "hostel-b#2026-10-10T13:00:00Z#example",
+        "confirmedKg": 200,
+        "weightSource": "SCALE",
+        "expectedCollectionKg": 160.0,
+        "reservedLoadKg": 220.0,
+        "mandatory": false,
+        "arrivalAt": "06:22",
+        "serviceStartAt": "06:22",
+        "serviceEndAt": "06:32"
+      }
+    ],
+    "startAt": "06:00",
+    "returnAt": "06:44",
+    "totals": {
+      "expectedCollectionKg": 240,
+      "reservedLoadKg": 330,
+      "totalKm": 8,
+      "totalMin": 44,
+      "serviceMin": 20,
+      "waitingMin": 0
+    }
+  },
+  "excluded": [
+    {
+      "generatorId": "kitchen-c",
+      "reason": "UNCONFIRMED"
+    },
+    {
+      "generatorId": "kitchen-d",
+      "reason": "HAZARD_REVIEW"
+    }
+  ],
+  "shortfall": {
+    "kg": 0,
+    "reasons": []
+  },
+  "mandatoryConflicts": [],
+  "matrixSource": "fixture",
+  "simulated": true,
+  "assumptions": {
+    "readinessPrior": 0.8,
+    "volumeRatio": 1,
+    "capacityBuffer": 0.1
+  }
+}

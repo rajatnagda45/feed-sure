@@ -1,0 +1,63 @@
+{
+  "schemaVersion": 1,
+  "scenarios": [
+    {
+      "scenarioId": "primary-distance-improvement",
+      "description": "All three stops needed; nearest-first chooses a longer directed order.",
+      "generators": [
+        {"generatorId": "a", "confirmedKg": 100},
+        {"generatorId": "b", "confirmedKg": 100},
+        {"generatorId": "c", "confirmedKg": 100}
+      ],
+      "params": {"targetKg": 240},
+      "km": [[0,1,2,3],[1,0,1,4],[2,1,0,5],[3,2,1,0]],
+      "min": [[0,3,6,9],[3,0,3,12],[6,3,0,15],[9,6,3,0]]
+    },
+    {
+      "scenarioId": "primary-capacity-tradeoff",
+      "description": "An efficient first choice can prevent a larger two-stop load; no universal kg winner.",
+      "generators": [
+        {"generatorId": "a", "confirmedKg": 220},
+        {"generatorId": "b", "confirmedKg": 150},
+        {"generatorId": "c", "confirmedKg": 150}
+      ],
+      "params": {"targetKg": 240, "truckCapacityKg": 330},
+      "km": [[0,1,0.9,1.1],[1,0,1.9,2.1],[0.9,1.9,0,0.2],[1.1,2.1,0.2,0]],
+      "min": [[0,3,2.7,3.3],[3,0,5.7,6.3],[2.7,5.7,0,0.6],[3.3,6.3,0.6,0]]
+    },
+    {
+      "scenarioId": "hazard-and-material-eligibility",
+      "description": "Hazards, unsupported material and outbound radius apply to both planners.",
+      "generators": [
+        {"generatorId": "hazard", "confirmedKg": 100, "hazard": true},
+        {"generatorId": "unsupported", "confirmedKg": 100, "supportedMaterial": false},
+        {"generatorId": "far", "confirmedKg": 100},
+        {"generatorId": "ready", "confirmedKg": 50}
+      ],
+      "params": {"targetKg": 100},
+      "km": [[0,1,2,16,3],[1,0,1,15,2],[2,1,0,14,1],[16,15,14,0,13],[3,2,1,13,0]],
+      "min": [[0,3,6,48,9],[3,0,3,45,6],[6,3,0,42,3],[48,45,42,0,39],[9,6,3,39,0]]
+    },
+    {
+      "scenarioId": "waiting-and-window-boundary",
+      "description": "Wait for opening, finish exactly at closing, and return exactly at shift end.",
+      "generators": [
+        {"generatorId": "a", "confirmedKg": 100, "window": {"start":"06:20","end":"06:30"}}
+      ],
+      "params": {"targetKg":80,"shiftEnd":"06:35"},
+      "km": [[0,1],[1,0]],
+      "min": [[0,5],[5,0]]
+    },
+    {
+      "scenarioId": "mandatory-after-target",
+      "description": "A zero optional target never suppresses a promised pickup.",
+      "generators": [
+        {"generatorId":"small","confirmedKg":20},
+        {"generatorId":"optional","confirmedKg":300}
+      ],
+      "params": {"targetKg":0,"mandatoryIds":["small"]},
+      "km": [[0,1,2],[1,0,1],[2,1,0]],
+      "min": [[0,3,6],[3,0,3],[6,3,0]]
+    }
+  ]
+}

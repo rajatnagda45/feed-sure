@@ -1,0 +1,35 @@
+{
+  "generatorId": "hotel-a",
+  "schemaVersion": 3,
+  "records": [
+    {
+      "pickup": {
+        "planKey": "2026-10-11#p-example",
+        "generatorId": "hotel-a",
+        "outcome": "COLLECTED",
+        "kg": 98,
+        "weightSource": "SCALE",
+        "reason": null,
+        "remainingKg": null,
+        "remainingUnknown": false,
+        "gps": null,
+        "schemaVersion": 3,
+        "revision": 1,
+        "recordedAt": "2026-10-11T01:00:00Z",
+        "actor": {
+          "type": "DRIVER",
+          "id": "2026-10-11#p-example"
+        },
+        "simulated": true,
+        "gpsStatus": "UNKNOWN",
+        "distanceM": null,
+        "gpsExpiresAt": null
+      },
+      "planKey": "2026-10-11#p-example",
+      "collectionDate": "2026-10-11",
+      "gateStatus": "WITHIN_TOLERANCE",
+      "gateRecorded": true,
+      "provisional": true
+    }
+  ]
+}

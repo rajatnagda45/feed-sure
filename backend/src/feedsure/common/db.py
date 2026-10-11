@@ -10,7 +10,16 @@ import boto3
 
 from feedsure.common.config import Config, get_config
 
-TableName = Literal["generators", "history", "submissions", "plans"]
+TableName = Literal[
+    "generators",
+    "history",
+    "submissions",
+    "plans",
+    "operations",
+    "pickups",
+    "gate_logs",
+    "mutation_log",
+]
 
 
 def to_db_value(value: Any) -> Any:
@@ -65,6 +74,10 @@ class DynamoDB:
             "history": self.config.history_table,
             "submissions": self.config.submissions_table,
             "plans": self.config.plans_table,
+            "operations": self.config.operations_table,
+            "pickups": self.config.pickups_table,
+            "gate_logs": self.config.gate_logs_table,
+            "mutation_log": self.config.mutation_log_table,
         }[table]
 
     def get(
@@ -85,6 +98,22 @@ class DynamoDB:
     def put(self, table: TableName, item: dict[str, Any]) -> None:
         """Upsert one item by its table primary key."""
         self.resource.Table(self.table_name(table)).put_item(Item=to_db_value(item))
+
+    def transact(self, actions: list[dict[str, Any]]) -> None:
+        """Atomically apply native-value actions using the DynamoDB resource serializer."""
+        self.resource.meta.client.transact_write_items(TransactItems=to_db_value(actions))
+
+    def conditional_put(
+        self, table: TableName, item: dict[str, Any], condition: str
+    ) -> dict[str, Any]:
+        """Construct an atomic Put action; callers provide optimistic conditions."""
+        return {
+            "Put": {
+                "TableName": self.table_name(table),
+                "Item": item,
+                "ConditionExpression": condition,
+            }
+        }
 
     def query(self, table: TableName, **kwargs: Any) -> list[dict[str, Any]]:
         """Query all pages and return JSON-compatible items."""

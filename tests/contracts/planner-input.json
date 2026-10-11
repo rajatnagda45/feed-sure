@@ -1,0 +1,263 @@
+{
+  "collectionDate": "2026-10-11",
+  "inputRevision": 4,
+  "generators": [
+    {
+      "generatorId": "hotel-a",
+      "name": "Fictional hotel-a",
+      "type": "hotel",
+      "address": "Synthetic address",
+      "lat": 12.690999999999999,
+      "lng": 77.474,
+      "pickupWindow": {
+        "start": "06:00",
+        "end": "09:00"
+      },
+      "defaultLang": "en",
+      "supportedMaterial": true,
+      "simulated": true,
+      "readiness": {
+        "generatorId": "hotel-a",
+        "collectionDate": "2026-10-11",
+        "status": "READY",
+        "confirmedKg": 100,
+        "weightSource": "SCALE",
+        "window": {
+          "start": "06:00",
+          "end": "09:00"
+        },
+        "lang": "en",
+        "photoKeys": [],
+        "schemaVersion": 3,
+        "submissionId": "hotel-a#2026-10-10T13:00:00Z#example",
+        "recordedAt": "2026-10-10T13:00:00Z",
+        "actor": {
+          "type": "GENERATOR",
+          "id": "hotel-a"
+        },
+        "confirmedBy": null,
+        "reason": null,
+        "simulated": true,
+        "late": false,
+        "photoStatus": "NOT_CHECKED",
+        "inputRevision": 1
+      },
+      "readinessStatus": "READY",
+      "unresolvedHazards": []
+    },
+    {
+      "generatorId": "hostel-b",
+      "name": "Fictional hostel-b",
+      "type": "hotel",
+      "address": "Synthetic address",
+      "lat": 12.700999999999999,
+      "lng": 77.474,
+      "pickupWindow": {
+        "start": "06:00",
+        "end": "09:00"
+      },
+      "defaultLang": "en",
+      "supportedMaterial": true,
+      "simulated": true,
+      "readiness": {
+        "generatorId": "hostel-b",
+        "collectionDate": "2026-10-11",
+        "status": "READY",
+        "confirmedKg": 200,
+        "weightSource": "SCALE",
+        "window": {
+          "start": "06:00",
+          "end": "09:00"
+        },
+        "lang": "en",
+        "photoKeys": [],
+        "schemaVersion": 3,
+        "submissionId": "hostel-b#2026-10-10T13:00:00Z#example",
+        "recordedAt": "2026-10-10T13:00:00Z",
+        "actor": {
+          "type": "GENERATOR",
+          "id": "hostel-b"
+        },
+        "confirmedBy": null,
+        "reason": null,
+        "simulated": true,
+        "late": false,
+        "photoStatus": "NOT_CHECKED",
+        "inputRevision": 2
+      },
+      "readinessStatus": "READY",
+      "unresolvedHazards": []
+    },
+    {
+      "generatorId": "kitchen-c",
+      "name": "Fictional kitchen-c",
+      "type": "hotel",
+      "address": "Synthetic address",
+      "lat": 12.710999999999999,
+      "lng": 77.474,
+      "pickupWindow": {
+        "start": "06:00",
+        "end": "09:00"
+      },
+      "defaultLang": "en",
+      "supportedMaterial": true,
+      "simulated": true,
+      "readiness": null,
+      "readinessStatus": "UNCONFIRMED",
+      "unresolvedHazards": []
+    },
+    {
+      "generatorId": "kitchen-d",
+      "name": "Fictional kitchen-d",
+      "type": "hotel",
+      "address": "Synthetic address",
+      "lat": 12.720999999999998,
+      "lng": 77.474,
+      "pickupWindow": {
+        "start": "06:00",
+        "end": "09:00"
+      },
+      "defaultLang": "en",
+      "supportedMaterial": true,
+      "simulated": true,
+      "readiness": {
+        "generatorId": "kitchen-d",
+        "collectionDate": "2026-10-11",
+        "status": "READY",
+        "confirmedKg": 100,
+        "weightSource": "SCALE",
+        "window": {
+          "start": "06:00",
+          "end": "09:00"
+        },
+        "lang": "en",
+        "photoKeys": [],
+        "schemaVersion": 3,
+        "submissionId": "kitchen-d#example",
+        "recordedAt": "2026-10-10T13:00:00Z",
+        "actor": {
+          "type": "GENERATOR",
+          "id": "hotel-a"
+        },
+        "confirmedBy": null,
+        "reason": null,
+        "simulated": true,
+        "late": false,
+        "photoStatus": "NOT_CHECKED",
+        "inputRevision": 1
+      },
+      "readinessStatus": "READY",
+      "unresolvedHazards": [
+        {
+          "action": "ENTER",
+          "reason": "Human observed glass",
+          "generatorId": "kitchen-d",
+          "schemaVersion": 3,
+          "simulated": true
+        }
+      ]
+    }
+  ],
+  "history": {},
+  "depot": {
+    "id": "plant",
+    "lat": 12.681,
+    "lng": 77.474
+  },
+  "matrix": {
+    "pointIds": [
+      "plant",
+      "hotel-a",
+      "hostel-b",
+      "kitchen-c",
+      "kitchen-d"
+    ],
+    "km": [
+      [
+        0,
+        2,
+        4,
+        6,
+        8
+      ],
+      [
+        2,
+        0,
+        2,
+        4,
+        6
+      ],
+      [
+        4,
+        2,
+        0,
+        2,
+        4
+      ],
+      [
+        6,
+        4,
+        2,
+        0,
+        2
+      ],
+      [
+        8,
+        6,
+        4,
+        2,
+        0
+      ]
+    ],
+    "min": [
+      [
+        0,
+        6,
+        12,
+        18,
+        24
+      ],
+      [
+        6,
+        0,
+        6,
+        12,
+        18
+      ],
+      [
+        12,
+        6,
+        0,
+        6,
+        12
+      ],
+      [
+        18,
+        12,
+        6,
+        0,
+        6
+      ],
+      [
+        24,
+        18,
+        12,
+        6,
+        0
+      ]
+    ],
+    "source": "fixture"
+  },
+  "params": {
+    "targetKg": 200,
+    "truckCapacityKg": 500,
+    "capacityBuffer": 0.1,
+    "readinessPrior": 0.8,
+    "shiftStart": "06:00",
+    "shiftEnd": "11:00",
+    "serviceMin": 10,
+    "maxRadiusKm": 15,
+    "mandatoryIds": []
+  },
+  "simulated": true
+}

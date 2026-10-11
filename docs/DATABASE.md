@@ -1,5 +1,29 @@
 # DATABASE — FeedSure CBG (DynamoDB, on-demand)
 
+## Shipped v3 storage
+
+Existing keys for Generators, History, Submissions and Plans are retained. Only `schemaVersion:3`
+readiness heads define current availability. Legacy photo verdicts never imply confirmation.
+
+| Table | Partition / sort key | Role |
+|---|---|---|
+| Operations | collectionDate / recordKey | Strongly read META revision, readiness and hazard heads |
+| Pickups | planKey / generatorId | Current stop outcomes; byGenerator GSI for own kitchen receipts |
+| GateLogs | date / short planId | Current trip intake and gate revision |
+| MutationLog | scopeKey / idempotencyKey | Immutable AUDIT records and separate expiring DEDUP records |
+
+Readiness/history/head updates and dispatch/mutation guards use DynamoDB transactions. Current
+pickups alone define totals; old corrections are not added as extra collections. DEDUP rows expire
+after seven days, audit rows have no TTL. Plans have no operational expiry; only matrix cache rows
+carry TTL. GPS expiry metadata does not remove fields automatically; a removal job remains needed.
+See [V3-CONTRACT.md](V3-CONTRACT.md) for item shapes and retention boundaries.
+
+The following v1 layouts and destructive seed instructions are historical, not the v3 run path.
+
+> **Version note:** This is a legacy v1 reference; some described features remain unimplemented.
+> [PRD v3](PRD.md) governs the target workflows, calculations, contracts and build order.
+> Where these documents conflict, PRD v3 wins. Update this reference as each workflow is implemented.
+
 Table names come from env vars and are prefixed with the stage, e.g. `feedsure-dev-Generators`.
 Store numbers as DynamoDB Numbers (Decimal in boto3; convert at the edges in `common/db.py`).
 

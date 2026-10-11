@@ -1,7 +1,8 @@
-"""Pure generator forecast skeleton."""
+"""Legacy operator quantity guidance; never authorises READY v3 collections."""
 
 from __future__ import annotations
 
+import math
 from datetime import date, timedelta
 from typing import Any
 
@@ -11,14 +12,19 @@ def forecast_kg(
     submission: dict[str, Any] | None,
     plan_date: str | date | None = None,
 ) -> float:
-    """Forecast kilograms from yesterday's report or recent historical volumes."""
+    """Suggest legacy volumes from prior dates; the v3 planner does not call this helper."""
     if submission is not None:
-        return round(float(submission.get("reportedKg", 0)), 1)
+        quantity = float(submission.get("reportedKg", 0))
+        if not math.isfinite(quantity) or quantity < 0:
+            raise ValueError("reportedKg must be finite and non-negative")
+        return round(quantity, 1)
 
     parsed: list[tuple[date, float]] = []
     for item in history:
         try:
-            parsed.append((date.fromisoformat(str(item["date"])), float(item["kg"])))
+            quantity = float(item["kg"])
+            if math.isfinite(quantity) and quantity >= 0:
+                parsed.append((date.fromisoformat(str(item["date"])), quantity))
         except (KeyError, TypeError, ValueError):
             continue
     if not parsed:
@@ -27,6 +33,9 @@ def forecast_kg(
         target = max(day for day, _kg in parsed) + timedelta(days=1)
     else:
         target = date.fromisoformat(plan_date) if isinstance(plan_date, str) else plan_date
-    same_weekday = [kg for day, kg in parsed if day.weekday() == target.weekday()]
-    values = same_weekday or [kg for _day, kg in parsed]
+    previous = [(day, kg) for day, kg in parsed if day < target]
+    same_weekday = [kg for day, kg in previous if day.weekday() == target.weekday()]
+    values = same_weekday or [kg for _day, kg in previous]
+    if not values:
+        return 0.0
     return round(sum(values) / len(values), 1)

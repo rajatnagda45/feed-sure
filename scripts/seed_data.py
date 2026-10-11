@@ -9,6 +9,7 @@ import json
 import math
 import os
 import random
+import secrets
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date, timedelta
@@ -261,6 +262,100 @@ def ensure_local_tables(config: Config, resource: Any) -> None:
         ).wait_until_exists()
 
 
+def ensure_v3_tables(config: Config, resource: Any) -> None:
+    """Create missing local v3 tables and index without changing or deleting existing data."""
+    ensure_local_tables(config, resource)
+    definitions = [
+        (config.operations_table, "collectionDate", "recordKey"),
+        (config.pickups_table, "planKey", "generatorId"),
+        (config.gate_logs_table, "date", "planId"),
+        (config.mutation_log_table, "scopeKey", "idempotencyKey"),
+    ]
+    existing = set(resource.meta.client.list_tables()["TableNames"])
+    for name, pk, sk in definitions:
+        if name in existing:
+            continue
+        attributes = [pk, sk] + (["recordKey"] if name == config.pickups_table else [])
+        options = {
+            "TableName": name,
+            "BillingMode": "PAY_PER_REQUEST",
+            "AttributeDefinitions": [
+                {"AttributeName": attr, "AttributeType": "S"} for attr in attributes
+            ],
+            "KeySchema": [
+                {"AttributeName": pk, "KeyType": "HASH"},
+                {"AttributeName": sk, "KeyType": "RANGE"},
+            ],
+        }
+        if name == config.pickups_table:
+            options["GlobalSecondaryIndexes"] = [
+                {
+                    "IndexName": "byGenerator",
+                    "KeySchema": [
+                        {"AttributeName": "generatorId", "KeyType": "HASH"},
+                        {"AttributeName": "recordKey", "KeyType": "RANGE"},
+                    ],
+                    "Projection": {"ProjectionType": "ALL"},
+                }
+            ]
+        resource.create_table(**options).wait_until_exists()
+        if name == config.mutation_log_table:
+            resource.meta.client.update_time_to_live(
+                TableName=name, TimeToLiveSpecification={"AttributeName": "ttl", "Enabled": True}
+            )
+
+
+def seed_v3_database(config: Config, resource: Any, collection_date: date) -> dict[str, str]:
+    """Seed ten fictional kitchens locally, retaining existing tokens, edits and histories."""
+    if not config.aws_endpoint_url:
+        raise ValueError("V3 synthetic seeding requires an explicit local endpoint.")
+    from feedsure.handlers.operations import Service
+
+    ensure_v3_tables(config, resource)
+    database = DynamoDB(config, resource)
+    tokens = {}
+    day = collection_date.isoformat()
+    for index in range(10):
+        gid = f"demo-kitchen-{index + 1:02d}"
+        if database.get("generators", {"generatorId": gid}, consistent_read=True):
+            continue
+        token = secrets.token_urlsafe(32)
+        tokens[gid] = token
+        generator = {
+            "generatorId": gid,
+            "name": f"Fictional Kitchen {index + 1}",
+            "type": "hotel" if index % 2 else "hostel_mess",
+            "address": "Synthetic pilot kitchen",
+            "lat": config.plant_lat + index * 0.004,
+            "lng": config.plant_lng + 0.01,
+            "pickupStart": "06:00",
+            "pickupEnd": "09:00",
+            "defaultLang": "en",
+            "tokenHash": hashlib.sha256(token.encode()).hexdigest(),
+            "supportedMaterial": True,
+            "schemaVersion": 3,
+            "simulated": True,
+        }
+        database.transact(
+            [database.conditional_put("generators", generator, "attribute_not_exists(generatorId)")]
+        )
+        # Include a cancellation, two unconfirmed suppliers and a tight-window/capacity case.
+        if index in {7, 8}:
+            continue
+        request = {
+            "generatorId": gid,
+            "collectionDate": day,
+            "status": "NOT_READY" if index == 2 else "READY",
+            "confirmedKg": 180 if index != 9 else 2500,
+            "weightSource": "ESTIMATE",
+            "window": {"start": "06:00", "end": "06:05" if index == 6 else "09:00"},
+            "reason": "Synthetic cancellation" if index == 2 else None,
+        }
+        event = {"headers": {"X-Generator-Token": token}}
+        Service(event, config, database, None).readiness(request)
+    return tokens
+
+
 def _clear_table(resource: Any, table_name: str) -> None:
     table = resource.Table(table_name)
     key_names = [entry["AttributeName"] for entry in table.key_schema]
@@ -412,6 +507,11 @@ def _parser() -> argparse.ArgumentParser:
         "--demo", type=date.fromisoformat, help="Also seed demo submissions for DATE"
     )
     parser.add_argument("--pilot-file", type=Path, default=DEFAULT_PILOT_FILE)
+    parser.add_argument(
+        "--v3-date",
+        type=date.fromisoformat,
+        help="Non-destructive local-only synthetic v3 readiness seed",
+    )
     return parser
 
 
@@ -433,6 +533,18 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.local:
         os.environ["AWS_ENDPOINT_URL"] = DEFAULT_LOCAL_ENDPOINT
     config = get_config()
+    if args.v3_date:
+        if args.reset:
+            raise SystemExit("--reset is forbidden for the non-destructive v3 seed.")
+        tokens = seed_v3_database(config, _resource(config), args.v3_date)
+        links_path = PROJECT_ROOT / "seed_links.local.txt"
+        # Retain prior private links; only append access for freshly created fictional kitchens.
+        with links_path.open("a", encoding="utf-8") as handle:
+            for gid, token in sorted(tokens.items()):
+                handle.write(f"http://localhost:5173/g/{quote(gid)}?t={quote(token)}\n")
+        print(f"Created {len(tokens)} fictional kitchens; data simulated; existing edits retained.")
+        print("Private bootstrap links appended to seed_links.local.txt (gitignored).")
+        return 0
     pilot = load_pilot(args.pilot_file)
 
     try:

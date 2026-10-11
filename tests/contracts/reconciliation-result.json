@@ -1,0 +1,19 @@
+{
+  "status": "WITHIN_TOLERANCE",
+  "pickedKg": 248,
+  "netGateKg": 240,
+  "deltaKg": -8,
+  "deltaPct": -3.225806451612903,
+  "provisional": true,
+  "pendingStopIds": [],
+  "gpsFlags": [
+    {
+      "generatorId": "hotel-a",
+      "status": "UNKNOWN"
+    },
+    {
+      "generatorId": "hostel-b",
+      "status": "UNKNOWN"
+    }
+  ]
+}

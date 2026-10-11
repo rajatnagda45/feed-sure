@@ -1,25 +1,25 @@
-"""Pure usable-kilogram calculation skeleton."""
+"""Pure collection estimates; photos never measure or discount whole-load mass."""
 
 from __future__ import annotations
 
-from typing import Any
-
-PROBABILITIES = {"ACCEPT": 0.95, "INSPECT": 0.6, "HOLD": 0.0}
+from feedsure.planner.validation import number
 
 
-def expected_usable_kg(
-    forecast: float,
-    screening: dict[str, Any] | None,
+def collection_quantities(
+    confirmed_kg: float,
     *,
-    prior_accept: float = 0.7,
-    prior_contam_pct: float = 2.0,
-) -> float:
-    """Return expected processable kilograms after quality and acceptance risk."""
-    if screening is None:
-        probability = float(prior_accept)
-        contamination = float(prior_contam_pct)
-    else:
-        probability = PROBABILITIES.get(str(screening.get("verdict")), 0.0)
-        contamination = float(screening.get("visibleContaminantPct", 0))
-    usable = max(0.0, float(forecast)) * probability * (1 - contamination / 100)
-    return round(max(0.0, usable), 1)
+    readiness_prior: float,
+    capacity_buffer: float,
+    volume_ratio: float = 1,
+) -> dict[str, float]:
+    """Separate expected collection from full-load capacity reservation assumptions."""
+    confirmed = number(confirmed_kg, "confirmedKg", 0, 5000)
+    probability = number(readiness_prior, "readinessPrior", 0, 1)
+    buffer = number(capacity_buffer, "capacityBuffer", 0, 1)
+    ratio = number(volume_ratio, "volumeRatio", 0.5, 1.5)
+    base = confirmed * ratio
+    return {
+        "baseKg": base,
+        "expectedCollectionKg": base * probability,
+        "reservedLoadKg": max(confirmed, base) * (1 + buffer),
+    }
