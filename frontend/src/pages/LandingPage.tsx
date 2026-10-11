@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 
-import { WorkflowMedia } from "../components/WorkflowMedia";
+import { CollectionFilm } from "./landing/CollectionFilm";
 import { FinalCTA } from "./landing/FinalCTA";
 import { HeroSection } from "./landing/HeroSection";
 import { LandingNav } from "./landing/LandingNav";
@@ -28,7 +28,7 @@ export function LandingPage() {
         <HeroSection />
         <ProblemSection />
         <WorkflowSection />
-        <WorkflowMedia />
+        <CollectionFilm />
         <OperationsPreview />
         <RoleSection />
         <TraceabilitySection />

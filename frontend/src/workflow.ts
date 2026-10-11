@@ -41,12 +41,18 @@ export interface ReadinessDraft {
   confirmedBy?: string;
 }
 
+export function isCollectionDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const parsed = new Date(`${value}T00:00:00Z`);
+  return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+}
+
 export function readinessRequest(draft: ReadinessDraft): {
   request?: ReadinessRequest;
   errors: Record<string, string>;
 } {
   const errors: Record<string, string> = {};
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(draft.collectionDate)) {
+  if (!isCollectionDate(draft.collectionDate)) {
     errors.collectionDate = "Choose a valid collection date.";
   }
   if (draft.status === "NOT_READY") {
@@ -67,8 +73,8 @@ export function readinessRequest(draft: ReadinessDraft): {
   if (!Number.isFinite(kg) || kg <= 0 || kg > 5000) {
     errors.confirmedKg = "Enter a quantity above 0 and no more than 5,000 kg.";
   }
-  if (!/^\d{2}:\d{2}$/.test(draft.windowStart)
-    || !/^\d{2}:\d{2}$/.test(draft.windowEnd)
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(draft.windowStart)
+    || !/^([01]\d|2[0-3]):[0-5]\d$/.test(draft.windowEnd)
     || draft.windowStart >= draft.windowEnd) {
     errors.window = "Pickup end time must be later than the start time.";
   }
