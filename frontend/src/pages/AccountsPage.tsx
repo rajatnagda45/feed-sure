@@ -9,6 +9,25 @@ function message(reason: unknown) {
   return reason instanceof Error ? reason.message : "Could not connect. Check the connection and retry.";
 }
 
+function initialsOf(account: Account): string {
+  const source = (account.organisation || account.loginId || "F").trim();
+  const parts = source.split(/[\s@._-]+/).filter(Boolean).slice(0, 2);
+  return parts.map((p) => p[0]?.toUpperCase() ?? "").join("") || "F";
+}
+
+function dashboardHref(account: Account): string | null {
+  if (account.status !== "ACTIVE") return null;
+  switch (account.role) {
+    case "kitchen":
+      return account.generatorId ? `/g/${encodeURIComponent(account.generatorId)}` : null;
+    case "owner": return "/owner";
+    case "cbg":
+    case "admin": return "/admin";
+    case "driver": return account.planKey ? `/driver/${encodeURIComponent(account.planKey)}` : "/driver";
+    default: return null;
+  }
+}
+
 function AccountEditor({ account, refresh }: { account: Account; refresh: (message: string) => void }) {
   const [fields, setFields] = useState({ organisation: account.organisation, contact: account.contact, address: account.address });
   const [password, setPassword] = useState("");
@@ -140,30 +159,86 @@ export function MyAccountPage() {
     } catch (reason) { setError(message(reason)); }
     finally { setBusy(false); }
   }
-  return <main className="auth-shell"><section className="token-panel">
-    <h1>My profile</h1>
-    {account && <><p><strong>{account.loginId}</strong> · {accountLabels[account.role]}</p><p>{account.organisation}</p>
-      {account.status === "PENDING" && <p role="status">{account.role === "admin" || account.role === "driver" ? "This managed account needs activation by an Admin." : "Complete your profile below to activate access automatically. No Admin approval is required."}</p>}
-      {notice && <p role="status" className="notice success">{notice}</p>}
-      <ProfileDetails key={`${account.id}:${account.revision}`} account={account} onSaved={(result) => { setAccount(result); setNotice(result.status === "ACTIVE" ? "Profile saved. Your access is active." : "Profile saved. Complete the remaining details to activate access."); refresh(); }} />
-      <h2>Login and security</h2><p>Your sign-in email is shown above. Contact the Admin if you need to change it.</p>
-      <form onSubmit={(event) => void save(event, "password")}><fieldset className="login-fields" disabled={busy || account.status !== "ACTIVE"}>
-        <label className="field"><span>Current password</span><input type="password" required maxLength={256} autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.currentTarget.value)} /></label>
-        <label className="field"><span>New password (at least 12 characters)</span><input type="password" required minLength={12} maxLength={256} autoComplete="new-password" value={password} onChange={(event) => setPassword(event.currentTarget.value)} /></label>
-        <label className="field"><span>Confirm new password</span><input type="password" required minLength={12} maxLength={256} autoComplete="new-password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.currentTarget.value)} /></label>
-        <button className="button button-primary" type="submit">Change password and sign out</button>
-      </fieldset></form>
-      <details className="account-delete"><summary>Delete my account</summary><p>Login access will be removed. Collection and intake records are retained.</p>
-        <form onSubmit={(event) => void save(event, "delete")}><fieldset className="login-fields" disabled={busy || account.status !== "ACTIVE"}>
-          <label className="field"><span>Current password</span><input type="password" required maxLength={256} autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.currentTarget.value)} /></label>
-          <label className="field"><span>Type {account.loginId} to confirm</span><input required value={confirmation} onChange={(event) => setConfirmation(event.currentTarget.value)} /></label>
-          <button className="button button-secondary" type="submit" disabled={confirmation !== account.loginId}>Delete my account</button>
-        </fieldset></form>
-      </details></>}
-    {error && <p className="inline-error" role="alert">{error}</p>}
-    {loading && <p role="status">Loading your saved profile…</p>}
-    <button className="text-button" type="button" disabled={busy || loading} onClick={() => { setNotice(null); setAccount(null); setAttempt((value) => value + 1); }}>Reload saved profile</button>
-    {!account && !loading && <Link to="/login">Check account access</Link>}
-    <Link className="text-button" to="/">Back to FeedSure</Link>
-  </section></main>;
+  const dash = account ? dashboardHref(account) : null;
+  const locationDone = account?.role === "kitchen"
+    ? Number.isFinite(account.profile?.lat) && Number.isFinite(account.profile?.lng) : null;
+  return <main className="account-page"><div className="account-wrap">
+    {loading && !account && <div className="account-skeleton" role="status" aria-label="Loading your profile">
+      <div className="sk sk-hero" /><div className="sk sk-card" /><div className="sk sk-card" />
+    </div>}
+    {account && <>
+      <header className="account-hero reveal-up">
+        <span className="account-avatar" aria-hidden="true">{initialsOf(account)}</span>
+        <div className="account-hero__id">
+          <p className="context-line">My profile</p>
+          <h1>{account.organisation || account.loginId}</h1>
+          <p className="account-hero__meta">{account.loginId} · {accountLabels[account.role]}</p>
+        </div>
+        <span className={`account-badge account-badge--${account.status.toLowerCase()}`}>
+          <span className="account-badge__dot" aria-hidden="true" />{account.status.toLowerCase()}
+        </span>
+      </header>
+
+      {account.status === "PENDING" && <p className="account-pending reveal-up" role="status">
+        {account.role === "admin" || account.role === "driver" ? "This managed account needs activation by an Admin." : "Complete your profile below to activate your access automatically — no Admin approval is required."}</p>}
+      {notice && <p className="account-flash reveal-up" role="status">{notice}</p>}
+      {error && <p className="inline-error reveal-up" role="alert">{error}</p>}
+
+      <div className="account-columns">
+        <div className="account-col-main">
+          <section className="account-card reveal-up">
+            <div className="account-card__head"><div><p className="context-line">Organisation</p><h2>Site &amp; contact details</h2></div></div>
+            <ProfileDetails key={`${account.id}:${account.revision}`} account={account} onSaved={(result) => { setAccount(result); setNotice(result.status === "ACTIVE" ? "Profile saved — your access is active." : "Profile saved. Complete the remaining details to activate access."); refresh(); }} />
+          </section>
+
+          <section className="account-card reveal-up">
+            <div className="account-card__head"><div><p className="context-line">Security</p><h2>Login &amp; password</h2></div></div>
+            <p className="account-note">Your sign-in email is <strong>{account.loginId}</strong>. Contact the Admin if you need to change it.</p>
+            <form onSubmit={(event) => void save(event, "password")}><fieldset className="login-fields" disabled={busy || account.status !== "ACTIVE"}>
+              <label className="field"><span>Current password</span><input type="password" required maxLength={256} autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.currentTarget.value)} /></label>
+              <div className="account-field-pair">
+                <label className="field"><span>New password (min 12 characters)</span><input type="password" required minLength={12} maxLength={256} autoComplete="new-password" value={password} onChange={(event) => setPassword(event.currentTarget.value)} /></label>
+                <label className="field"><span>Confirm new password</span><input type="password" required minLength={12} maxLength={256} autoComplete="new-password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.currentTarget.value)} /></label>
+              </div>
+              <button className="button button-primary" type="submit">Change password &amp; sign out</button>
+            </fieldset></form>
+          </section>
+
+          <section className="account-card account-card--danger reveal-up">
+            <div className="account-card__head"><div><p className="context-line">Danger zone</p><h2>Delete my account</h2></div></div>
+            <details className="account-delete"><summary>I want to delete my account</summary><p className="account-note">Login access will be removed and all sessions signed out. Your collection and intake records are retained.</p>
+              <form onSubmit={(event) => void save(event, "delete")}><fieldset className="login-fields" disabled={busy || account.status !== "ACTIVE"}>
+                <label className="field"><span>Current password</span><input type="password" required maxLength={256} autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.currentTarget.value)} /></label>
+                <label className="field"><span>Type <code>{account.loginId}</code> to confirm</span><input required value={confirmation} onChange={(event) => setConfirmation(event.currentTarget.value)} /></label>
+                <button className="button button-danger" type="submit" disabled={confirmation !== account.loginId}>Delete my account</button>
+              </fieldset></form>
+            </details>
+          </section>
+        </div>
+
+        <aside className="account-col-side">
+          <section className="account-card account-summary reveal-up">
+            <h3>Account overview</h3>
+            <dl className="account-facts">
+              <div><dt>Role</dt><dd>{accountLabels[account.role]}</dd></div>
+              <div><dt>Status</dt><dd className={`account-facts__status account-facts__status--${account.status.toLowerCase()}`}>{account.status.toLowerCase()}</dd></div>
+              {account.contact && <div><dt>Contact</dt><dd>{account.contact}</dd></div>}
+              {account.address && <div><dt>Address</dt><dd>{account.address}</dd></div>}
+              {typeof account.capacityKg === "number" && <div><dt>Reviewed capacity</dt><dd>{account.capacityKg.toLocaleString("en-IN")} kg/day</dd></div>}
+              {locationDone !== null && <div><dt>Pickup location</dt><dd className={locationDone ? "account-facts__ok" : "account-facts__warn"}>{locationDone ? "Confirmed" : "Incomplete"}</dd></div>}
+            </dl>
+            <div className="account-side-actions">
+              {dash && account.status === "ACTIVE" && <Link className="button button-primary button-full" to={dash}>Open my dashboard</Link>}
+              <button className="text-button" type="button" disabled={busy || loading} onClick={() => { setNotice(null); setAccount(null); setAttempt((value) => value + 1); }}>{loading ? "Reloading…" : "Reload saved profile"}</button>
+              <Link className="text-button" to="/">Back to FeedSure</Link>
+            </div>
+          </section>
+        </aside>
+      </div>
+    </>}
+    {!account && !loading && <section className="account-card reveal-up"><h1>My profile</h1>
+      {error && <p className="inline-error" role="alert">{error}</p>}
+      <div className="account-side-actions"><Link className="button button-primary" to="/login">Check account access</Link>
+        <button className="text-button" type="button" onClick={() => { setNotice(null); setAttempt((value) => value + 1); }}>Retry</button></div></section>}
+  </div></main>;
 }

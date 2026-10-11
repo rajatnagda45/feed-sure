@@ -36,8 +36,8 @@ export function ProfileDetails({ account, onSaved }: { account: Account; onSaved
     } catch (issue) { setError(issue instanceof Error ? issue.message : "Could not save. Your entries are still here; retry when connected."); }
     finally { setBusy(false); }
   }
-  return <section aria-label="Profile details"><h2>Site and contact details</h2>
-    <p>Saving complete profile details activates your access automatically. Changes update future collection plans; dispatched trips and past receipts keep their recorded details.</p>
+  return <section aria-label="Profile details">
+    <p className="account-note">Saving complete profile details activates your access automatically. Changes update future collection plans; dispatched trips and past receipts keep their recorded details.</p>
     <form onSubmit={(event) => void save(event)}><fieldset className="login-fields" disabled={busy}>
       {(Object.keys(fields) as (keyof typeof fields)[]).map((key) => <label className="field" key={key}>
         <span>{key === "organisation" ? "Organisation / site name" : key === "contact" ? "Contact name and phone or email" : kitchen ? "Pickup address" : "Plant / organisation address"}</span>
