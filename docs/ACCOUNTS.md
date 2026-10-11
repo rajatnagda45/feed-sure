@@ -70,6 +70,10 @@ DynamoDB retains collection, dispatch and intake data; the private Supabase imag
 
 The launcher safely reads `.env`, starts the API on 8797 and writes only public settings to ignored
 `frontend/.env.supabase.local`. `-Check` validates local fields; it does not contact Supabase.
+After pulling changes that add frontend dependencies, stop Vite, run `npm ci` in `frontend`,
+then restart the frontend command above. The dev script rebuilds Vite's dependency cache on
+startup so earlier unresolved 3D imports are not reused. Installing packages while Vite is
+already running still requires restarting that process; a production build does not reset it.
 `-PrepareOnly` writes the public Vite environment without starting servers. The file is UTF-8
 without a byte-order mark so Windows PowerShell cannot hide its first setting from Vite.
 The runner mocks AWS DynamoDB, routing and analysis. Auth, account persistence and private image
