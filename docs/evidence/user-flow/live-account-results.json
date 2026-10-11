@@ -1,0 +1,13 @@
+{
+  "checks": [
+    "Public email/password signup issues a session without email delivery",
+    "Pending access denial and approval verified during the initial run",
+    "Approval enrolls supplier; profile corrections reject stale dispatch and appear in replanning",
+    "Driver creation, approval, assignment, pickup retry, gate intake and supplier records pass",
+    "Logout revokes backend access; a fresh email/password login restores access"
+  ],
+  "mode": "Hosted Supabase Auth and registry; local real handlers and Moto",
+  "status": "PASS",
+  "testAccountsRetained": true,
+  "testAccountCountCreated": 3
+}

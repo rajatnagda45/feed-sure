@@ -1,6 +1,7 @@
+import { useAccount } from "../auth";
+import { LocationPicker } from "../components/LocationPicker";
 import { FormEvent, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { supabase } from "../supabase";
 import { Account, accountLabels, accountRequest, clearAccountAccess } from "../accounts";
 
 function message(reason: unknown) {
@@ -11,6 +12,10 @@ function AccountEditor({ account, refresh }: { account: Account; refresh: (messa
   const [fields, setFields] = useState({ organisation: account.organisation, contact: account.contact, address: account.address });
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
+  const [locationConfirmed, setLocationConfirmed] = useState(false);
+  const [editingLocation, setEditingLocation] = useState(false);
+  const [profile, setProfile] = useState(account.profile);
+  const [capacity, setCapacity] = useState(String(account.capacityKg ?? ""));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -40,11 +45,15 @@ function AccountEditor({ account, refresh }: { account: Account; refresh: (messa
       {account.status !== "ACTIVE" && <button type="button" className="button button-primary" disabled={busy} onClick={() => void action("activate")}>{account.status === "PENDING" ? "Approve account" : "Reactivate account"}</button>}
       {account.status === "ACTIVE" && <button type="button" className="button button-secondary" disabled={busy} onClick={() => void action("suspend")}>Suspend account</button>}
     </div>
-    <details><summary>Edit account details</summary><form onSubmit={(event) => { event.preventDefault(); void action("update", fields); }}>
+    <details><summary>Edit account details</summary><form onSubmit={(event) => { event.preventDefault(); void action("update", { ...fields, ...(account.role === "kitchen" && profile ? { profile } : {}), ...(["cbg", "owner"].includes(account.role) ? { capacityKg: Number(capacity) } : {}) }); }}>
       <fieldset className="login-fields" disabled={busy}>
         {(Object.keys(fields) as (keyof typeof fields)[]).map((key) => <label className="field" key={key}><span>{key === "organisation" ? "Organisation / plant name" : key === "contact" ? "Contact" : "Address"}</span>
           <input required maxLength={200} value={fields[key]} onChange={(event) => setFields({ ...fields, [key]: event.currentTarget.value })} /></label>)}
-        <button className="button button-secondary" type="submit">Save details</button>
+        {account.role === "kitchen" && <><label className="field">Generator type<select value={profile?.type ?? "hotel"} onChange={(event) => setProfile((current) => ({ lat: current?.lat ?? 0, lng: current?.lng ?? 0, type: event.currentTarget.value }))}><option value="hotel">Hotel</option><option value="hostel_mess">Hostel / mess</option><option value="pg">PG</option><option value="restaurant">Restaurant</option><option value="canteen">Canteen</option></select></label>
+          <details onToggle={(event) => { if (event.currentTarget.open) setEditingLocation(true); }}><summary>Correct pickup location</summary><LocationPicker address={fields.address} onChange={(point) => { setLocationConfirmed(Boolean(point)); if (point) setProfile((current) => ({ ...point, type: current?.type ?? "hotel" })); }} /></details>
+          <p>Changes apply to future planning. Previously dispatched trips keep their original pickup location.</p></>}
+        {["cbg", "owner"].includes(account.role) && <label className="field">Reviewed capacity (kg/day)<input type="number" required min="0.01" step="any" max="1000000000" value={capacity} onChange={(event) => setCapacity(event.currentTarget.value)} /></label>}
+        <button className="button button-secondary" type="submit" disabled={account.role === "kitchen" && (editingLocation || fields.address !== account.address) && !locationConfirmed}>Save details</button>
       </fieldset>
     </form></details>
     <details><summary>Reset password</summary><form onSubmit={(event) => { event.preventDefault(); void action("password", { password }); }}>
@@ -96,6 +105,7 @@ export function AccountsPage() {
 
 export function MyAccountPage() {
   const navigate = useNavigate();
+  const { signOut } = useAccount();
   const [account, setAccount] = useState<Account | null>(null);
   const [password, setPassword] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
@@ -119,8 +129,7 @@ export function MyAccountPage() {
       await accountRequest("/auth/account", { action, expectedRevision: account.revision, currentPassword,
         ...(action === "password" ? { password } : {}),
       });
-      const result = await supabase?.auth.signOut({ scope: "local" });
-      if (result?.error) throw new Error("Account updated. Sign-out failed; retry Sign out before signing in again.");
+      if (!await signOut()) throw new Error("Account updated. Retry Sign out before signing in again.");
       clearAccountAccess(); navigate("/login", { replace: true });
     } catch (reason) { setError(message(reason)); }
     finally { setBusy(false); }

@@ -1,15 +1,31 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
 import { accountPath, useAccount } from "../auth";
 import { supabase, supabaseEnabled } from "../supabase";
+import { authMessage } from "../network";
+import { authRedirect, emailDeliveryEnabled } from "../authEmail";
 
 export function LoginPage() {
-  const { account, loading, error: verificationError } = useAccount();
+  const { account, userId, pending, recovery, refresh, loading, error: verificationError } = useAccount();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState("");
+  const [cooldown, setCooldown] = useState(0);
+  useEffect(() => { if (!cooldown) return; const timer = setTimeout(() => setCooldown(cooldown - 1), 1000); return () => clearTimeout(timer); }, [cooldown]);
+  if (recovery) return <Navigate to="/reset-password" replace />;
   if (account && !loading) return <Navigate to={accountPath(account)} replace />;
+  async function resend() {
+    if (!supabase || busy || cooldown || !email.trim()) return;
+    setBusy(true); setError(null);
+    try {
+      const result = await supabase.auth.resend({ type: "signup", email: email.trim(), options: { emailRedirectTo: authRedirect("/login") } });
+      if (result.error) throw result.error;
+      setNotice("If this account needs confirmation, an email has been sent. Check your inbox and spam folder.");
+    } catch (issue) { setError(authMessage(issue)); }
+    finally { setBusy(false); setCooldown(60); }
+  }
   async function login(event: FormEvent) {
     event.preventDefault();
     if (!supabase) return;
@@ -18,13 +34,16 @@ export function LoginPage() {
       const result = await supabase.auth.signInWithPassword({ email: email.trim(), password });
       if (result.error) throw result.error;
       setPassword("");
-    } catch (issue) { setError(issue instanceof Error ? issue.message : "Login failed. Try again."); }
+    } catch (issue) { setError(authMessage(issue)); }
     finally { setBusy(false); }
   }
   return <main className="auth-shell"><section className="token-panel">
     <Link className="brand" to="/"><span className="brand-mark">F</span><span>FeedSure CBG</span></Link>
     <h1>Sign in</h1>
     <p>Sign in with your email after your registration has been approved.</p>
+    {userId && !loading && <div role="status"><h2>{pending ? "Waiting for Admin approval" : "Account access needs attention"}</h2>
+      <p>{pending ? "Your registration is awaiting review. After approval, sign out and sign in again to activate your access." : "Retry the account check, or sign out below and sign in again. Contact your plant Admin if access was suspended."}</p>
+      <button className="button button-secondary" onClick={refresh}>Check account status</button><Link to="/account">View my registration</Link></div>}
     {!supabase ? <p role="status">{supabaseEnabled ? "Supabase configuration is incomplete." : "Account login is not configured for this installation. Use your private access link."}</p>
       : <form onSubmit={login}>
         <label className="field"><span>Email</span><input type="email" autoComplete="username" required
@@ -35,6 +54,9 @@ export function LoginPage() {
         <button className="button button-primary" disabled={busy || loading} type="submit">
           {busy || loading ? "Signing in…" : "Sign in"}</button>
       </form>}
-    {supabase && <Link className="text-button" to="/register">Register your organisation or CBG team</Link>}
+    {notice && <p role="status">{notice}</p>}
+    {supabase && <><Link className="text-button" to="/forgot-password">Forgot password</Link>
+      {emailDeliveryEnabled && <button className="text-button" disabled={busy || cooldown > 0 || !email.trim()} onClick={() => void resend()}>{cooldown ? `Resend available in ${cooldown}s` : "Resend confirmation"}</button>}
+      <Link className="text-button" to="/register">Register your organisation or CBG team</Link></>}
   </section></main>;
 }

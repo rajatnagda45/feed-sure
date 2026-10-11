@@ -1,3 +1,4 @@
+import { normalizeLanguage } from "./language";
 import { Lang } from "./api";
 
 const strings = {
@@ -94,5 +95,5 @@ const strings = {
 } as const;
 
 export function t(lang: Lang) {
-  return strings[lang];
+  return strings[normalizeLanguage(lang)];
 }

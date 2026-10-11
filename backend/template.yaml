@@ -3,6 +3,10 @@ Transform: AWS::Serverless-2016-10-31
 Description: FeedSure CBG v3 operational backend
 
 Parameters:
+  GeocodingUrl:
+    Type: String
+    Default: ""
+    Description: HTTPS Nominatim-compatible provider endpoint; configure your own production service.
   AuthProvider:
     Type: String
     Default: tokens
@@ -283,6 +287,7 @@ Globals:
         NVIDIA_TIMEOUT_SECONDS: !Ref NvidiaTimeoutSeconds
         MOCK_BEDROCK: !Ref MockBedrock
         MOCK_BEDROCK_FIXTURE: !Ref MockBedrockFixture
+        GEOCODING_URL: !Ref GeocodingUrl
         AUTH_PROVIDER: !Ref AuthProvider
         PHOTO_STORAGE_PROVIDER: !Ref PhotoStorageProvider
         SUPABASE_ACCOUNT_MANAGEMENT: !Ref SupabaseAccountManagement
@@ -427,6 +432,30 @@ Resources:
             ApiId: !Ref HttpApi
             Path: /auth/session
             Method: GET
+        LocationSearch:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /locations/find
+            Method: GET
+        DriverList:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /auth/drivers
+            Method: GET
+        DriverAssign:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /auth/drivers/{accountId}
+            Method: POST
+        RenewAccess:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /plans/{planKey}/renew-access
+            Method: POST
         RegistrationStatus:
           Type: HttpApi
           Properties:

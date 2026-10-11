@@ -46,8 +46,8 @@ it("stops before signup when the account migration or backend is unavailable", a
   expect(supabase!.auth.signUp).not.toHaveBeenCalled();
 });
 
-it("explains the SMTP requirement when Supabase cannot send to a non-team address", async () => {
+it("explains the no-email setup when Supabase still requires delivery", async () => {
   vi.mocked(supabase!.auth.signUp).mockResolvedValue({ data: { user: null, session: null },
     error: new AuthApiError("Email address not authorized", 403, "email_address_not_authorized") });
-  await expect(registerAccount(payload)).rejects.toThrow("configure Supabase SMTP");
+  await expect(registerAccount(payload)).rejects.toThrow("no-email pilot setup");
 });

@@ -35,6 +35,7 @@ before(async () => {
   await db.query("update auth.users set raw_app_meta_data=$1 where id=$2",
     [{ feedsure_account_role: "admin" }, uid(20)]);
   await db.exec(await readFile(new URL("../../supabase/migrations/202610110003_admin_creation_role.sql", import.meta.url), "utf8"));
+  await db.exec(await readFile(new URL("../../supabase/migrations/20261011150000_user_flows.sql", import.meta.url), "utf8"));
 });
 after(async () => { await db.close(); });
 
@@ -163,4 +164,41 @@ test("last Admin protection and deletion scrub the profile while retaining linka
 test("signout is enforced by checking that the Auth session still exists", async () => {
   await db.query("delete from auth.sessions where id=$1", [sid(2)]);
   assert.equal((await rpc(2, "identity")).status, 401);
+});
+
+
+test("trusted driver creation stays pending and public metadata cannot request driver access", async () => {
+  await user(40, {feedsure_registration: {...registration, role: "driver"}});
+  assert.equal((await rpc(40,"identity")).role,"kitchen");
+  await db.query("update auth.users set raw_app_meta_data=$1 where id=$2", [{feedsure_account_role:"driver"},uid(40)]);
+  const driver=await rpc(40,"identity");
+  assert.equal(driver.role,"driver"); assert.equal(driver.status,"PENDING");
+});
+test("only dispatchers assign drivers and assignment revisions prevent overwrites", async () => {
+  await user(41,{}, {feedsure_role:"DRIVER"});
+  await user(42,{}, {feedsure_role:"DRIVER"});
+  await user(44,{}, {feedsure_role:"GENERATOR",generator_id:"audit-supplier"});
+  const trip="2026-10-12#p-test";
+  assert.equal((await rpc(44,"assign_driver",41,1,{planKey:trip})).status,403);
+  assert.equal((await rpc(1,"assign_driver",41,1,{planKey:trip})).plan_key,trip);
+  assert.equal((await rpc(1,"assign_driver",41,1,{planKey:trip})).status,409);
+  assert.equal((await rpc(1,"assign_driver",42,1,{planKey:trip})).plan_key,trip);
+  assert.equal((await rpc(41,"identity")).plan_key,null);
+});
+test("reviewed location corrections validate and advance the account revision", async () => {
+  await user(43,{feedsure_registration:registration});
+  assert.equal((await rpc(1,"update",43,1,{profile:{lat:999,lng:0,type:"hotel"}})).status,400);
+  const result=await rpc(1,"update",43,1,{address:"New entrance",profile:{lat:12.7,lng:77.5,type:"canteen"}});
+  assert.equal(result.revision,2); assert.equal(result.profile.lat,12.7); assert.equal(result.address,"New entrance");
+});
+
+test("workflow migration can replay after manual dashboard application without resetting accounts", async () => {
+  const before = await rpc(43, "identity");
+  await db.exec(await readFile(new URL("../../supabase/migrations/20261011150000_user_flows.sql", import.meta.url), "utf8"));
+  assert.deepEqual(await rpc(43, "identity"), before);
+  const privileges = await db.query(`select
+    has_function_privilege('anon','public.feedsure_accounts_api(uuid,uuid,text,uuid,integer,jsonb,uuid)','execute') as anon,
+    has_function_privilege('authenticated','public.feedsure_accounts_api(uuid,uuid,text,uuid,integer,jsonb,uuid)','execute') as browser,
+    has_function_privilege('service_role','public.feedsure_accounts_api(uuid,uuid,text,uuid,integer,jsonb,uuid)','execute') as backend`);
+  assert.deepEqual(privileges.rows[0], {anon: false, browser: false, backend: true});
 });

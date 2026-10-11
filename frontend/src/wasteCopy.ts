@@ -1,3 +1,4 @@
+import { normalizeLanguage } from "./language";
 import { Lang } from "./api";
 
 const copy = {
@@ -61,4 +62,4 @@ const copy = {
   },
 } as const;
 
-export const wasteCopy = (language: Lang) => copy[language];
+export const wasteCopy = (language: Lang) => copy[normalizeLanguage(language)];

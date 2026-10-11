@@ -1,3 +1,4 @@
+import { normalizeLanguage } from "../language";
 import { useAccount } from "../auth";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -98,10 +99,10 @@ export function GeneratorPage() {
       const generator = generatorResponse.generator;
       if (controller.signal.aborted) return;
       setProfile(generator);
-      setLanguage(generator.defaultLang);
+      setLanguage(normalizeLanguage(generator.defaultLang));
       setDraft((current) => ({
         ...current,
-        lang: generator.defaultLang,
+        lang: normalizeLanguage(generator.defaultLang),
         windowStart: generator.pickupWindow.start,
         windowEnd: generator.pickupWindow.end,
       }));

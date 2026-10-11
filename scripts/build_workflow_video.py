@@ -5,10 +5,10 @@ No runtime application dependencies are installed. WebP source images are commit
 """
 
 import argparse
-from pathlib import Path
 import shutil
 import subprocess
 import tempfile
+from pathlib import Path
 
 
 def main() -> None:
@@ -34,7 +34,8 @@ def main() -> None:
                 "drawbox=x=0:y=548:w=iw:h=172:color=0x173f32@0.95:t=fill,"
                 "drawtext=fontfile=font.ttf:textfile=title.txt:fontcolor=0xdef0c6:fontsize=24:x=48:y=573,"
                 "drawtext=fontfile=font.ttf:textfile=subtitle.txt:fontcolor=white:fontsize=34:x=48:y=614,"
-                "drawtext=fontfile=font.ttf:text='FeedSure / AI-generated illustration':fontcolor=white:fontsize=16:x=48:y=680,"
+                "drawtext=fontfile=font.ttf:text='FeedSure / AI-generated illustration':"
+                "fontcolor=white:fontsize=16:x=48:y=680,"
                 "fade=t=in:st=0:d=0.35,fade=t=out:st=5.65:d=0.35"
             )
             subprocess.run([
@@ -43,7 +44,9 @@ def main() -> None:
                 "-vf", filters, "-c:v", "libx264", "-preset", "medium", "-crf", "25",
                 "-pix_fmt", "yuv420p", "-an", f"scene-{index}.mp4",
             ], cwd=work, check=True)
-        (work / "scenes.txt").write_text("".join(f"file 'scene-{i}.mp4'\n" for i in range(3)), encoding="utf-8")
+        (work / "scenes.txt").write_text(
+            "".join(f"file 'scene-{i}.mp4'\n" for i in range(3)), encoding="utf-8"
+        )
         subprocess.run([
             encoder, "-hide_banner", "-loglevel", "error", "-y", "-f", "concat",
             "-safe", "0", "-i", "scenes.txt", "-c", "copy", "-movflags", "+faststart",

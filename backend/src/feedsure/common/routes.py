@@ -1,6 +1,10 @@
 """One HTTP route inventory used by local wiring and infrastructure verification."""
 
 ROUTES = [
+    ("GET", "/locations/find"),
+    ("GET", "/auth/drivers"),
+    ("POST", "/auth/drivers/{accountId}"),
+    ("POST", "/plans/{planKey}/renew-access"),
     ("GET", "/auth/session"),
     ("GET", "/auth/registration"),
     ("GET", "/auth/account"),

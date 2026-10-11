@@ -60,7 +60,7 @@ if ($Check) {
 
 # Scope configuration to this process and its demo child. No machine settings change.
 foreach ($entry in $settings.GetEnumerator()) {
-    if ($entry.Key -match '^(SUPABASE_|AUTH_PROVIDER$|PHOTO_STORAGE_PROVIDER$|PHOTO_|UPLOAD_|STAGE$)') {
+    if ($entry.Key -match '^(GEOCODING_URL$|SUPABASE_|AUTH_PROVIDER$|PHOTO_STORAGE_PROVIDER$|PHOTO_|UPLOAD_|STAGE$)') {
         [Environment]::SetEnvironmentVariable($entry.Key, $entry.Value, 'Process')
     }
 }
@@ -68,6 +68,7 @@ foreach ($entry in $settings.GetEnumerator()) {
 # Sync only public frontend settings. Never copy the server role key to Vite.
 $frontendEnvironment = Join-Path $projectRoot 'frontend/.env.supabase.local'
 $publicSettings = [ordered]@{
+    VITE_AUTH_EMAIL_MODE = $(if ($settings['VITE_AUTH_EMAIL_MODE'] -eq 'email') { 'email' } else { 'admin' })
     VITE_API_BASE_URL = "http://localhost:$ApiPort"
     VITE_SUPABASE_URL = $settings['SUPABASE_URL'].TrimEnd('/')
     VITE_SUPABASE_PUBLISHABLE_KEY = $settings['SUPABASE_PUBLISHABLE_KEY']
@@ -75,7 +76,7 @@ $publicSettings = [ordered]@{
 $frontendLines = @()
 if (Test-Path -LiteralPath $frontendEnvironment) {
     $frontendLines = @(Get-Content -LiteralPath $frontendEnvironment | Where-Object {
-        $_ -notmatch '^\s*(VITE_API_BASE_URL|VITE_SUPABASE_URL|VITE_SUPABASE_PUBLISHABLE_KEY)\s*='
+        $_ -notmatch '^\s*(VITE_AUTH_EMAIL_MODE|VITE_API_BASE_URL|VITE_SUPABASE_URL|VITE_SUPABASE_PUBLISHABLE_KEY)\s*='
     })
 }
 foreach ($entry in $publicSettings.GetEnumerator()) { $frontendLines += "$($entry.Key)=$($entry.Value)" }

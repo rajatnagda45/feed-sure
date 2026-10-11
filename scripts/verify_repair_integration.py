@@ -73,7 +73,7 @@ def run(access: dict, *, failed_analysis: bool) -> dict:
         except HTTPError as error:
             status, raw = error.code, error.read()
         assert status == expected, (
-            f"{request.method} {path.split('?')[0]}: {status}, expected {expected}"
+            f"{request.get_method()} {path.split('?')[0]}: {status}, expected {expected}"
         )
         return json.loads(raw) if raw else None
 

@@ -1,10 +1,12 @@
-import { supabase } from "../supabase";
+import { DriverAssignment } from "../components/DriverAssignment";
+
 import { useAccount } from "../auth";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import {
   ApiError,
+  apiRequest,
   OperationGenerator,
   OperationsSnapshot,
   PlanDetailsResponse,
@@ -83,7 +85,7 @@ function displayError(error: unknown): string {
 }
 
 export function PlantPage() {
-  const { account } = useAccount();
+  const { account, signOut, signingOut } = useAccount();
   const [adminToken, setAdminToken] = useState(() => account ? "supabase-account" : sessionStorage.getItem("feedsure:admin") ?? "");
   const [tokenDraft, setTokenDraft] = useState("");
   const [date, setDate] = useState(() => sessionStorage.getItem("feedsure:demo-date") ?? serviceDateInIndia());
@@ -104,6 +106,7 @@ export function PlantPage() {
   const [driverAccess, setDriverAccess] = useState<{ token: string; expiresAt: string; planKey: string } | null>(null);
   const [supplyFilter, setSupplyFilter] = useState("all");
   const [driverLinkVisible, setDriverLinkVisible] = useState(false);
+  const renewalAttempt = useRef<string | null>(null);
   const dispatchAttempt = useRef<{ signature: string; key: string } | null>(null);
   const phoneEditor = useRef<HTMLElement>(null);
 
@@ -186,7 +189,7 @@ export function PlantPage() {
   };
 
   const clearToken = () => {
-    if (account) { void supabase?.auth.signOut({ scope: "local" }); return; }
+    if (account) { void signOut(); return; }
     sessionStorage.removeItem("feedsure:admin");
     setAdminToken("");
     setSnapshot(null);
@@ -263,6 +266,20 @@ export function PlantPage() {
     } finally {
       setDispatching(false);
     }
+  };
+
+  const renewAccess = async () => {
+    if (!activePlan || dispatching) return;
+    setDispatching(true); setError(null);
+    renewalAttempt.current ??= createIdempotencyKey("renew-access");
+    try {
+      const result = await apiRequest<{ plan: PlanEnvelope; driverAccess: { token: string; expiresAt: string } }>(`/plans/${encodeURIComponent(activePlan.planKey)}/renew-access`, {
+        method: "POST", adminToken, idempotencyKey: renewalAttempt.current, body: JSON.stringify({ expectedVersion: activePlan.version }),
+      });
+      setDriverAccess({ ...result.driverAccess, planKey: activePlan.planKey }); renewalAttempt.current = null;
+      setMessage("Driver access renewed. Previously issued private links are revoked; share the new link if using token access.");
+    } catch (issue) { setError(displayError(issue)); }
+    finally { setDispatching(false); }
   };
 
   const copyDriverLink = async () => {
@@ -347,7 +364,7 @@ export function PlantPage() {
         <Link className="brand" to="/"><span className="brand-mark">F</span><span>FeedSure · Operations</span></Link>
         <div className="header-actions">
           {snapshot?.simulated && <span className="data-tag">Simulated supplier data</span>}
-          <button className="text-button" type="button" onClick={clearToken}>Lock</button>
+          <button className="text-button" type="button" onClick={clearToken}>{account ? (signingOut ? "Signing out…" : "Sign out") : "Lock"}</button>
         </div>
       </header>
 
@@ -412,17 +429,19 @@ export function PlantPage() {
                   {activePlan.mandatoryConflicts.length > 0 && <p className="notice error">Mandatory conflicts: {activePlan.mandatoryConflicts.map((item) => `${item.generatorId} (${item.reason})`).join(", ")}. Dispatch is blocked.</p>}
                   <ol className="route-list">
                     <li className="depot-stop"><span className="stop-number plant-number">P</span><div><strong>Depart CBG plant</strong><span>{activePlan.plan.startAt} · {snapshot.depot.lat.toFixed(4)}, {snapshot.depot.lng.toFixed(4)}</span></div></li>
-                    {activePlan.plan.stops.map((stop, index) => <li key={stop.generatorId}><span className="stop-number">{index + 1}</span><div><strong>{stop.name}</strong><span>{stop.address}</span><span>Arrival {stop.arrivalAt} · service {stop.serviceStartAt}–{stop.serviceEndAt}</span><span>Window {stop.window.start}–{stop.window.end} · {formatKg(stop.confirmedKg)} confirmed ({stop.weightSource.toLowerCase()})</span></div><div><strong>{formatKg(stop.expectedCollectionKg)} expected</strong><span>{formatKg(stop.reservedLoadKg)} reserved{stop.mandatory ? " · mandatory" : ""}</span></div></li>)}
+                    {activePlan.plan.stops.map((stop, index) => <li key={stop.generatorId}><span className="stop-number">{index + 1}</span><div><strong>{stop.name}</strong><span>{stop.address}</span>{activePlan.travelLegs?.[index] && <span>{activePlan.travelLegs[index].km.toFixed(1)} km · {Math.round(activePlan.travelLegs[index].min)} min travel from previous stop ({activePlan.travelLegs[index].source === "fallback" ? "estimated" : "road matrix"})</span>}<span>Arrival {stop.arrivalAt} · service {stop.serviceStartAt}–{stop.serviceEndAt}</span><span>Window {stop.window.start}–{stop.window.end} · {formatKg(stop.confirmedKg)} confirmed ({stop.weightSource.toLowerCase()})</span></div><div><strong>{formatKg(stop.expectedCollectionKg)} expected</strong><span>{formatKg(stop.reservedLoadKg)} reserved{stop.mandatory ? " · mandatory" : ""}</span></div></li>)}
                     <li className="depot-stop"><span className="stop-number plant-number">P</span><div><strong>Return to CBG plant</strong><span>{activePlan.plan.returnAt} · unload and record net intake</span></div></li>
                   </ol>
                   {(staleDraft || !controlsMatchPlan) && activePlan.state === "DRAFT" && <p className="notice warning">{staleDraft ? "Confirmations changed since this draft." : "Controls differ from the saved draft."} Re-plan before dispatch.</p>}
+                  {account && activePlan.state === "DISPATCHED" && <DriverAssignment planKey={activePlan.planKey} />}
+                  {activePlan.state === "DISPATCHED" && <button className="button button-secondary" disabled={dispatching} onClick={() => void renewAccess()}>Renew driver access</button>}
                   <div className="plan-actions">
                     <button className="button button-primary" type="button" onClick={() => void dispatch()} disabled={loading || dispatching || !controlsMatchPlan || activePlan.inputRevision !== snapshot.inputRevision || activePlan.status !== "FEASIBLE" || activePlan.mandatoryConflicts.length > 0 || activePlan.plan.stops.length === 0 || activePlan.state !== "DRAFT"}>{dispatching ? "Dispatching…" : activePlan.state === "DISPATCHED" ? "Dispatched" : "Dispatch reviewed version"}</button>
-                    {activePlan.state === "DISPATCHED" && !currentDriverAccess && <button className="button button-secondary" type="button" onClick={() => void dispatch()} disabled={dispatching}>Retrieve private driver link</button>}
-                    {currentDriverAccess && <button className="button button-secondary" type="button" onClick={() => void copyDriverLink()}>Copy private driver link</button>}
+                    {activePlan.state === "DISPATCHED" && !account && !currentDriverAccess && <button className="button button-secondary" type="button" onClick={() => void dispatch()} disabled={dispatching}>Retrieve private driver link</button>}
+                    {!account && currentDriverAccess && <button className="button button-secondary" type="button" onClick={() => void copyDriverLink()}>Copy private driver link</button>}
                   </div>
-                  {activePlan.state === "DISPATCHED" && !currentDriverAccess && <p className="muted">Retrieve the existing private driver link after a refresh. Its original expiry is retained; expired access requires operational support.</p>}
-                  {currentDriverAccess && <aside className="driver-handoff"><h3>Driver handoff</h3><p>Share the private link with the assigned driver. Ask them to check the stop windows, record every outcome while parked, and return to the plant.</p><p>Access expires {new Date(currentDriverAccess.expiresAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })} India time.</p><button type="button" className="text-button" onClick={() => setDriverLinkVisible((value) => !value)}>{driverLinkVisible ? "Hide private link" : "Show private link for manual copy"}</button>{driverLinkVisible && <label className="field"><span>Private driver link · keep off public recordings</span><input readOnly value={driverLink} onFocus={(event) => event.currentTarget.select()} /></label>}</aside>}
+                  {activePlan.state === "DISPATCHED" && !account && !currentDriverAccess && <p className="muted">Retrieve the existing private driver link after a refresh. Its original expiry is retained; expired access requires operational support.</p>}
+                  {!account && currentDriverAccess && <aside className="driver-handoff"><h3>Driver handoff</h3><p>Share the private link with the assigned driver. Ask them to check the stop windows, record every outcome while parked, and return to the plant.</p><p>Access expires {new Date(currentDriverAccess.expiresAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })} India time.</p><button type="button" className="text-button" onClick={() => setDriverLinkVisible((value) => !value)}>{driverLinkVisible ? "Hide private link" : "Show private link for manual copy"}</button>{driverLinkVisible && <label className="field"><span>Private driver link · keep off public recordings</span><input readOnly value={driverLink} onFocus={(event) => event.currentTarget.select()} /></label>}</aside>}
                 </>
               )}
             </div>

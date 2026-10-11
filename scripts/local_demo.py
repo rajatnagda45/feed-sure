@@ -69,6 +69,7 @@ def main() -> None:
         AWS_ENDPOINT_URL="",
         MOCK_LOCATION="true",
         ROUTING_PROVIDER=args.routing_provider,
+        GEOCODING_URL=os.getenv("GEOCODING_URL", "https://nominatim.openstreetmap.org/search"),
         MOCK_BEDROCK="false" if args.photo_provider == "nvidia" else "true",
         PHOTO_ANALYSIS_PROVIDER="nvidia" if args.photo_provider == "nvidia" else "bedrock",
         MOCK_BEDROCK_FIXTURE=args.photo_fixture,

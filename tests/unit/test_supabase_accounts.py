@@ -73,6 +73,10 @@ def managed(http, monkeypatch):  # noqa: F811
                 result = http.rpc_error
             elif data["p_action"] == "identity":
                 result = http.actor
+            elif data["p_action"] == "activate":
+                result = {**http.target, "status": "ACTIVE", "revision": 2}
+            elif data["p_action"] == "sites":
+                result = {"accounts": []}
             elif data["p_action"] == "list":
                 result = {"accounts": [http.target]}
             elif data["p_action"] == "password":
@@ -141,12 +145,63 @@ def test_approval_enrolls_and_scopes_generator_and_restores_after_demo_restart(m
     assert result.status_code == 200, result.text
     db = managed.state.database
     assert db.get("generators", {"generatorId": GID})["pickupStart"] == "06:00"
+    assert db.get("generators", {"generatorId": GID})["defaultLang"] == "en"
     managed.actor = row(role="kitchen")
     assert managed.get("/generators/" + GID, headers=AUTH).status_code == 200
     assert managed.get("/generators/hotel-a", headers=AUTH).status_code == 403
     db.resource.Table(db.table_name("generators")).delete_item(Key={"generatorId": GID})
     assert managed.get("/generators/" + GID, headers=AUTH).status_code == 200
     assert db.get("generators", {"generatorId": GID})["simulated"] is True
+
+
+def test_driver_can_sign_in_without_assignment_but_cannot_open_arbitrary_trip(managed):
+    managed.actor = row(role="driver")
+    result = managed.get("/auth/session", headers=AUTH)
+    assert result.status_code == 200
+    assert result.json()["account"]["role"] == "DRIVER"
+    assert "planKey" not in result.json()["account"]
+    assert managed.get("/generators", headers=AUTH).status_code == 403
+
+
+def test_admin_can_create_pending_driver_without_plant_capacity(managed):
+    response = managed.post(
+        "/auth/accounts",
+        headers=AUTH,
+        json={
+            "role": "driver",
+            "email": "driver@example.test",
+            "password": "long-test-password",
+            "organisation": "Pilot driver",
+            "contact": "Test contact",
+            "address": "Pilot plant",
+        },
+    )
+    assert response.status_code == 200, response.text
+    creation = next(data for path, _, data, _ in managed.calls if path == "/auth/v1/admin/users")
+    assert creation["app_metadata"] == {"feedsure_account_role": "driver"}
+    assert "capacityKg" not in creation["user_metadata"]["feedsure_registration"]
+
+
+def test_newer_site_profile_synchronizes_without_accepting_an_older_revision(managed):
+    from types import SimpleNamespace
+
+    from feedsure.common.accounts import Accounts, public
+
+    registry = Accounts(managed.state.config, SimpleNamespace(db=managed.state.database))
+    account = public({**row(TARGET, "kitchen"), "revision": 3})
+    registry.enroll(account)
+    registry.enroll(
+        {
+            **account,
+            "revision": 4,
+            "address": "New pickup entrance",
+            "profile": {"lat": 12.7, "lng": 77.5, "type": "canteen"},
+        }
+    )
+    registry.enroll(account)
+    stored = managed.state.database.get("generators", {"generatorId": GID})
+    assert stored["address"] == "New pickup entrance"
+    assert stored["lat"] == 12.7 and stored["profileRevision"] == 4
 
 
 def test_registry_revocation_is_checked_on_every_request_without_legacy_fallback(managed):

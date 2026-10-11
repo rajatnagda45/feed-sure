@@ -6,18 +6,22 @@ DynamoDB retains collection, dispatch and intake data; the private Supabase imag
 
 ## Setup and local testing
 
-1. Create a Supabase project. Enable email/password signup, email confirmation and a minimum
-   password length of 12. Set Auth Site URL to `http://localhost:5197` for testing. Configure
-   SMTP/rate limits and Supabase abuse controls for hosted use. Email confirmation and Admin
-   approval are separate requirements.
-   Without custom SMTP, Supabase sends only to project team email addresses, so public signup
-   for other addresses fails. Configure [custom SMTP](https://supabase.com/docs/guides/auth/auth-smtp)
-   for self-registration. For a local test before SMTP is ready, an active Admin can create
-   a confirmed account from `/accounts/new`, then approve it in `/accounts`. This keeps
-   public email confirmation enabled; Admin provisioning does not send a verification email.
+1. Enable email/password signup and a minimum password length of 12. For this pilot's
+   **no-email mode**, open Supabase Authentication > Sign In / Providers > Email, turn
+   **Confirm email OFF**, and save. Keep email/password sign-in enabled. Set
+   `VITE_AUTH_EMAIL_MODE=admin` in the root `.env` used by the launcher (the default).
+   Set Auth Site URL to `http://localhost:5197` for testing. Restart Vite after changing its
+   environment. This uses the email as a login identifier without proving ownership of its
+   inbox; Admins must review registrations before granting access. Forgot password directs
+   the user to an Admin, who verifies their identity and resets the password in Manage accounts.
+   No SMTP is needed for this flow. See [Supabase configuration](https://supabase.com/docs/guides/auth/general-configuration).
+   Existing unconfirmed users may still require operator review/confirmation in Supabase;
+   do not repeatedly retry signup or delete accounts to work around that state.
+   The frontend variable alone does not change the hosted Confirm email setting.
 2. Run `supabase/migrations/202610110001_private_photos.sql`, then
    `supabase/migrations/202610110002_accounts.sql`, then
-   `supabase/migrations/202610110003_admin_creation_role.sql` once in the SQL editor. The second migration
+   `supabase/migrations/202610110003_admin_creation_role.sql`, then
+   `supabase/migrations/20261011150000_user_flows.sql` once in the SQL editor. The second migration
    imports existing **trusted app_metadata** assignments as active accounts; other users and
    public signups remain pending. Review imported Admin assignments first.
    The third migration handles the Admin API's delayed trusted role metadata and repairs
@@ -79,7 +83,8 @@ without a byte-order mark so Windows PowerShell cannot hide its first setting fr
 The runner mocks AWS DynamoDB, routing and analysis. Auth, account persistence and private image
 storage use your **real Supabase project**. Use test users and synthetic details. Supabase profiles
 survive restart; Moto operational data resets. Approved registered generators are restored into
-Moto on their first authenticated request. Imported generator IDs must already exist in DynamoDB;
+Moto on their first authenticated request or the next dispatcher's planning snapshot. Imported
+generator assignments without reviewed profile details still require their DynamoDB records;
 the demo seeds `demo-kitchen-01` through `demo-kitchen-10`.
 
 For SAM, set `AuthProvider=supabase`, `SupabaseAccountManagement=true` and the existing Supabase
@@ -91,10 +96,11 @@ it after relying on its revocation controls.
 ## Screens and permissions
 
 - `/register`: generators, CBG operations and plant owners request access. Generators supply
-  pickup coordinates/type; plant teams supply capacity. The Auth insert trigger captures pending
+  a PIN code/address or optional live GPS and confirm their pickup entrance on a movable map pin;
+  coordinates are saved automatically. Plant teams supply capacity. The Auth insert trigger captures pending
   details. Browser metadata cannot grant Admin access or approve a registration.
-- `/login`: sign in with email after confirmation and approval. Pending users receive an approval
-  message. The SDK persists and refreshes sessions and handles sign-out.
+- `/login`: sign in with email/password. Pending users can check approval status and sign out;
+  operational dashboards remain unavailable until approval. The SDK persists and refreshes sessions.
 - `/accounts`: only active **Admin accounts** create, approve, edit contact details, reset,
   suspend/reactivate and delete accounts. `/accounts/new` can create another Admin. Admin-created
   users have confirmed email status; share their temporary password privately. Creation is pending.
@@ -104,10 +110,25 @@ it after relying on its revocation controls.
 CBG operations has dispatcher permissions but cannot manage accounts. Owners have the existing
 intake desk and gate logging, without planning/dispatch. Plant approval grants access to the
 **single pilot plant**, not independent plants or tenant isolation. Only approve its actual team.
-Drivers retain explicit trip scope/expiry; update `plan_key` in the trusted registry after dispatch.
+Drivers retain explicit trip scope/expiry. Admins create and approve driver accounts; dispatchers
+assign an active driver from the dispatched plan screen. Unassigned drivers see a waiting page.
+The access-renewal action preserves pickup records and invalidates earlier token links.
 Generator approval enrolls its immutable `registered-<user UUID>` scope in DynamoDB with 06:00-09:00
-pickup defaults. Review location and collection suitability first. Account contact edits do not
-change existing operational coordinates, pickup addresses or historical evidence.
+pickup defaults. Review location and collection suitability first. Reviewed location, type, name
+and address corrections synchronize to future planning snapshots. Draft plans reject changed
+profile revisions at dispatch; previously dispatched plans retain their captured details.
+
+## Optional email delivery later
+
+Email/password login itself does not require SMTP. For self-service confirmation or recovery
+emails, configure a transactional provider's host, port, username, password and verified sender
+in Supabase Authentication > Email > SMTP settings. Follow the provider's domain verification
+instructions. Keep SMTP credentials in Supabase, never in frontend variables. Then enable
+Confirm email, set `VITE_AUTH_EMAIL_MODE=email`, allow the exact `/login` and `/reset-password`
+redirect URLs in Supabase URL Configuration, rebuild/restart the frontend, and test delivery,
+confirmation, recovery and expired links with test accounts. Admin approval still applies.
+Supabase's default sender is restricted and is not a production delivery service. See
+[official SMTP setup](https://supabase.com/docs/guides/auth/auth-smtp).
 
 ## Lifecycle, retention and failures
 

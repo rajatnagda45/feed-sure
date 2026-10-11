@@ -44,6 +44,7 @@ function Schematic({ points }: RouteMapProps) {
 export function RouteMap({ points, roadRoute }: RouteMapProps) {
   const scene = useMemo(() => validMapPoints(points), [points]);
   const signature = mapSignature(scene);
+  const mapView = useRef<MapLibreMap | null>(null);
   const latest = useRef(scene);
   latest.current = scene;
   const geometry = useMemo(() => roadGeometry(roadRoute), [roadRoute]);
@@ -70,6 +71,7 @@ export function RouteMap({ points, roadRoute }: RouteMapProps) {
           // Keep fetch-based raster loading and normal HTTP expiry headers.
           refreshExpiredTiles: true,
         });
+        mapView.current = instance;
         let markers: Marker[] = [];
         let observer: ResizeObserver | undefined;
         const destroy = () => {
@@ -77,6 +79,7 @@ export function RouteMap({ points, roadRoute }: RouteMapProps) {
           markers.forEach((marker) => marker.remove());
           markers = [];
           instance.remove();
+          mapView.current = null;
         };
         try {
           instance.addControl(new NavigationControl({ showCompass: false }), "top-right");
@@ -143,6 +146,10 @@ export function RouteMap({ points, roadRoute }: RouteMapProps) {
       <div><strong>Collection area</strong><span>{status === "failed" ? "Schematic · no geographic basemap" : provider?.label ?? "No basemap configured"}</span></div>
       {status === "ready" && <button className="text-button" type="button" onClick={fitRoute}>Fit route</button>}
     </div>
+    {status === "ready" && <label className="field">Find a stop on the map<select defaultValue="" onChange={(event) => {
+      const point = scene.find((item) => item.id === event.currentTarget.value);
+      if (point) mapView.current?.flyTo({ center: [point.lng, point.lat], zoom: 17 });
+    }}><option value="">Choose a stop to separate nearby markers</option>{scene.map((point) => <option key={point.id} value={point.id}>{point.kind === "stop" ? `${point.order}. ` : ""}{point.name}</option>)}</select></label>}
     <div className={`map-frame${status === "failed" ? " map-failed" : ""}`}>
       <div ref={container} className="map-canvas" aria-label="Collection area map" aria-hidden={status === "failed"} />
       {status === "loading" && <p className="map-notice" aria-live="polite">Loading geographic basemap…</p>}

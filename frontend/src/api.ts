@@ -1,3 +1,4 @@
+import { timedFetch } from "./network";
 import { accessToken } from "./supabase";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8787";
@@ -45,7 +46,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   if (!bearer && generatorToken) headers.set("X-Generator-Token", generatorToken);
   if (!bearer && driverToken) headers.set("X-Driver-Token", driverToken);
   if (idempotencyKey) headers.set("Idempotency-Key", idempotencyKey);
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await timedFetch(`${API_BASE_URL}${path}`, {
     ...init,
     headers,
   });
@@ -340,6 +341,7 @@ export interface RoadRoute {
 }
 
 export interface PlanEnvelope {
+  travelLegs?: { fromId: string; toId: string; km: number; min: number; source: string }[];
   roadRoute?: RoadRoute;
   schemaVersion: 3;
   collectionDate: string;
