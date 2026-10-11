@@ -4,6 +4,14 @@ Before the truck leaves, know which waste suppliers are ready. After it returns,
 
 FeedSure is a single-truck collection prototype connecting a CBG plant with waste suppliers: hotels, hostels, PG owners, canteens and organisations generating bulk food waste. A supplier confirms a date, quantity and pickup window. The dispatcher reviews a feasible route and freezes it. The driver records pickups; the plant records net intake; suppliers see their own collection record and trip-level gate status.
 
+## Watch the collection journey
+
+[![Watch the 18-second FeedSure collection workflow video](frontend/public/media/collection.webp)](frontend/public/media/collection-workflow.mp4)
+
+**[▶ Watch the video — 18 seconds](frontend/public/media/collection-workflow.mp4)**
+
+The same illustrated video shown on the landing page follows readiness, collection and plant intake. Click the preview to open it. Silent, with on-screen explanations; [English captions](frontend/public/media/collection-workflow.en.vtt) are also available. Scenes are AI-generated illustrations, not pilot footage. See [media provenance](docs/FRONTEND-MEDIA.md).
+
 ## What works locally
 
 Readiness saves without photos or AI. Planning checks full-load capacity reservations, pickup windows and depot return. Dispatch rejects changed inputs; later edits raise alerts while preserving driver stops. Scoped access, retry protection, revisioned corrections, partial pickups and gate reconciliation execute through real domain handlers with local Moto storage.
