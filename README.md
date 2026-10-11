@@ -58,7 +58,7 @@ Photos can assist with visible items only; they cannot establish whole-load safe
 
 ## AI tools used
 
-OpenAI Codex was used for implementation, review, tests and documentation. Confirm any additional AI tools used by the team before submission. Runtime Bedrock is a separate optional service; this local QA does not establish a live model call.
+OpenAI Codex was used for implementation, review, tests and documentation. OpenAI's built-in image generation tool created the three illustrative landing-page scenes; the silent workflow video assembles these images with captions using FFmpeg. These are illustrations, not pilot footage. See [media provenance](docs/FRONTEND-MEDIA.md). Confirm any additional AI tools used by the team before submission. Runtime Bedrock is a separate optional service; this local QA does not establish a live model call.
 
 ## Credits and licence
 
