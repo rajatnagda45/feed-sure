@@ -1,4 +1,5 @@
 import { useAccount } from "../auth";
+import { ProfileDetails } from "../components/ProfileDetails";
 import { LocationPicker } from "../components/LocationPicker";
 import { FormEvent, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -29,7 +30,7 @@ function AccountEditor({ account, refresh }: { account: Account; refresh: (messa
       setNotice(name === "password" ? "Password reset. Existing sessions have been signed out." : "Account updated.");
       refresh(name === "password" ? "Password reset. Existing sessions have been signed out."
         : name === "delete" ? "Account deleted. Collection and intake records were retained."
-        : name === "activate" ? "Account approved and active. The user can now sign in."
+        : name === "activate" ? "Account active. The user can now sign in."
         : name === "suspend" ? "Account suspended. All its sessions have been signed out." : "Account details saved.");
     } catch (reason) { setError(message(reason)); }
     finally { setBusy(false); }
@@ -39,17 +40,17 @@ function AccountEditor({ account, refresh }: { account: Account; refresh: (messa
       <span className={`account-status account-status-${account.status.toLowerCase()}`}>{account.status.toLowerCase()}</span></div>
     <p>{account.contact || "No contact details"} · {account.address || "No address supplied"}</p>
     {account.capacityKg && <p>Registered plant capacity: {account.capacityKg.toLocaleString("en-IN")} kg/day</p>}
-    {account.profile && <p>Pickup coordinates: {account.profile.lat}, {account.profile.lng} · {account.profile.type.replaceAll("_", " ")}</p>}
-    {account.status === "PENDING" && account.role !== "kitchen" && <p className="notice">Check the plant details before approval. Activating this account gives access to the existing pilot plant.</p>}
+    {account.role === "kitchen" && <p>{Number.isFinite(account.profile?.lat) && Number.isFinite(account.profile?.lng) ? `Pickup entrance: ${account.profile?.lat}, ${account.profile?.lng}` : "Pickup location incomplete — the user can confirm it in My profile to activate access."}</p>}
+    {account.status === "PENDING" && <p className="notice">Complete profile details activate generator and plant access automatically.</p>}
     <div className="account-actions">
-      {account.status !== "ACTIVE" && <button type="button" className="button button-primary" disabled={busy} onClick={() => void action("activate")}>{account.status === "PENDING" ? "Approve account" : "Reactivate account"}</button>}
+      {(account.status === "SUSPENDED" || (account.status === "PENDING" && ["admin", "driver"].includes(account.role))) && <button type="button" className="button button-primary" disabled={busy || !account.address || (account.role === "kitchen" && (!Number.isFinite(account.profile?.lat) || !Number.isFinite(account.profile?.lng)))} onClick={() => void action("activate")}>{account.status === "PENDING" ? "Activate managed account" : "Reactivate account"}</button>}
       {account.status === "ACTIVE" && <button type="button" className="button button-secondary" disabled={busy} onClick={() => void action("suspend")}>Suspend account</button>}
     </div>
-    <details><summary>Edit account details</summary><form onSubmit={(event) => { event.preventDefault(); void action("update", { ...fields, ...(account.role === "kitchen" && profile ? { profile } : {}), ...(["cbg", "owner"].includes(account.role) ? { capacityKg: Number(capacity) } : {}) }); }}>
+    <details><summary>Edit account details</summary><form onSubmit={(event) => { event.preventDefault(); void action("update", { ...fields, ...(account.role === "kitchen" && profile && Number.isFinite(profile.lat) && Number.isFinite(profile.lng) ? { profile } : {}), ...(["cbg", "owner"].includes(account.role) ? { capacityKg: Number(capacity) } : {}) }); }}>
       <fieldset className="login-fields" disabled={busy}>
         {(Object.keys(fields) as (keyof typeof fields)[]).map((key) => <label className="field" key={key}><span>{key === "organisation" ? "Organisation / plant name" : key === "contact" ? "Contact" : "Address"}</span>
           <input required maxLength={200} value={fields[key]} onChange={(event) => setFields({ ...fields, [key]: event.currentTarget.value })} /></label>)}
-        {account.role === "kitchen" && <><label className="field">Generator type<select value={profile?.type ?? "hotel"} onChange={(event) => setProfile((current) => ({ lat: current?.lat ?? 0, lng: current?.lng ?? 0, type: event.currentTarget.value }))}><option value="hotel">Hotel</option><option value="hostel_mess">Hostel / mess</option><option value="pg">PG</option><option value="restaurant">Restaurant</option><option value="canteen">Canteen</option></select></label>
+        {account.role === "kitchen" && <><label className="field">Generator type<select value={profile?.type ?? "hotel"} onChange={(event) => setProfile((current) => ({ ...current, type: event.currentTarget.value }))}><option value="hotel">Hotel</option><option value="hostel_mess">Hostel / mess</option><option value="pg">PG</option><option value="restaurant">Restaurant</option><option value="canteen">Canteen</option></select></label>
           <details onToggle={(event) => { if (event.currentTarget.open) setEditingLocation(true); }}><summary>Correct pickup location</summary><LocationPicker address={fields.address} onChange={(point) => { setLocationConfirmed(Boolean(point)); if (point) setProfile((current) => ({ ...point, type: current?.type ?? "hotel" })); }} /></details>
           <p>Changes apply to future planning. Previously dispatched trips keep their original pickup location.</p></>}
         {["cbg", "owner"].includes(account.role) && <label className="field">Reviewed capacity (kg/day)<input type="number" required min="0.01" step="any" max="1000000000" value={capacity} onChange={(event) => setCapacity(event.currentTarget.value)} /></label>}
@@ -93,7 +94,7 @@ export function AccountsPage() {
       <Link className="button button-primary" to="/accounts/new">Create new login</Link></div>
     <div className="account-toolbar">
       <label className="field"><span>Search accounts</span><input type="search" value={search} onChange={(event) => setSearch(event.currentTarget.value)} /></label>
-      <label className="field"><span>Account status</span><select value={filter} onChange={(event) => setFilter(event.currentTarget.value)}><option value="ALL">All accounts</option><option value="PENDING">Pending approval</option><option value="ACTIVE">Active</option><option value="SUSPENDED">Suspended</option></select></label>
+      <label className="field"><span>Account status</span><select value={filter} onChange={(event) => setFilter(event.currentTarget.value)}><option value="ALL">All accounts</option><option value="PENDING">Setup incomplete</option><option value="ACTIVE">Active</option><option value="SUSPENDED">Suspended</option></select></label>
       <button className="button button-secondary" disabled={loading} type="button" onClick={() => setRevision((value) => value + 1)}>Refresh accounts</button>
     </div>
     {notice && <p className="notice success" role="status">{notice}</p>}
@@ -105,7 +106,7 @@ export function AccountsPage() {
 
 export function MyAccountPage() {
   const navigate = useNavigate();
-  const { signOut } = useAccount();
+  const { signOut, refresh } = useAccount();
   const [account, setAccount] = useState<Account | null>(null);
   const [password, setPassword] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
@@ -113,12 +114,17 @@ export function MyAccountPage() {
   const [confirmation, setConfirmation] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  const [loading, setLoading] = useState(true);
   useEffect(() => {
     let active = true;
+    setError(null); setLoading(true);
     accountRequest<Account>("/auth/account").then((result) => { if (active) setAccount(result); })
-      .catch((reason) => { if (active) setError(message(reason)); });
+      .catch((reason) => { if (active) setError(message(reason)); })
+      .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, []);
+  }, [attempt]);
   async function save(event: FormEvent, action: "password" | "delete") {
     event.preventDefault();
     if (!account) return;
@@ -135,9 +141,12 @@ export function MyAccountPage() {
     finally { setBusy(false); }
   }
   return <main className="auth-shell"><section className="token-panel">
-    <h1>My account</h1>
+    <h1>My profile</h1>
     {account && <><p><strong>{account.loginId}</strong> · {accountLabels[account.role]}</p><p>{account.organisation}</p>
-      {account.status === "PENDING" && <p role="status">Your registration is waiting for Admin approval. Account changes become available after approval.</p>}
+      {account.status === "PENDING" && <p role="status">{account.role === "admin" || account.role === "driver" ? "This managed account needs activation by an Admin." : "Complete your profile below to activate access automatically. No Admin approval is required."}</p>}
+      {notice && <p role="status" className="notice success">{notice}</p>}
+      <ProfileDetails key={`${account.id}:${account.revision}`} account={account} onSaved={(result) => { setAccount(result); setNotice(result.status === "ACTIVE" ? "Profile saved. Your access is active." : "Profile saved. Complete the remaining details to activate access."); refresh(); }} />
+      <h2>Login and security</h2><p>Your sign-in email is shown above. Contact the Admin if you need to change it.</p>
       <form onSubmit={(event) => void save(event, "password")}><fieldset className="login-fields" disabled={busy || account.status !== "ACTIVE"}>
         <label className="field"><span>Current password</span><input type="password" required maxLength={256} autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.currentTarget.value)} /></label>
         <label className="field"><span>New password (at least 12 characters)</span><input type="password" required minLength={12} maxLength={256} autoComplete="new-password" value={password} onChange={(event) => setPassword(event.currentTarget.value)} /></label>
@@ -152,7 +161,9 @@ export function MyAccountPage() {
         </fieldset></form>
       </details></>}
     {error && <p className="inline-error" role="alert">{error}</p>}
-    {!account && <Link to="/login">Sign in to manage your account</Link>}
+    {loading && <p role="status">Loading your saved profile…</p>}
+    <button className="text-button" type="button" disabled={busy || loading} onClick={() => { setNotice(null); setAccount(null); setAttempt((value) => value + 1); }}>Reload saved profile</button>
+    {!account && !loading && <Link to="/login">Check account access</Link>}
     <Link className="text-button" to="/">Back to FeedSure</Link>
   </section></main>;
 }

@@ -49,15 +49,16 @@ def request(
         or not key
     ):
         raise ApiError(503, "DEPENDENCY_NOT_READY", "Configure Supabase URL and server keys.")
+    headers = {"apikey": key, "Content-Type": content_type}
+    # Publishable keys are opaque API keys, not JWTs. User/session and legacy
+    # service-role JWTs still belong in Authorization.
+    if token or not key.startswith("sb_publishable_"):
+        headers["Authorization"] = "Bearer " + (token or key)
     req = Request(
         base + path,
         data=data,
         method=method,
-        headers={
-            "apikey": key,
-            "Authorization": "Bearer " + (token or key),
-            "Content-Type": content_type,
-        },
+        headers=headers,
     )
     try:
         with build_opener(NoRedirects()).open(

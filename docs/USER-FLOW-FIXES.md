@@ -35,6 +35,27 @@ not migrate collection storage to Supabase.
 
 ## Changes against the audit
 
+### Follow-up: create the login before confirming the location
+
+Registration no longer waits for address lookup, GPS permission or map confirmation. The address
+can be left blank. Signup success links to My profile, and pending users can sign in and edit their
+details while awaiting review. My profile saves organisation, contact, address, generator type and
+confirmed pickup coordinates (or plant capacity) to the Supabase account registry. Login email remains
+an identity field handled by the Admin. Password and deletion controls retain reauthentication.
+
+`20261011170000_profile_completion.sql` adds a service-only own-profile action with session validation,
+revision checks and a strict editable-field allowlist. It preserves approval, role and assignments.
+Pending address changes invalidate an older pin; active address changes require a confirmed pin.
+Admin approval still rejects incomplete generator locations. Approved profile changes synchronize to
+future operational snapshots; dispatched trips and existing receipts retain their original details.
+
+Follow-up validation: 358 backend tests, 116 frontend tests (three existing opt-in tests skipped),
+16 PostgreSQL WASM policy tests and the production build. Hosted migration application and browser
+save/reload/location-confirmation checks are recorded separately from fixture tests. The updated local
+API uses port 8816 with the existing frontend on 5213. The earlier API on 8815 remains running to preserve
+its in-memory collection records; both previews use the same hosted account registry. The updated API
+starts with a separate simulated collection dataset. The private retained collection export is unchanged.
+
 | Findings | Implementation |
 | --- | --- |
 | 1 | PIN/address search, optional GPS, movable pickup pin, keyboard adjustments and explicit entrance confirmation; manual coordinate typing removed. PIN centres alone are not accepted as a confirmed entrance. |

@@ -6,9 +6,9 @@ import { mapRequest, selectBasemap } from "./mapModel";
 import { requestGps } from "../workflow";
 
 type Point = { lat: number; lng: number; label?: string };
-export function LocationPicker({ address, onChange }: { address: string; onChange: (point: Point | null) => void }) {
+export function LocationPicker({ address, initialPoint, onChange }: { address: string; initialPoint?: Point; onChange: (point: Point | null) => void }) {
   const [pin, setPin] = useState("");
-  const [point, setPoint] = useState<Point | null>(null);
+  const [point, setPoint] = useState<Point | null>(initialPoint ?? null);
   const [results, setResults] = useState<Point[]>([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -75,7 +75,7 @@ export function LocationPicker({ address, onChange }: { address: string; onChang
     {busy && <p role="status">Finding location…</p>}{message && <p role="status">{message}</p>}
     {results.map((result, index) => <button key={index} className="location-result" type="button" onClick={() => choose(result)}>{result.label}</button>)}
     {point && <><div ref={container} className="location-map" aria-label="Move the pickup pin" />
-      {mapFailed && <p role="alert">Map could not load. Use live location at the entrance, or ask your plant Admin to verify the site before approval.</p>}
+      {mapFailed && <p role="alert">Map could not load. Use live location at the entrance, or ask your operator to help confirm the pickup location.</p>}
       <p>Click the map or drag the pin. Keyboard adjustments move it roughly 10 metres:</p>
       <div className="account-actions">{([['North', 0.0001, 0], ['South', -0.0001, 0], ['East', 0, 0.0001], ['West', 0, -0.0001]] as const).map(([label, lat, lng]) => <button type="button" key={label} onClick={() => choose({ lat: point.lat + lat, lng: point.lng + lng })}>{label}</button>)}</div>
       <small>Selected point: {point.lat.toFixed(6)}, {point.lng.toFixed(6)} · Subject to service-area review.</small>

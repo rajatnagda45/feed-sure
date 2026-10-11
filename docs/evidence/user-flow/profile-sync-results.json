@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "checks": [
+    "Hosted login and profile reload",
+    "Admin sees identical saved profile",
+    "Approved profile synchronizes to operational site",
+    "Earlier preview collection records remain available"
+  ],
+  "earlierReceiptCount": 1,
+  "mode": "Live Supabase Auth/registry; separate local Moto API"
+}

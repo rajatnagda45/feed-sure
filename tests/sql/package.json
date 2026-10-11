@@ -2,6 +2,6 @@
   "name": "feedsure-account-sql-tests",
   "private": true,
   "type": "module",
-  "scripts": { "test": "node --test accounts.test.mjs" },
+  "scripts": { "test": "node --test" },
   "devDependencies": { "@electric-sql/pglite": "0.5.8" }
 }

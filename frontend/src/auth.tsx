@@ -99,7 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     {children}
     {userId && <aside className="account-session" aria-label="Account session">
       {account && <Link to={accountPath(account)}>My dashboard</Link>}
-      {!recovery && <Link to="/account">My account</Link>}
+      {!recovery && <Link to="/account">My profile</Link>}
       {account?.accountRole === "admin" && <Link to="/accounts">Manage accounts</Link>}
       <button type="button" disabled={signingOut} onClick={() => void signOut()}>{signingOut ? "Signing out…" : "Sign out"}</button>
       {error && <p role="alert">{error}</p>}
