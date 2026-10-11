@@ -1,7 +1,8 @@
 """Disposable localhost demo using Moto transport and the real v3 HTTP/domain handlers.
 
 Run from the repository root: python scripts/local_demo.py --date 2026-10-12
-No Docker, AWS credentials, external endpoint or persistent database is used.
+No Docker or AWS credentials are needed. Collection data is disposable; optional
+Supabase Auth/Storage providers use the configured external project.
 """
 
 from __future__ import annotations
@@ -50,7 +51,7 @@ def main() -> None:
     except OSError as error:
         listener.close()
         parser.error(f"Local API port is unavailable: {error}")
-    # Overrides apply only inside this child process. Never consult real account credentials.
+    # AWS/demo overrides apply only inside this child process. Supabase uses explicit configuration.
     os.environ.update(
         AWS_ACCESS_KEY_ID="testing",
         AWS_SECRET_ACCESS_KEY="testing",
@@ -76,7 +77,10 @@ def main() -> None:
         resource = boto3.resource("dynamodb", region_name="ap-south-1")
         # The marker labels transport as local; this resource never opens that endpoint.
         config = replace(get_config(), aws_endpoint_url="moto://in-process")
-        tokens = seed_v3_database(config, resource, args.date)
+        # Seed internally generated demo records with disposable bootstrap credentials.
+        # The HTTP runtime still uses the chosen provider and never accepts these tokens
+        # when Supabase is enabled.
+        tokens = seed_v3_database(replace(config, auth_provider="tokens"), resource, args.date)
         import dev_server
 
         dev_server.app.state.config = config
@@ -105,12 +109,25 @@ def main() -> None:
             ),
             encoding="utf-8",
         )
+        photo_transport = (
+            "Supabase photo storage"
+            if config.photo_storage_provider == "supabase"
+            else "local photo bytes"
+        )
         print(
-            f"Synthetic kitchens; Moto DynamoDB; local photo bytes; "
+            f"Synthetic collection quantities; Moto DynamoDB; {photo_transport}; "
             f"mock screening ({args.photo_fixture}); fallback matrix. Date {args.date}."
         )
         print(f"Private access: {access_file}. DynamoDB state is discarded on process stop.")
-        print(f"Photo bytes persist privately in {photo_dir} until retention or manual cleanup.")
+        if config.photo_storage_provider == "supabase":
+            print(
+                "Supabase photo bytes persist in the configured private bucket; "
+                "clean up test images there."
+            )
+        else:
+            print(
+                f"Photo bytes persist privately in {photo_dir} until retention or manual cleanup."
+            )
         server = uvicorn.Server(
             uvicorn.Config(dev_server.app, host="127.0.0.1", port=args.port, access_log=False)
         )

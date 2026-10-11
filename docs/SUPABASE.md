@@ -4,6 +4,9 @@ Supabase is an optional provider for email/password login and private photo stor
 The collection domain remains in AWS DynamoDB, and optional analysis remains in Bedrock.
 The default token/S3 installation and local demo still work without Supabase.
 
+For a Windows test using live Supabase and disposable local collection data, follow
+[the local testing guide](SUPABASE-LOCAL-TEST.md).
+
 ## Configure an installation
 
 1. Create a Supabase project. Run
