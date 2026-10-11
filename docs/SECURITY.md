@@ -1,5 +1,10 @@
 # SECURITY — FeedSure CBG
 
+Supabase account management supports pending registration, Admin approval and per-request
+lifecycle checks. Passwords remain in Supabase Auth. The registry enables RLS and exposes its
+transactional RPC only to the backend service role. See [ACCOUNTS.md](ACCOUNTS.md) for session
+revocation, retention and provider failure recovery. Legacy credentials are rejected in Supabase mode.
+
 ## Shipped v3 controls and limits
 
 Admin, plant owner, generator and driver credentials travel in separate headers. Blank/placeholder admin

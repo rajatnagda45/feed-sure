@@ -1,0 +1,2 @@
+# Install from the repository root. pyproject.toml remains the dependency source.
+-e .[dev]

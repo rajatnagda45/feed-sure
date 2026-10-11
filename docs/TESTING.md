@@ -75,6 +75,13 @@ Map scene/lifecycle tests cover attribution, stop order, depot return, camera re
 
 ## Evaluation and remaining evidence
 
+Supabase account verification adds `tests/unit/test_supabase_accounts.py` (real handlers/Moto,
+mocked Auth/PostgREST), frontend registration transport tests, and `tests/sql` for the shipped
+Postgres registry migration/RPC with PGlite and fixture Auth schemas. Run `npm ci` and `npm test`
+in `tests/sql`. These cover pending approval, privilege isolation, revision checks, last-Admin
+protection, lifecycle revocation, and receipt handling. Hosted Auth/storage and multi-connection
+race performance require separate live checks. See [ACCOUNTS.md](ACCOUNTS.md) for setup and recovery.
+
 Primary and nearest-first use identical readiness, eligibility, mandatory stops, matrices and feasibility constraints. Published synthetic results remain 18 scenarios: 16 ties, one equal-quantity distance improvement and one trade-off where nearest-first collected more expected kg. Expected kg is not recorded collection. No field savings or screening accuracy are established.
 
 Live AWS/S3/Bedrock/Amazon Location, SAM build/deployment, physical phone camera and GPS, production precise-location cleanup, licence selection and the recorded submission video remain separate tasks.

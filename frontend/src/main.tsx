@@ -8,6 +8,8 @@ import "./styles.css";
 import "./design.css";
 import "./product.css";
 import "./readiness.css";
+import "./landing.css";
+import "./accounts.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

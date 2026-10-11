@@ -81,7 +81,7 @@ def main() -> None:
         resource = boto3.resource("dynamodb", region_name="ap-south-1")
         # The marker labels transport as local; this resource never opens that endpoint.
         config = replace(get_config(), aws_endpoint_url="moto://in-process")
-        tokens = seed_v3_database(config, resource, args.date)
+        tokens = seed_v3_database(replace(config, auth_provider="tokens"), resource, args.date)
         import dev_server
 
         dev_server.app.state.config = config
@@ -115,9 +115,14 @@ def main() -> None:
             if args.photo_provider == "nvidia"
             else f"mock screening ({args.photo_fixture})"
         )
+        photos = (
+            "private Supabase photos"
+            if config.photo_storage_provider == "supabase"
+            else "local photo bytes"
+        )
         print(
-            f"Synthetic kitchens; Moto DynamoDB; local photo bytes; "
-            f"{screening}; fallback matrix. Date {args.date}."
+            f"Synthetic kitchens; Moto DynamoDB; {photos}; {screening}; "
+            f"fallback matrix. Date {args.date}."
         )
         print(f"Private access: {access_file}. DynamoDB state is discarded on process stop.")
         print(f"Photo bytes persist privately in {photo_dir} until retention or manual cleanup.")

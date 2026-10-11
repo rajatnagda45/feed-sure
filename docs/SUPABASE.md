@@ -2,6 +2,10 @@
 
 Supabase is an optional provider for email/password login and private photo storage.
 The collection domain remains in AWS DynamoDB, and optional analysis remains in Bedrock.
+For public registration, Admin approval and account lifecycle, follow [ACCOUNTS.md](ACCOUNTS.md)
+and run the second migration before enabling `SUPABASE_ACCOUNT_MANAGEMENT=true`. The registry
+then becomes authoritative; edits to Auth metadata do not change existing registry assignments.
+
 The default token/S3 installation and local demo still work without Supabase.
 
 ## Configure an installation
@@ -13,8 +17,8 @@ The default token/S3 installation and local demo still work without Supabase.
    no broad browser insert/update/read policy should grant access to this bucket.
 2. Create users with email/password through Supabase Auth's administrator dashboard
    or Admin API. Assign **app_metadata**, not user_metadata, using the Admin API
-   `updateUserById` or a trusted server. There is deliberately no public account enrollment
-   or role picker. A login without an operator-assigned role is denied.
+   `updateUserById` or a trusted server. In metadata-only mode, account enrollment
+   requires operator assignment. A login without an assigned role is denied.
 3. Set server environment variables:
 
    ```dotenv
@@ -67,7 +71,9 @@ dashboard. The official JS SDK persists and refreshes the session. Each API call
 sends the current bearer token; the backend calls `/auth/v1/user` with a bounded
 timeout and uses the returned `app_metadata`. Browser metadata and decoded, unsigned
 JWT claims never authorize a request. `GET /auth/session` returns only the account
-ID, role and assignment, with the existing no-store API response headers.
+ID, role and assignment, with the existing no-store API response headers. With account
+management enabled it also includes `accountRole` and the approved registered generator's
+profile needed for idempotent enrollment into the operational database.
 
 When `AUTH_PROVIDER=supabase`, legacy access tokens cannot bypass login. Leaving
 the provider as `tokens` preserves private links; explicit bearer requests still

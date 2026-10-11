@@ -1,5 +1,7 @@
 import { AccountGate, AuthProvider } from "./auth";
 import { LoginPage } from "./pages/LoginPage";
+import { RegistrationPage } from "./pages/RegistrationPage";
+import { AccountsPage, MyAccountPage } from "./pages/AccountsPage";
 import { supabaseEnabled } from "./supabase";
 import { Navigate, Route, Routes } from "react-router-dom";
 
@@ -16,6 +18,10 @@ export function App() {
   return (
     <AuthProvider><Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegistrationPage />} />
+      <Route path="/account" element={<MyAccountPage />} />
+      <Route path="/accounts" element={<AccountGate role="ADMIN" manage><AccountsPage /></AccountGate>} />
+      <Route path="/accounts/new" element={<AccountGate role="ADMIN" manage><RegistrationPage admin /></AccountGate>} />
       <Route path={ROUTES.landing} element={<LandingPage />} />
       <Route path={ROUTES.generator} element={<AccountGate role="GENERATOR"><GeneratorPage /></AccountGate>} />
       <Route path={ROUTES.plant} element={<AccountGate role="ADMIN"><PlantPage /></AccountGate>} />

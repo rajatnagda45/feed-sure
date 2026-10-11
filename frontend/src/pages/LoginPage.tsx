@@ -24,7 +24,7 @@ export function LoginPage() {
   return <main className="auth-shell"><section className="token-panel">
     <Link className="brand" to="/"><span className="brand-mark">F</span><span>FeedSure CBG</span></Link>
     <h1>Sign in</h1>
-    <p>Use the account issued by your operator to open your assigned dashboard.</p>
+    <p>Sign in with your email after your registration has been approved.</p>
     {!supabase ? <p role="status">{supabaseEnabled ? "Supabase configuration is incomplete." : "Account login is not configured for this installation. Use your private access link."}</p>
       : <form onSubmit={login}>
         <label className="field"><span>Email</span><input type="email" autoComplete="username" required
@@ -35,5 +35,6 @@ export function LoginPage() {
         <button className="button button-primary" disabled={busy || loading} type="submit">
           {busy || loading ? "Signing in…" : "Sign in"}</button>
       </form>}
+    {supabase && <Link className="text-button" to="/register">Register your organisation or CBG team</Link>}
   </section></main>;
 }

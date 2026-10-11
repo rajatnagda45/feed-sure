@@ -100,6 +100,7 @@ class Config:
     supabase_photos_bucket: str = "feedsure-photos"
     supabase_timeout_seconds: int = 5
     auth_provider: str = "tokens"
+    supabase_account_management: bool = False
     photo_storage_provider: str = "s3"
     plant_owner_token: str = ""
     photo_analysis_provider: str = "bedrock"
@@ -121,6 +122,7 @@ def get_config() -> Config:
         supabase_photos_bucket=_string("SUPABASE_PHOTOS_BUCKET", "feedsure-photos"),
         supabase_timeout_seconds=_integer("SUPABASE_TIMEOUT_SECONDS", 5),
         auth_provider=_string("AUTH_PROVIDER", "tokens"),
+        supabase_account_management=_boolean("SUPABASE_ACCOUNT_MANAGEMENT", False),
         photo_storage_provider=_string("PHOTO_STORAGE_PROVIDER", "s3"),
         aws_region=_string("AWS_REGION", "ap-south-1"),
         bedrock_region=_string("BEDROCK_REGION", "ap-south-1"),

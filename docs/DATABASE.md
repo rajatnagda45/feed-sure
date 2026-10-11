@@ -1,5 +1,10 @@
 # DATABASE — FeedSure CBG (DynamoDB, on-demand)
 
+Supabase Auth stores identities and passwords; the private `public.feedsure_accounts`
+Postgres registry stores profiles, revisions and account lifecycle. See [ACCOUNTS.md](ACCOUNTS.md).
+Approval enrolls generators into the existing DynamoDB domain. The loopback runner uses disposable
+Moto DynamoDB and restores approved registered generator profiles on their first authenticated request.
+
 ## Shipped v3 storage
 
 Existing keys for Generators, History, Submissions and Plans are retained. Only `schemaVersion:3`

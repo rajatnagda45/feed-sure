@@ -2,6 +2,12 @@
 
 ROUTES = [
     ("GET", "/auth/session"),
+    ("GET", "/auth/registration"),
+    ("GET", "/auth/account"),
+    ("POST", "/auth/account"),
+    ("GET", "/auth/accounts"),
+    ("POST", "/auth/accounts"),
+    ("POST", "/auth/accounts/{accountId}"),
     ("GET", "/intake"),
     ("GET", "/generators"),
     ("GET", "/generators/{generatorId}"),

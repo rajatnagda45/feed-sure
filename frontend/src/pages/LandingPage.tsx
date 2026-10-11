@@ -1,59 +1,39 @@
-import { supabaseEnabled } from "../supabase";
-import { Link } from "react-router-dom";
-import { KitchenHeroMedia, WorkflowMedia } from "../components/WorkflowMedia";
+import { useEffect, useRef } from "react";
+
+import { CollectionFilm } from "./landing/CollectionFilm";
+import { FinalCTA } from "./landing/FinalCTA";
+import { HeroSection } from "./landing/HeroSection";
+import { LandingNav } from "./landing/LandingNav";
+import { OperationsPreview } from "./landing/OperationsPreview";
+import { ProblemSection } from "./landing/ProblemSection";
+import { RoleSection } from "./landing/RoleSection";
+import { TraceabilitySection } from "./landing/TraceabilitySection";
+import { WorkflowSection } from "./landing/WorkflowSection";
+import { motionEnabled } from "./landing/motion";
 
 export function LandingPage() {
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  // Animation is strictly opt-in: the `fs--motion` class only hides/animates
+  // content when IntersectionObserver is available and reduced-motion is off.
+  // Without it, every section renders fully visible (no-JS / reduced-motion safe).
+  useEffect(() => {
+    if (motionEnabled()) rootRef.current?.classList.add("fs--motion");
+  }, []);
+
   return (
-    <main className="landing-shell">
-      <header className="site-header">
-        <Link className="brand" to="/" aria-label="FeedSure CBG home">
-          <span className="brand-mark" aria-hidden="true">F</span>
-          <span>FeedSure CBG</span>
-        </Link>
-        <span className="data-tag">Operational pilot</span>
-        {supabaseEnabled && <Link className="button button-primary" to="/login">Sign in</Link>}
-      </header>
-
-      <section className="hero" aria-labelledby="hero-title">
-        <div className="hero-copy">
-          <p className="context-line">Food waste to CBG plant</p>
-          <h1 id="hero-title">Know what is ready before the truck leaves.</h1>
-          <p className="hero-summary">
-            Hotels, hostels, PGs, canteens and other bulk food-waste sources confirm waste for collection. Dispatchers build a feasible route, and the
-            driver records what was actually collected. Plant intake closes the loop.
-          </p>
-          <nav className="hero-actions" aria-label="FeedSure destinations">
-            <Link className="button button-secondary" to="/supplier-access">Waste supplier access</Link>
-            <Link className="button button-primary" to="/admin">Admin / dispatcher</Link>
-            <Link className="button button-secondary" to="/owner">CBG plant owner</Link>
-            <Link className="button button-secondary" to="/driver-access">Driver access</Link>
-          </nav>
-          <p className="private-link-note">
-            {supabaseEnabled ? "Sign in with your assigned account to confirm readiness, manage dispatch or record intake."
-              : "Waste suppliers use a private link issued by the dispatcher. Drivers receive a trip link after dispatch. Admins and plant owners enter separate access credentials."} <a href="#demo-guide">Explore the local demo</a>.
-          </p>
-        </div>
-
-        <KitchenHeroMedia />
-      </section>
-
-      <WorkflowMedia />
-
-      <section className="demo-guide" id="demo-guide" aria-labelledby="demo-guide-title">
-        <div className="section-heading"><div><p className="context-line">Four roles, one trip</p><h2 id="demo-guide-title">Follow a collection from readiness to intake</h2></div></div>
-        <div className="demo-roles">
-          <article><h3>Waste supplier</h3><p>For hotels, hostels, PG owners, canteens and organisations with bulk food waste. Confirm quantity and a pickup window. View your saved confirmation and collection record.</p><span className="access-note">Requires a supplier-specific link</span><Link className="text-button" to="/supplier-access">Open waste supplier access</Link></article>
-          <article><h3>Dispatcher</h3><p>Open the operations desk with the runtime admin token. Review cancellations, unconfirmed waste suppliers and capacity conflicts. Build and review a draft before freezing the trip.</p><Link className="text-button" to="/admin">Open dispatcher access</Link></article>
-          <article><h3>CBG plant owner</h3><p>Review recorded pickups, enter net received weight, and check intake discrepancies. Use your separate plant owner credential.</p><Link className="text-button" to="/owner">Open plant owner access</Link></article>
-          <article><h3>Driver</h3><p>Open the assigned trip, follow the ordered stops and save pickup outcomes while parked. Return to the plant for gate intake.</p><span className="access-note">Driver link is issued after dispatch</span><Link className="text-button" to="/driver-access">Open driver access</Link></article>
-        </div>
-        <details className="demo-scenario"><summary>What to try in a local demo</summary><ol><li>Build a route and inspect the omitted waste suppliers. The target may remain unmet.</li><li>Record a phone confirmation or change a window, then re-plan. Review the new input revision.</li><li>Dispatch once, record collected, partial or skipped outcomes, and compare recorded pickup with net plant intake.</li></ol><p>Ask the demo operator for private access. Synthetic suppliers, local database and fallback travel estimates are identified in the operations desk. Public map tiles do not demonstrate AWS operation.</p></details>
-      </section>
-
-      <footer className="site-footer">
-        Demo environments are labelled when generator data is simulated. Pickup and gate records
-        describe collection and intake, not downstream processing.
-      </footer>
-    </main>
+    <div className="fs fs-intro" ref={rootRef}>
+      <LandingNav />
+      <main id="main">
+        <HeroSection />
+        <ProblemSection />
+        <WorkflowSection />
+        <CollectionFilm />
+        <OperationsPreview />
+        <RoleSection />
+        <TraceabilitySection />
+        <FinalCTA />
+      </main>
+    </div>
   );
 }
