@@ -1,0 +1,163 @@
+/* ============================================================================
+   FeedSure operational pages — editorial production theme.
+   Loaded last: re-themes the shared product design tokens and components to
+   match the landing page's forest/ivory editorial identity, so every
+   authenticated page (profile, supplier, dispatcher, plant owner, driver)
+   looks premium without rewriting its markup or logic.
+   The landing/auth pages use the separate `.fs` scope and are unaffected.
+============================================================================ */
+:root {
+  --ink: #1e3029;
+  --muted: #5e7066;
+  --green: #1f6b47;
+  --green-dark: #153f32;
+  --green-soft: #dce8d4;
+  --line: #e3e7dd;
+  --surface: #ffffff;
+  --wash: #f7f6ef;
+  --shadow: 0 22px 48px -34px rgb(13 46 37 / 42%);
+  --lime: #d0f45a;
+  --app-sans: "Manrope", "Inter", system-ui, -apple-system, sans-serif;
+  --app-display: "Fraunces", "Georgia", "Times New Roman", serif;
+  --app-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+
+/* ---- Typography ---------------------------------------------------------- */
+body { font-family: var(--app-sans); background: var(--wash); -webkit-font-smoothing: antialiased; }
+.plant-shell, .generator-shell, .driver-shell, .auth-shell, .owner-content { background: var(--wash); }
+
+h1, h2, .token-panel h1, .generator-step > h1, .driver-summary h1, .operations-brief h1 {
+  font-family: var(--app-display);
+  font-weight: 540;
+  letter-spacing: -0.02em;
+}
+h1 { color: var(--green-dark); }
+h3 { font-family: var(--app-sans); font-weight: 700; letter-spacing: -0.005em; }
+.brand { font-family: var(--app-display); font-weight: 600; letter-spacing: -0.01em; }
+.context-line, .data-tag { font-family: var(--app-sans); }
+.metric-grid strong, .status-rail strong, .driver-metrics strong, .mono, code,
+[class*="route-id"], .trip-overview span b { font-variant-numeric: tabular-nums; }
+
+/* ---- Brand mark --------------------------------------------------------- */
+.brand-mark {
+  color: var(--lime);
+  background: var(--green-dark);
+  border-radius: 12px 12px 12px 3px;
+  font-family: var(--app-display);
+}
+
+/* ---- Headers ------------------------------------------------------------ */
+.site-header, .plant-header, .mobile-header, .generator-shell > .page-pad:first-child {
+  background: rgb(247 246 239 / 85%);
+  backdrop-filter: saturate(140%) blur(8px);
+  border-bottom: 1px solid var(--line);
+}
+.language-switch {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--green-dark);
+  background: #fff;
+  font-weight: 650;
+}
+
+/* ---- Buttons ------------------------------------------------------------ */
+.button {
+  border-radius: 10px;
+  font-family: var(--app-sans);
+  font-weight: 700;
+  letter-spacing: -0.005em;
+  transition: background-color 180ms ease, border-color 180ms ease, transform 180ms ease,
+    box-shadow 180ms ease, color 180ms ease;
+}
+.button-primary { color: var(--wash); background: var(--green-dark); border-color: var(--green-dark); }
+.button-primary:hover:not(:disabled) { background: #0d2e25; transform: translateY(-1px); box-shadow: 0 12px 26px -12px rgb(13 46 37 / 55%); }
+.button-primary:active:not(:disabled) { transform: translateY(0); }
+.button-secondary { border: 1px solid #c6d2c4; color: var(--green-dark); background: #fff; }
+.button-secondary:hover:not(:disabled) { border-color: var(--green-dark); background: rgb(21 63 50 / 4%); }
+.text-button { color: var(--green-dark); font-weight: 650; text-underline-offset: 4px; }
+.text-button:hover:not(:disabled) { color: #0d2e25; }
+
+/* ---- Inputs ------------------------------------------------------------- */
+.field { font-weight: 650; color: var(--green-dark); }
+.field input, .field select, .field textarea, .row-actions input, .time-fields input, .unit-input {
+  border: 1px solid #ccd6cb;
+  border-radius: 10px;
+  background: #fff;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+.field input:hover, .field select:hover, .field textarea:hover { border-color: #9fb3a4; }
+.field input:focus, .field select:focus, .field textarea:focus,
+.row-actions input:focus, .time-fields input:focus, .unit-input:focus-within {
+  border-color: var(--green-dark);
+  outline: 0;
+  box-shadow: 0 0 0 3px rgb(21 63 50 / 12%);
+}
+.segmented { border: 1px solid var(--line); border-radius: 12px; background: #f0efe6; padding: 4px; }
+.segmented button { border-radius: 8px; font-weight: 650; }
+.segmented button.selected { border-color: #cbdcd1; color: var(--green-dark); background: #fff; box-shadow: 0 2px 6px -2px rgb(21 63 50 / 20%); }
+.check-field input { accent-color: var(--green-dark); }
+
+/* ---- Cards, panels & shells --------------------------------------------- */
+.token-panel {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: 0 30px 60px -44px rgb(13 46 37 / 45%);
+}
+.auth-shell { background: var(--wash); padding: clamp(24px, 5vw, 56px) 18px; }
+.planner-controls, .comparison-panel, .supply-panel, .inline-editor, .reconciliation-panel,
+.operations-grid, .driver-stop, .driver-guide, .driver-return, .owner-trip, .saved-readiness,
+.record-list article, .location-result {
+  border-radius: 16px;
+}
+.planner-controls, .comparison-panel, .supply-panel, .reconciliation-panel, .owner-trip {
+  border: 1px solid var(--line);
+  box-shadow: 0 20px 44px -36px rgb(13 46 37 / 38%);
+}
+.operations-grid, .driver-stop { border: 1px solid var(--line); box-shadow: 0 16px 36px -32px rgb(13 46 37 / 34%); overflow: clip; }
+.saved-readiness { border: 1px solid #cfe0d4; background: #f3f8f3; border-radius: 16px; }
+.photo-optional, .driver-handoff, .next-action, .notice, .shortfall, .save-message { border-radius: 0 10px 10px 0; }
+.empty-state { border: 1px dashed #c7d3c6; border-radius: 14px; background: #fff; }
+
+/* ---- Status & notices --------------------------------------------------- */
+.status-badge { border-radius: 7px; font-weight: 700; letter-spacing: 0.02em; }
+.status-feasible, .readiness-ready { color: var(--green-dark); background: var(--green-soft); }
+.notice.success { color: var(--green-dark); background: var(--green-soft); border-color: var(--green-dark); }
+.data-tag::before, .status-rail div:first-child strong { color: var(--green-dark); }
+
+/* Big operational metric numbers get the editorial display treatment */
+.status-rail strong, .metric-grid strong, .driver-metrics strong, .generator-step .unit-input input {
+  font-family: var(--app-display);
+  font-weight: 500;
+}
+
+/* ---- Sticky account session bar ----------------------------------------- */
+.account-session {
+  gap: 18px;
+  padding: 12px clamp(16px, 4vw, 40px);
+  background: rgb(247 246 239 / 92%);
+  backdrop-filter: saturate(150%) blur(10px);
+  border-top: 1px solid var(--line);
+  box-shadow: 0 -8px 24px -18px rgb(13 46 37 / 30%);
+}
+.account-session a { color: var(--green-dark); font-weight: 650; text-decoration: none; text-underline-offset: 4px; }
+.account-session a:hover { text-decoration: underline; }
+.account-session button {
+  min-height: 40px;
+  padding: 8px 18px;
+  border: 1px solid #c6d2c4;
+  border-radius: 10px;
+  color: var(--green-dark);
+  background: #fff;
+  font-weight: 650;
+  transition: border-color 160ms ease, background-color 160ms ease;
+}
+.account-session button:hover:not(:disabled) { border-color: var(--green-dark); background: rgb(21 63 50 / 4%); }
+
+/* ---- Driver summary (dark) keeps its weight but warms to the palette ----- */
+.driver-summary { background: var(--green-dark); }
+.driver-summary h1 { color: var(--wash); }
+
+/* ---- Selection & focus -------------------------------------------------- */
+::selection { background: var(--lime); color: var(--green-dark); }
+:focus-visible { outline: 3px solid var(--green-dark); outline-offset: 3px; }

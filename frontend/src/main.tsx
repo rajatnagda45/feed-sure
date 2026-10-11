@@ -10,6 +10,7 @@ import "./product.css";
 import "./readiness.css";
 import "./landing.css";
 import "./accounts.css";
+import "./app-theme.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
