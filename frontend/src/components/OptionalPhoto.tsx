@@ -1,6 +1,7 @@
 import { ChangeEvent, useEffect, useRef, useState } from "react";
 import { ApiError, Lang } from "../api";
 import { t } from "../i18n";
+import { wasteCopy } from "../wasteCopy";
 import { analyzePhoto, attachPhoto, createIdempotencyKey, getEvidence, getKitchenReadiness,
   PhotoRecord, PhotoUpload, photoStatusText, preparePhoto, uploadPhoto } from "../photoApi";
 import { resizePhoto } from "../photoUpload";
@@ -15,6 +16,7 @@ type Pending = { record: PhotoRecord; key: string; photoKey: string | null; acti
 
 export function OptionalPhoto({ generatorId, token, language, submission, onSaved }: Props) {
   const copy = t(language);
+  const words = wasteCopy(language);
   const [cameraOpen, setCameraOpen] = useState(false);
   const chooser = useRef<HTMLInputElement>(null);
   const [photo, setPhoto] = useState<Blob | null>(null);
@@ -142,8 +144,9 @@ export function OptionalPhoto({ generatorId, token, language, submission, onSave
   };
 
   return <section className="optional-photo" aria-labelledby="photo-title">
-    <h2 id="photo-title">{copy.photoTitle}</h2>
-    <p>{copy.photoOptional}</p>
+    <h2 id="photo-title">{words.photoTitle} <small>({language === "hi" ? "वैकल्पिक" : "optional"})</small></h2>
+    <p>{submission ? words.photoHint : copy.photoOptional}</p>
+    <ol className="photo-shot-guide"><li>{words.photoTip1}</li><li>{words.photoTip2}</li></ol>
     <p className="photo-privacy">{copy.photoPrivacy}</p>
     <input ref={chooser} type="file" accept="image/jpeg,image/png" onChange={choose}
       hidden aria-label={copy.chooseImage} />

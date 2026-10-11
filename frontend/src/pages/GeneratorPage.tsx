@@ -14,9 +14,11 @@ import {
 } from "../api";
 import { t } from "../i18n";
 import { OptionalPhoto } from "../components/OptionalPhoto";
+import { WasteGuide } from "../components/WasteGuide";
+import { wasteCopy } from "../wasteCopy";
 import { getKitchenReadiness } from "../photoApi";
 import { consumeBootstrapToken } from "../session";
-import { ReadinessDraft, formatServiceDate, monthForDate, readinessRequest, serviceDateInIndia } from "../workflow";
+import { ReadinessDraft, formatServiceDate, isCollectionDate, monthForDate, readinessRequest, serviceDateInIndia } from "../workflow";
 
 function errorMessage(error: unknown): string {
   if (error instanceof ApiError) {
@@ -64,6 +66,11 @@ export function GeneratorPage() {
 
   useEffect(() => {
     if (!token || !id) return;
+    if (!isCollectionDate(draft.collectionDate)) {
+      setReadinessLoading(false);
+      setReadinessError(null);
+      return;
+    }
     const controller = new AbortController();
     const generation = saveGeneration.current;
     setReadinessLoading(true);
@@ -108,6 +115,10 @@ export function GeneratorPage() {
 
   useEffect(() => {
     if (!token || !id) return;
+    if (!isCollectionDate(draft.collectionDate)) {
+      setRecordsLoading(false);
+      return;
+    }
     const controller = new AbortController();
     setRecordsError(null);
     setRecordsLoading(true);
@@ -119,8 +130,16 @@ export function GeneratorPage() {
   }, [id, token, draft.collectionDate, recordsRefreshKey]);
 
   const copy = t(language);
+  const words = wasteCopy(language);
+  const preview = readinessRequest({ ...draft, lang: language });
   const updateDraft = <K extends keyof ReadinessDraft>(key: K, value: ReadinessDraft[K]) => {
-    setDraft((current) => ({ ...current, [key]: value }));
+    if (key === "collectionDate" && value === draft.collectionDate) return;
+    if (key === "collectionDate") {
+      setSaved(null);
+      setEditing(true);
+    }
+    setDraft((current) => ({ ...current, [key]: value,
+      ...(key === "collectionDate" ? { confirmedKg: "", reason: "" } : {}) }));
     setErrors((current) => ({ ...current, [key]: "", window: "" }));
     setSaveError(null);
   };
@@ -129,7 +148,10 @@ export function GeneratorPage() {
     event.preventDefault();
     const normalized = readinessRequest({ ...draft, generatorId: id, lang: language });
     setErrors(normalized.errors);
-    if (!normalized.request || !token) return;
+    if (!normalized.request || !token) {
+      requestAnimationFrame(() => document.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus());
+      return;
+    }
     setSaving(true);
     saveGeneration.current += 1;
     setSaveError(null);
@@ -177,42 +199,65 @@ export function GeneratorPage() {
         </button>
       </header>
 
-      <section className="generator-step" aria-busy={loading}>
+      <section className="generator-step waste-step" lang={language} aria-busy={loading}>
         {loading && <p className="loading-line">Loading waste supplier details…</p>}
         {loadError && <><p className="inline-error" role="alert">{loadError}</p><button className="button button-secondary" type="button" onClick={() => window.location.reload()}>Retry waste supplier access</button></>}
 
         {!loading && profile && (
           <>
-            <p className="context-line">{profile.name}</p>
-            {profile.locationSource && (
-              <p className="service-note">
-                Demo venue reference · <a href={profile.locationSource.url} target="_blank" rel="noreferrer">Mapped location</a>
-                {" · "}<a href={profile.locationSource.copyrightUrl} target="_blank" rel="noreferrer">{profile.locationSource.attribution} · ODbL</a>.
-                {" "}Supplier participation and pickup entrance are unverified.
-              </p>
-            )}
-            <h1>{copy.readyQuestion}</h1>
+            <h1>{words.title}</h1>
+            <p className="waste-intro">{words.intro}</p>
             <p className="service-note">
-              Collection: <strong>{formatServiceDate(draft.collectionDate)}</strong> in India time. Reported quantities are
-              {profile.simulated ? " simulated for this demo." : " supplied by this waste supplier."}
+              <strong>{isCollectionDate(draft.collectionDate) ? formatServiceDate(draft.collectionDate) : "—"}</strong> ({words.indiaTime}). {profile.simulated ? words.simulated : words.reported}
             </p>
 
+            <nav className="waste-flow" aria-label={words.title}>
+              <a href="#collection-details"><span aria-hidden="true">1</span>{words.details}</a>
+              <span><span aria-hidden="true">2</span>{words.optionalPhoto}</span>
+              <a href="#records-title"><span aria-hidden="true">3</span>{words.record}</a>
+            </nav>
+            <div className="waste-layout">
+            <div className="waste-workspace" id="collection-details">
+            <div className="waste-site"><strong>{words.site}: {profile.name}</strong><p>{profile.address}</p><small>{words.siteHint}</small>
+              {profile.locationSource && <details className="waste-site-source">
+                <summary>{words.locationReference}</summary>
+                <a href={profile.locationSource.url} target="_blank" rel="noreferrer">OpenStreetMap</a>{" · "}
+                <a href={profile.locationSource.copyrightUrl} target="_blank" rel="noreferrer">{profile.locationSource.attribution} · ODbL</a>
+                <p>{words.locationDisclaimer}</p>
+              </details>}
+            </div>
+            <fieldset className="waste-date" disabled={saving}>
+              <legend>{copy.date}</legend>
+              <div className="waste-date-controls">
+                <div className="segmented">
+                  {([0, 1] as const).map((offset) => <button key={offset} type="button"
+                    className={draft.collectionDate === serviceDateInIndia(new Date(), offset) ? "selected" : ""}
+                    aria-pressed={draft.collectionDate === serviceDateInIndia(new Date(), offset)}
+                    onClick={() => updateDraft("collectionDate", serviceDateInIndia(new Date(), offset))}>
+                    {offset === 0 ? words.today : words.tomorrow}</button>)}
+                </div>
+                <input type="date" aria-label={copy.date} value={draft.collectionDate}
+                  onChange={(event) => updateDraft("collectionDate", event.currentTarget.value)}
+                  aria-invalid={Boolean(errors.collectionDate)} aria-describedby="date-help" />
+              </div>
+              <small id="date-help">{errors.collectionDate ? words.dateError : words.dateHint}</small>
+            </fieldset>
             {readinessLoading ? <p role="status">Checking saved readiness…</p> : readinessError ? <div><p className="inline-error" role="alert">{readinessError}</p><button className="button button-secondary" type="button" onClick={() => setRefreshKey((key) => key + 1)}>Retry saved readiness</button></div> : saved && !editing ? (
               <section className="saved-readiness" aria-live="polite">
                 <span className="complete-mark" aria-hidden="true">✓</span>
                 <div>
-                  <h2>{copy.saved}</h2>
+                  <h2>{words.saved}</h2>
                   <p>
                     {saved.collectionDate} · {saved.status === "READY"
                       ? `${saved.confirmedKg} kg · ${saved.window?.start}–${saved.window?.end}`
                       : copy.notReady}
                   </p>
-                  {saved.weightSource && <p>Weight source: {saved.weightSource === "SCALE" ? "Scale reading" : "Kitchen estimate"}. Saved {new Date(saved.recordedAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })} (India time).</p>}
+                  {saved.weightSource && <p>{words.recordedSource}: {saved.weightSource === "SCALE" ? copy.scale : copy.estimate}. {words.savedTime}: {new Date(saved.recordedAt).toLocaleString(language === "hi" ? "hi-IN" : "en-IN", { timeZone: "Asia/Kolkata" })}.</p>}
+                  {saved.status === "NOT_READY" && saved.reason && <p>{words.savedReason}: {saved.reason}</p>}
                   {saved.late && <p>Saved after the normal cutoff; the dispatcher can still review it.</p>}
-                  <p className="muted">
-                    If a trip is already dispatched, this update creates a dispatcher alert and does
-                    not automatically change the driver route.
-                  </p>
+                  <h3 className="waste-next-title">{words.next}</h3>
+                  <p>{saved.status === "READY" ? words.nextReady : words.nextNotReady}</p>
+                  <p className="muted">{words.dispatched}</p>
                 </div>
                 <button className="button button-secondary" type="button" onClick={() => {
                   setDraft((current) => ({ ...current, status: saved.status,
@@ -221,23 +266,13 @@ export function GeneratorPage() {
                     windowEnd: saved.window?.end ?? current.windowEnd, reason: saved.reason ?? "" }));
                   setEditing(true);
                 }}>
-                  {copy.edit}
+                  {words.edit}
                 </button>
               </section>
             ) : (
               <form className="readiness-form" onSubmit={submit} noValidate>
                 <fieldset className="readiness-fields" disabled={saving}>
-                <legend className="visually-hidden">Readiness for this collection date</legend>
-                <label className="field">
-                  <span>{copy.date}</span>
-                  <input
-                    type="date"
-                    value={draft.collectionDate}
-                    onChange={(event) => updateDraft("collectionDate", event.currentTarget.value)}
-                    aria-invalid={Boolean(errors.collectionDate)}
-                  />
-                  {errors.collectionDate && <small className="field-error">{errors.collectionDate}</small>}
-                </label>
+                <legend className="visually-hidden">{words.details}</legend>
 
                 <fieldset className="choice-field">
                   <legend>{copy.readyQuestion}</legend>
@@ -254,12 +289,13 @@ export function GeneratorPage() {
                       </button>
                     ))}
                   </div>
+                  <small>{words.readyHint}</small>
                 </fieldset>
 
                 {draft.status === "READY" ? (
                   <>
                     <label className="field">
-                      <span>{copy.quantity}</span>
+                      <span>{words.amount} <small>({words.quantity})</small></span>
                       <span className="unit-input">
                         <input
                           type="number"
@@ -267,14 +303,16 @@ export function GeneratorPage() {
                           min="0.1"
                           max="5000"
                           step="0.1"
+                          placeholder="0"
+                          aria-describedby="quantity-help quantity-error"
                           value={draft.confirmedKg}
                           onChange={(event) => updateDraft("confirmedKg", event.currentTarget.value)}
                           aria-invalid={Boolean(errors.confirmedKg)}
                         />
                         <strong>kg</strong>
                       </span>
-                      {errors.confirmedKg && <small className="field-error">{errors.confirmedKg}</small>}
-                      <small>Editable guidance only; enter the site’s current estimate or scale reading.</small>
+                      <small id="quantity-error" className="field-error">{errors.confirmedKg ? words.quantityError : ""}</small>
+                      <small id="quantity-help">{words.quantityHint}</small>
                     </label>
 
                     <fieldset className="choice-field">
@@ -288,45 +326,59 @@ export function GeneratorPage() {
                             aria-pressed={draft.weightSource === source}
                             onClick={() => updateDraft("weightSource", source)}
                           >
-                            {source === "SCALE" ? copy.scale : copy.estimate}
+                            {source === "SCALE" ? words.scale : words.estimate}
                           </button>
                         ))}
                       </div>
+                      <small>{words.sourceHint}</small>
                     </fieldset>
 
                     <fieldset className="choice-field">
-                      <legend>{copy.window}</legend>
+                      <legend>{words.time}</legend>
                       <div className="time-fields">
-                        <label><span>Start</span><input type="time" value={draft.windowStart} onChange={(event) => updateDraft("windowStart", event.currentTarget.value)} /></label>
-                        <label><span>End</span><input type="time" value={draft.windowEnd} onChange={(event) => updateDraft("windowEnd", event.currentTarget.value)} /></label>
+                        <label><span>{words.from}</span><input type="time" value={draft.windowStart} aria-invalid={Boolean(errors.window)} aria-describedby="window-help window-error" onChange={(event) => updateDraft("windowStart", event.currentTarget.value)} /></label>
+                        <label><span>{words.until}</span><input type="time" value={draft.windowEnd} aria-invalid={Boolean(errors.window)} aria-describedby="window-help window-error" onChange={(event) => updateDraft("windowEnd", event.currentTarget.value)} /></label>
                       </div>
-                      {errors.window && <small className="field-error">{errors.window}</small>}
+                      <small id="window-help">{words.timeHint}</small>
+                      <small id="window-error" className="field-error">{errors.window ? words.windowError : ""}</small>
                     </fieldset>
                   </>
                 ) : (
                   <label className="field">
                     <span>{copy.reason}</span>
+                    <small>{words.notReadyHint}</small>
                     <textarea
                       rows={3}
                       value={draft.reason}
                       onChange={(event) => updateDraft("reason", event.currentTarget.value)}
-                      placeholder="Waste supplier closed, no waste today…"
+                      placeholder={words.reasonPlaceholder}
                     />
                   </label>
                 )}
-
-
+                <div className="waste-review" aria-live="polite">
+                  <strong>{words.review}</strong>
+                  <p>{draft.status === "NOT_READY" ? `${draft.collectionDate} · ${copy.notReady}`
+                    : preview.request ? `${draft.collectionDate} · ${draft.confirmedKg} kg (${draft.weightSource === "SCALE" ? copy.scale : copy.estimate}) · ${draft.windowStart}–${draft.windowEnd}`
+                    : words.missing}</p>
+                </div>
                 {saveError && <p className="inline-error" role="alert">{saveError}</p>}
                 <button className="button button-primary button-full" type="submit" disabled={saving}>
-                  {saving ? copy.saving : saveError ? copy.retry : copy.save}
+                  {saving ? copy.saving : saveError ? copy.retry : words.save}
                 </button>
+                <small className="waste-save-hint">{words.saveHint}</small>
                 </fieldset>
               </form>
             )}
 
-            <OptionalPhoto generatorId={id} token={token} language={language}
-              submission={editing ? null : saved} onSaved={(record) => setSaved((current) =>
+            {saved && !editing && !readinessLoading && !readinessError && saved.status === "READY" && <>
+            <a className="waste-skip" href="#records-title">{saved.photoKeys.length ? words.record : words.skip}</a>
+            <OptionalPhoto key={saved.submissionId} generatorId={id} token={token} language={language}
+              submission={saved} onSaved={(record) => setSaved((current) =>
                 current?.submissionId === saved?.submissionId ? record : current)} />
+            </>}
+            </div>
+            <WasteGuide language={language} />
+            </div>
 
             <section className="records-section" aria-labelledby="records-title">
               <div className="section-heading">
