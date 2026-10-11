@@ -249,13 +249,19 @@ def build_matrix(
     _validate_points(points)
     config = config or get_config()
     current = now or datetime.now(UTC)
-    intended_source = "fallback" if config.mock_location else "location"
+    from feedsure.planner.roads import osrm_matrix, routing_provider
+
+    intended_source = routing_provider(config)
     cache_key = matrix_cache_key(
         points,
         provider=intended_source,
         region=config.location_region,
         road_factor=config.road_factor,
         fallback_speed_kmph=config.fallback_speed_kmph,
+        route_options={"osrmBaseUrl": config.osrm_base_url, "profile": "driving"}
+        if intended_source == "osrm"
+        else None,
+        travel_mode="driving" if intended_source == "osrm" else TRAVEL_MODE,
     )
     expected_ids = [_point_id(point) for point in points]
     if database is not None:
@@ -276,12 +282,17 @@ def build_matrix(
             pass
 
     source = "fallback"
-    if config.mock_location:
+    if intended_source == "fallback":
         data = fallback_matrix(points, config)
     else:
         try:
-            data = _location_matrix(points, client or _location_client(config), sleeper)
-            source = "location"
+            data = (
+                osrm_matrix(points, config)
+                if intended_source == "osrm"
+                else _location_matrix(points, client or _location_client(config), sleeper)
+            )
+            validate_matrix(data, expected_ids)
+            source = intended_source
         except Exception:
             data = fallback_matrix(points, config)
     validate_matrix(data, expected_ids)

@@ -36,6 +36,7 @@ from feedsure.common.v3 import (
     text,
     window,
 )
+from feedsure.planner.roads import road_route, routing_provider
 
 PROFILE_FIELDS = {
     "generatorId",
@@ -286,7 +287,7 @@ class Service:
                     "serviceMode": {
                         "database": "local" if self.config.aws_endpoint_url else "aws",
                         "screening": "not_used",
-                        "matrix": "fallback" if self.config.mock_location else "location",
+                        "matrix": routing_provider(self.config),
                     },
                     "simulated": any(p["simulated"] for p in profiles),
                 }
@@ -526,6 +527,9 @@ class Service:
         ).get("totals", {}):
             raise ApiError(503, "DEPENDENCY_NOT_READY", "Planner does not implement contract v3.")
         short_id = "p-" + secrets.token_hex(8)
+        result["roadRoute"] = road_route(
+            snapshot["depot"], result["plan"]["stops"], matrix["source"], self.config
+        )
         plan_key = day + "#" + short_id
         stored = {
             **result,

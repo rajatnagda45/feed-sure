@@ -68,6 +68,8 @@ The saved mapped venue dataset also has a [portable Supabase seed](supabase/READ
 attributed OSM venue locations, ten simulated readiness states and 140 simulated history records.
 This prepares collection-data import; the current API still uses DynamoDB/Moto for that data.
 
+Local demos use road-network distances and a road-following map path through OSRM. AWS mode uses Amazon Location truck routing. Unavailable road paths show stop markers without invented straight connections; offline distances remain labelled estimates. See [road-routing configuration and verification](docs/ROAD-ROUTING.md).
+
 Readiness saves without photos or AI. Planning checks full-load capacity reservations, pickup windows and depot return. Dispatch rejects changed inputs; later edits raise alerts while preserving driver stops. Scoped access, retry protection, revisioned corrections, partial pickups and gate reconciliation run through **real domain handlers** on local Moto storage.
 
 Separate interfaces share the same records: suppliers enter through `/supplier-access` and use `/g/:id`, admins/dispatchers use `/admin`, CBG plant owners use `/owner`, drivers use `/driver/:planKey`. The owner desk lists dispatched trips, recorded pickups and net-intake discrepancies with revisioned gate corrections; its distinct `PLANT_OWNER_TOKEN` grants intake access only.

@@ -18,6 +18,16 @@ function harness(points = [plant, stop]) {
 afterEach(() => { vi.useRealTimers(); });
 
 describe("map resource lifetime and recovery", () => {
+  it("replaces or clears geometry even when stop coordinates stay unchanged", () => {
+    const map = harness();
+    map.load();
+    map.session.update([plant, stop], "road-path-1");
+    map.session.update([plant, stop], "road-path-2");
+    map.session.update([plant, stop], "null");
+    expect(map.port.draw).toHaveBeenCalledTimes(4);
+    expect(map.port.fit).toHaveBeenCalledTimes(1);
+    map.session.destroy();
+  });
   it("draws the latest pre-load scene, then preserves the camera through polling and metadata edits", () => {
     const map = harness();
     const changed = [plant, { ...stop, order: 2, window: { start: "07:00", end: "09:00" } }];

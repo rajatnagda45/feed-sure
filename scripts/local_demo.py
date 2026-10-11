@@ -29,6 +29,12 @@ def main() -> None:
     parser.add_argument("--port", type=int, default=8787)
     parser.add_argument("--frontend-port", type=int, default=5173)
     parser.add_argument(
+        "--routing-provider",
+        choices=["osrm", "fallback"],
+        default="osrm",
+        help="OSRM road routing (sends demo coordinates) or offline estimates.",
+    )
+    parser.add_argument(
         "--manifest",
         type=Path,
         default=ROOT / ".tmp/local-demo-access.json",
@@ -62,6 +68,7 @@ def main() -> None:
         AWS_REGION="ap-south-1",
         AWS_ENDPOINT_URL="",
         MOCK_LOCATION="true",
+        ROUTING_PROVIDER=args.routing_provider,
         MOCK_BEDROCK="false" if args.photo_provider == "nvidia" else "true",
         PHOTO_ANALYSIS_PROVIDER="nvidia" if args.photo_provider == "nvidia" else "bedrock",
         MOCK_BEDROCK_FIXTURE=args.photo_fixture,
@@ -122,7 +129,7 @@ def main() -> None:
         )
         print(
             f"Synthetic kitchens; Moto DynamoDB; {photos}; {screening}; "
-            f"fallback matrix. Date {args.date}."
+            f"{args.routing_provider} routing (fallback estimates on failure). Date {args.date}."
         )
         print(f"Private access: {access_file}. DynamoDB state is discarded on process stop.")
         print(f"Photo bytes persist privately in {photo_dir} until retention or manual cleanup.")

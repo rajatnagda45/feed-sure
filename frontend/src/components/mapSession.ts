@@ -65,8 +65,8 @@ export function createMapSession({ points, open, onStatus, timeoutMs = 15000 }: 
     else if (loaded) draw();
   } catch { fail(); }
   return {
-    update(next: MapPoint[]) {
-      const nextSignature = mapSignature(next);
+    update(next: MapPoint[], geometryRevision = "") {
+      const nextSignature = mapSignature(next) + geometryRevision;
       current = next;
       if (nextSignature === signature) return;
       signature = nextSignature;

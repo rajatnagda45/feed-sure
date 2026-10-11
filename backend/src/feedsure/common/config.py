@@ -109,6 +109,9 @@ class Config:
     nvidia_api_url: str = "https://integrate.api.nvidia.com/v1/chat/completions"
     nvidia_max_tokens: int = 600
     nvidia_timeout_seconds: float = 5
+    routing_provider: str = "auto"
+    osrm_base_url: str = "https://router.project-osrm.org"
+    routing_timeout_seconds: float = 6
 
 
 def get_config() -> Config:
@@ -116,6 +119,9 @@ def get_config() -> Config:
     stage = _string("STAGE", "dev")
     return Config(
         stage=stage,
+        routing_provider=_string("ROUTING_PROVIDER", "auto"),
+        osrm_base_url=_string("OSRM_BASE_URL", "https://router.project-osrm.org"),
+        routing_timeout_seconds=_number("ROUTING_TIMEOUT_SECONDS", 6),
         supabase_url=_string("SUPABASE_URL", ""),
         supabase_publishable_key=_string("SUPABASE_PUBLISHABLE_KEY", ""),
         supabase_service_role_key=_string("SUPABASE_SERVICE_ROLE_KEY", ""),
