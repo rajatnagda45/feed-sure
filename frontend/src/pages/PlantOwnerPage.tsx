@@ -1,4 +1,4 @@
-import { supabase } from "../supabase";
+
 import { useAccount } from "../auth";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
@@ -96,7 +96,7 @@ export function IntakeTripPanel({ trip, token, refresh, onSaving }: {
 }
 
 export function PlantOwnerPage() {
-  const { account } = useAccount();
+  const { account, signOut, signingOut } = useAccount();
   const [token, setToken] = useState(() => account ? "supabase-account" : sessionStorage.getItem("feedsure:plant-owner") ?? "");
   const [credential, setCredential] = useState("");
   const [date, setDate] = useState(() => sessionStorage.getItem("feedsure:demo-date") ?? serviceDateInIndia());
@@ -127,7 +127,7 @@ export function PlantOwnerPage() {
     setToken(value); setCredential("");
   }
   function lock() {
-    if (account) { void supabase?.auth.signOut({ scope: "local" }); return; }
+    if (account) { void signOut(); return; }
     sessionStorage.removeItem("feedsure:plant-owner");
     setToken(""); setData(null); setError(null); setNotice(null);
   }
@@ -153,7 +153,7 @@ export function PlantOwnerPage() {
   return <main className="plant-shell owner-shell">
     <header className="plant-header">
       <Link className="brand" to="/"><span className="brand-mark">F</span><span>FeedSure · Plant owner</span></Link>
-      <button className="text-button" disabled={saving} onClick={lock}>Lock</button>
+      <button className="text-button" disabled={saving} onClick={lock}>{account ? (signingOut ? "Signing out…" : "Sign out") : "Lock"}</button>
     </header>
     <div className="owner-content">
       <div className="section-heading"><div><h1>Plant intake</h1><p className="muted">Compare the driver’s recorded pickup with what the plant received.</p></div></div>

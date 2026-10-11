@@ -24,7 +24,7 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe("authenticated optional photo client", () => {
   it("uses apiRequest headers, encoded submission IDs and stable caller keys", async () => {
-    const fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ uploads: [upload] }) });
+    const fetch = vi.fn().mockImplementation(async () => new Response(JSON.stringify({ uploads: [upload] })));
     vi.stubGlobal("fetch", fetch);
     const record = { submissionId: "kitchen#2026-10-11#abc", photoRevision: 2 } as PhotoRecord;
     await preparePhoto("kitchen", "private-token", "image/jpeg");
@@ -97,8 +97,7 @@ describe("authenticated optional photo client", () => {
   });
 
   it("propagates photo API authorization errors", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 401,
-      json: async () => ({ error: { code: "UNAUTHORIZED", message: "Own kitchen only" } }) }));
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(async () => new Response(JSON.stringify({ error: { code: "UNAUTHORIZED", message: "Own kitchen only" } }), { status: 401 })));
     await expect(getEvidence("other#id", "token")).rejects.toBeInstanceOf(ApiError);
   });
 });

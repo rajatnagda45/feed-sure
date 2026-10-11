@@ -1,0 +1,224 @@
+FeedSure user flow audit
+Date: 11 October 2026
+Snapshot: origin/main 74b002fab6e345012749432c3f5d282543b6fa11
+Local checkout: I:\Project\feed\feed-sure-audit
+
+This is an analysis and proposed-fix register. Application code, authentication
+settings, hosted accounts and existing working directories were not changed.
+The report is local and uncommitted. Findings cover registration, account access,
+supplier readiness, dispatch, driver handoff, intake and records. This is not a
+claim that every possible defect has been found.
+
+MAIN CONCLUSION
+
+The collection workflow passes local API checks, but the account-based journey
+has gaps that can prevent users reaching it. Fix account state and recovery,
+the newly enrolled supplier language value, and driver assignment before asking
+users to test the remaining operational screens.
+
+Evidence labels: REPRODUCED = checked by execution; CODE = traced in this snapshot;
+OBSERVED = visible in the user's screenshot or current browser; NEEDS LIVE CHECK =
+depends on the hosted project or a particular running installation.
+Priority: P1 blocks a supported workflow; P2 causes confusion or weak recovery.
+
+ISSUE REGISTER
+
+01. Pickup location requires latitude and longitude [P1; OBSERVED + CODE]
+    Users cannot reasonably supply exact coordinates. There is no PIN-code,
+    address-search or optional live-location selection in RegistrationPage.tsx.
+    Proposed: PIN code locates the area; address/landmark and an adjustable map
+    pin identify the site. Optional GPS must have a denied/unavailable fallback.
+    Save coordinates automatically. A PIN-code centre is not a pickup entrance.
+    Acceptance: registration completes without typing coordinates, including
+    denied GPS, ambiguous PIN codes and an address outside the service area.
+
+02. Registration connection failure lacks useful recovery [P1; OBSERVED]
+    Earlier screenshot: 'Registration unavailable: Failed to fetch'. The root
+    cause was not established. On this audit, localhost:5197/register completed
+    its readiness check and enabled the form, so the earlier failure is not
+    currently reproduced. API fetch errors pass through as raw browser messages.
+    Proposed: bounded requests, user-facing retry, preserved non-sensitive form
+    fields, and operator diagnostics for API URL, CORS, server and migration.
+    Evidence: frontend/src/api.ts:48; pages/RegistrationPage.tsx:29.
+
+03. Map distance and road path mismatch [P1; OBSERVED, VERSION CHECK NEEDED]
+    The earlier screenshot had straight dashed connectors and a first-leg ETA
+    matching the old haversine road-factor estimate. Current main includes PR12
+    road matrices and provider geometry. Do not reimplement that fix blindly.
+    Proposed: identify the running frontend/API and saved plan; re-plan using
+    the intended provider; verify distance, ETA and geometry use the same source.
+    Show fallback estimates clearly, improve overlapping markers and present
+    leg distances/travel times. Verify the full return-to-plant trip.
+    Evidence: planner/roads.py; components/RouteMap.tsx; docs/ROAD-ROUTING.md.
+
+04. Verification-email rate limit blocks signup [P1; OBSERVED]
+    Screenshot shows 'email rate limit exceeded'. registerAccount only special-
+    cases email_address_not_authorized; rate-limit errors are passed through.
+    Exact hosted SMTP/quota configuration was not inspected. The registration
+    readiness endpoint checks the account registry, not email deliverability.
+    Proposed: configure appropriate email delivery, clear rate-limit messaging
+    and safe retry/resend behaviour. Keep verification and approval requirements.
+    Existing fieldset already disables submission while busy; retain that guard.
+    Evidence: frontend/src/accounts.ts:29; common/accounts.py:106.
+
+05. Pending users have no visible sign-out/status refresh [P1; CODE]
+    Auth can issue a session, then /auth/session denies a pending account.
+    AuthProvider clears its app account. Its sign-out/profile toolbar renders
+    only when that app account exists, leaving the user on the sign-in page.
+    /account supports pending profiles, but there is no link from this state.
+    Approval also revokes the old session, requiring a fresh sign-in.
+    Proposed: explicit unverified/pending/active/suspended/session-error states;
+    pending page with sign out, check status and a usable support instruction.
+    Evidence: frontend/src/auth.tsx:51-72; LoginPage.tsx; accounts.py:52;
+    tests/unit/test_supabase_accounts.py:118.
+
+06. Account details remain mounted after global sign-out [P1; CODE]
+    /account has no auth gate. MyAccountPage loads its own account once and does
+    not subscribe to auth changes. Signing out with the global toolbar clears
+    AuthProvider, but does not navigate or clear this page's saved profile.
+    Backend requests remain authenticated; this is stale visible information
+    and controls, not evidence of a server authorization bypass.
+    Proposed: a session-aware account gate supporting pending users, immediate
+    clearing of private state and a consistent post-logout destination.
+    Acceptance: after logout, on this page and across tabs, no old profile is
+    displayed and Back cannot reveal retained account state.
+    Evidence: frontend/src/App.tsx:22; pages/AccountsPage.tsx:98-111;
+    frontend/src/auth.tsx:49,71.
+
+07. Forgotten password and confirmation recovery are missing [P1; CODE]
+    Login provides only sign-in and registration. No public forgot-password,
+    resend-confirmation or expired-verification-link recovery view exists.
+    Admin reset and signed-in password change do exist, but do not provide
+    self-service recovery for a locked-out user.
+    Proposed: recovery request, callback and reset flow, confirmation resend
+    with cooldown and privacy-preserving responses; test allowed redirect URLs.
+    Evidence: pages/LoginPage.tsx; App.tsx; accounts.ts:36 (signup has no explicit
+    emailRedirectTo and depends on the hosted project's configured redirect).
+
+08. Dashboard 'Lock' can silently fail to sign out [P2; CODE]
+    PlantPage and PlantOwnerPage call signOut and discard its error result.
+    The separate global sign-out handles returned errors, so behaviour differs.
+    Proposed: one logout action with busy state, error/retry and navigation,
+    clearly named 'Sign out' in account mode. Do not claim success on failure.
+    Evidence: pages/PlantPage.tsx:189; pages/PlantOwnerPage.tsx:130; auth.tsx:71.
+
+09. Newly registered supplier dashboard can crash [P1; REPRODUCED]
+    Accounts.enroll creates defaultLang='EN'. The profile endpoint preserves it.
+    GeneratorPage puts it directly into language state. Translation functions
+    index dictionaries that only have 'en' and 'hi'; words.title then dereferences
+    undefined. Existing seeded suppliers use supported values, hiding the defect.
+    Audit probes confirmed enrolledDefaultLang='EN', and both t('EN') and
+    wasteCopy('EN') return undefined while lowercase values work.
+    Proposed: canonical language codes on enrollment, normalize existing profiles,
+    defensive frontend fallback and a new-registration-to-readiness regression.
+    Evidence: common/accounts.py:236; operations.py:208; GeneratorPage.tsx:101,208;
+    frontend/src/i18n.ts; frontend/src/wasteCopy.ts.
+
+10. Driver handoff does not match Supabase authentication [P1; CODE]
+    Dispatcher generates a ?t= private driver link. Supabase AccountGate requires
+    an authenticated DRIVER with the exact planKey; the backend intentionally
+    rejects legacy tokens in Supabase mode. Account creation excludes drivers,
+    and the account editor has no trip-assignment action. Docs require SQL edits.
+    Proposed: trusted driver onboarding and dispatcher assignment, with a
+    mode-correct handoff link and a safe 'no assigned trip' page.
+    Acceptance: dispatcher assigns a driver; that driver signs in, opens only
+    their trip and records a pickup without a database operator.
+    Evidence: PlantPage.tsx:176,425; App.tsx:30; auth.tsx:79;
+    operations.py:74,605; accounts.py:160; docs/ACCOUNTS.md.
+
+11. Driver access can expire before the planned collection [P1; CODE]
+    Expiry is dispatch time plus 12 hours by default, even for a next-day trip.
+    Dispatching a next-day trip early enough can expire access before departure
+    or return. Both bearer-account drivers and token drivers check that expiry.
+    Retrieving the link keeps the original expiry; no renewal flow is provided.
+    Proposed: a bounded policy covering the collection shift plus a defined grace
+    period, and authorized renewal/revocation preserving the frozen route.
+    Evidence: operations.py:605-630,726; config.py:186; PlantPage.tsx:424.
+
+12. Incorrect registration location cannot be corrected in the app [P1; CODE]
+    Admin can change organisation/contact/address, but not coordinates, site
+    type or plant capacity. Generator enrollment copies address/coordinates once;
+    subsequent account edits do not update operational pickup data. An invalid
+    profile can fail approval with no correction action, while a changed address
+    can disagree with the route's existing destination.
+    Proposed: reviewed site-profile correction, revalidation and synchronization
+    of future planning data; preserve historical and dispatched snapshots.
+    Evidence: pages/AccountsPage.tsx:11; common/accounts.py:224,229,283-326;
+    docs/ACCOUNTS.md documents the current separation.
+
+13. Login/setup requests have no app-level deadline [P2; CODE]
+    apiRequest uses fetch without a default timeout. Auth verification and the
+    registration setup check pass no cancellation/deadline. A stalled request
+    can leave 'Signing in' or disabled registration for an uncontrolled duration.
+    Proposed: finite timeouts, cancellation and actionable retry that preserve
+    entered non-sensitive data. Do not automatically retry account creation.
+    Evidence: frontend/src/api.ts:36-52; auth.tsx:51; RegistrationPage.tsx:29.
+
+14. Plant registration implies more than the single-plant model [P2; LIMITATION]
+    Multiple teams can register plant names/capacities, but approved users work
+    against the same pilot plant. Registration capacity does not configure an
+    independent plant or automatically update planning parameters. The form does
+    warn about the pilot; this remains an onboarding/product expectation issue.
+    Proposed: clearly identify joining the existing plant and review capacity
+    separately. A multi-plant feature requires its own scope and isolation design.
+    Evidence: RegistrationPage.tsx:91; docs/ACCOUNTS.md; operations.py:defaults.
+
+15. Local restarts preserve accounts but lose operational records [P1 for demo;
+    DOCUMENTED LIMITATION]
+    Supabase accounts persist, while local_demo uses in-process Moto for
+    readiness, plans, pickups and gate records. Restart resets those records.
+    Registered suppliers are restored lazily; driver assignments can reference
+    trips that no longer exist. This does not describe production DynamoDB.
+    Proposed: clear disposable-demo messaging and coordinated reset, or a
+    persistent local backend for user acceptance testing.
+    Evidence: scripts/local_demo.py; docs/ACCOUNTS.md.
+
+16. Large frontend bundles affect first access on slow devices [P2; MEASURED]
+    Production output: main JS 1,403.33 KB (389.55 KB gzip); separate 3D scene
+    825.02 KB (218.35 KB gzip). Build emits a size warning. Actual mobile latency
+    was not measured, so do not infer a specific load time.
+    Proposed: measure low-end/mobile startup; load role pages/maps on demand;
+    keep login and recovery lightweight.
+
+VALIDATION AND LIMITS
+
+- Latest origin/main fetched; full separate worktree created at the commit above.
+  Original dirty checkout and pending README GIF work were preserved.
+- Backend: 348 tests passed; existing Starlette/httpx deprecation warning.
+- Frontend: 104 tests passed, 3 opt-in tests skipped; production build passed.
+- Account SQL: 10 local PGlite checks passed. Hosted project was not modified.
+- Route evaluation: 18 scenarios evaluated; outputs in .tmp/audit-routes.*.
+- Actual loopback HTTP workflow passed using disposable Moto data, token auth,
+  fallback routing and mock photo analysis. Readiness, cancellation, photo
+  persistence/isolation, stale dispatch rejection, dispatch, 100 kg pickup,
+  95 kg gate intake and refreshed supplier records were exercised.
+  Evidence: .tmp/audit-workflow.json. This is not a hosted Supabase E2E result.
+- Existing tests cover partial/duplicate pickups, missing/zero gate weight,
+  cancellation constraints and denied GPS logic.
+- Current localhost:5197 login and registration pages were inspected without
+  submitting an account. Registration setup succeeded during this check.
+- No hosted signup/email delivery, successful user login, logout across tabs,
+  approval notification or phone-browser test was performed. Code findings are
+  explicitly marked; they are not presented as completed browser reproductions.
+- Initial pytest run hit sandbox temporary-directory restrictions; rerun outside
+  that sandbox passed. The first disposable API was given an unsupported storage
+  setting by the audit runner; rerunning with the supported setting passed.
+  That failed check also exposed a diagnostic-only helper defect:
+  scripts/verify_repair_integration.py:76 uses Request.method, which may be absent
+  for implicit POST requests. Use Request.get_method() when that helper is fixed.
+
+PROPOSED IMPLEMENTATION ORDER -- NOT YET AUTHORIZED
+
+1. Confirm one consistent frontend/API/project setup and email delivery.
+2. Fix account state, pending/recovery screens and logout clearing/navigation.
+3. Fix supplier enrollment language and location registration/corrections.
+4. Add working driver assignment/handoff and shift-aware access expiry.
+5. Verify real account journeys for Admin, supplier, CBG operations, owner and
+   driver, then repeat the full collection loop through the browser.
+6. Resolve remaining map clarity, demo persistence and performance issues.
+
+Acceptance before broader user testing: register -> confirm email -> pending
+approval -> approve -> sign in -> correct role dashboard -> sign out -> sign in
+again, including a new supplier rather than only seeded accounts. Include wrong
+password, expired confirmation, email limit, network failure, suspension, refresh
+and cross-tab logout. Never weaken authorization to make a demo pass.

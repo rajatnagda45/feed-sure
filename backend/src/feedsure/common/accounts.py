@@ -43,6 +43,7 @@ def public(row: dict) -> dict:
         "contact": row["contact"],
         "address": row["address"],
         "generatorId": row.get("generator_id"),
+        "planKey": row.get("plan_key"),
         "capacityKg": row.get("capacity_kg"),
         "profile": row.get("profile") or None,
     }
@@ -51,7 +52,7 @@ def public(row: dict) -> dict:
 def access(row: dict) -> dict:
     """Map the trusted registry to existing operational permissions."""
     if row["status"] != "ACTIVE":
-        raise ApiError(403, "FORBIDDEN", "Your registration is pending Admin approval.")
+        raise ApiError(403, "ACCOUNT_PENDING", "Your registration is pending Admin approval.")
     role = ROLES.get(row["role"])
     result = {"id": row["id"], "role": role, "accountRole": row["role"]}
     if role == "GENERATOR":
@@ -64,8 +65,9 @@ def access(row: dict) -> dict:
     elif role == "DRIVER":
         from feedsure.common.v3 import split_plan
 
-        split_plan(row.get("plan_key"))
-        result["planKey"] = row["plan_key"]
+        if row.get("plan_key"):
+            split_plan(row["plan_key"])
+            result["planKey"] = row["plan_key"]
     elif role not in {"ADMIN", "PLANT_OWNER"}:
         raise ApiError(403, "FORBIDDEN", "Account role is unavailable.")
     return result
@@ -158,7 +160,7 @@ class Accounts:
             },
         )
         role = payload.get("role")
-        if role not in {"kitchen", "cbg", "owner", "admin"}:
+        if role not in {"kitchen", "cbg", "owner", "admin", "driver"}:
             invalid("Choose a valid account role.")
         result = {
             "role": role,
@@ -175,7 +177,7 @@ class Accounts:
                 "lng": number(payload.get("lng"), "lng", -180, 180),
                 "type": payload["type"],
             }
-        elif role != "admin":
+        elif role in {"cbg", "owner"}:
             result["capacityKg"] = number(payload.get("capacityKg"), "capacityKg", 0.01, 1e9)
         return result
 
@@ -216,7 +218,11 @@ class Accounts:
         """Idempotently restore approved generator profiles into AWS/local DynamoDB."""
         profile = account.get("profile") or {}
         gid = account.get("generatorId")
-        if not isinstance(gid, str) or not gid.startswith("registered-"):
+        if not isinstance(gid, str):
+            return
+        # Legacy imported assignments can lack a registration profile. Preserve
+        # their existing domain record until an Admin supplies reviewed details.
+        if not profile and not gid.startswith("registered-"):
             return
         lat = number(profile.get("lat"), "lat", -90, 90)
         lng = number(profile.get("lng"), "lng", -180, 180)
@@ -224,33 +230,37 @@ class Accounts:
             invalid("Generator registration needs valid pickup details.")
         if validate_only:
             return
-        if self.service.db.get("generators", {"generatorId": gid}, consistent_read=True):
+        existing = self.service.db.get("generators", {"generatorId": gid}, consistent_read=True)
+        if existing and existing.get("profileRevision", 0) >= account["revision"]:
             return
         record = {
+            **(existing or {}),
+            "profileRevision": account["revision"],
             "generatorId": gid,
             "name": account["organisation"],
             "address": account["address"],
             "lat": lat,
             "lng": lng,
             "type": profile["type"],
-            "defaultLang": "EN",
-            "supportedMaterial": True,
+            "defaultLang": (existing or {}).get("defaultLang", "en").lower(),
+            "supportedMaterial": (existing or {}).get("supportedMaterial", True),
             "simulated": bool(self.config.aws_endpoint_url),
-            "pickupStart": "06:00",
-            "pickupEnd": "09:00",
+            "pickupStart": (existing or {}).get("pickupStart", "06:00"),
+            "pickupEnd": (existing or {}).get("pickupEnd", "09:00"),
             "schemaVersion": 3,
-            "tokenHash": hashlib.sha256(secrets.token_bytes(32)).hexdigest(),
+            "tokenHash": (existing or {}).get("tokenHash")
+            or hashlib.sha256(secrets.token_bytes(32)).hexdigest(),
         }
         from botocore.exceptions import ClientError
 
         try:
-            self.service.db.transact(
-                [
-                    self.service.db.conditional_put(
-                        "generators", record, "attribute_not_exists(generatorId)"
-                    )
-                ]
+            action = self.service.db.conditional_put(
+                "generators",
+                record,
+                "attribute_not_exists(profileRevision) OR profileRevision < :revision",
             )
+            action["Put"]["ExpressionAttributeValues"] = {":revision": account["revision"]}
+            self.service.db.transact([action])
         except ClientError as error:
             if error.response.get("Error", {}).get("Code") not in {
                 "ConditionalCheckFailedException",
@@ -266,6 +276,8 @@ class Accounts:
             {
                 "action",
                 "expectedRevision",
+                "profile",
+                "capacityKg",
                 "password",
                 "currentPassword",
                 "organisation",
@@ -312,6 +324,18 @@ class Accounts:
                 for key in ("organisation", "contact", "address")
                 if key in payload
             }
+        if action == "update" and "profile" in payload:
+            profile = payload["profile"]
+            if target["role"] != "kitchen" or not isinstance(profile, dict):
+                invalid("Pickup details apply only to a generator account.")
+            fields(profile, {"lat", "lng", "type"})
+            merged = {**public(target), "profile": profile}
+            self.enroll(merged, validate_only=True)
+            changes["profile"] = profile
+        if action == "update" and "capacityKg" in payload:
+            if target["role"] not in {"cbg", "owner"}:
+                invalid("Capacity applies only to a plant account.")
+            changes["capacityKg"] = number(payload["capacityKg"], "capacityKg", 0.01, 1e9)
         if action == "activate":
             for key in ("organisation", "contact", "address"):
                 text(target[key], key, required=True, limit=200)
@@ -320,7 +344,11 @@ class Accounts:
             elif target["role"] in {"cbg", "owner"}:
                 number(target.get("capacity_kg"), "capacityKg", 0.01, 1e9)
         result = self.rpc(action, p_target=target["id"], p_revision=expected, p_changes=changes)
-        if action == "activate" and target["role"] == "kitchen":
+        if (
+            action in {"activate", "update"}
+            and result["status"] == "ACTIVE"
+            and target["role"] == "kitchen"
+        ):
             self.enroll(public(result))
         elif action == "password":
             try:
@@ -356,6 +384,24 @@ class Accounts:
                 return public(row)
             if method == "POST":
                 return self.mutate(row, body(event), own=True)
+        if path == "/auth/drivers" and method == "GET":
+            return self.rpc("drivers")
+        if path.startswith("/auth/drivers/") and method == "POST":
+            if row["role"] not in {"admin", "cbg"} or row["status"] != "ACTIVE":
+                raise ApiError(403, "FORBIDDEN", "Dispatcher access required.")
+            payload = body(event)
+            fields(payload, {"planKey", "expectedRevision"})
+            plan = self.service.load_plan(payload.get("planKey"))
+            if plan["state"] != "DISPATCHED":
+                invalid("Dispatch a trip before assigning a driver.")
+            return public(
+                self.rpc(
+                    "assign_driver",
+                    p_target=uuid(path.rsplit("/", 1)[1]),
+                    p_revision=revision(payload.get("expectedRevision")),
+                    p_changes={"planKey": plan["planKey"]},
+                )
+            )
         self.manager(row)
         if path == "/auth/accounts":
             if method == "GET":

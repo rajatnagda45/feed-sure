@@ -109,6 +109,7 @@ class Config:
     nvidia_api_url: str = "https://integrate.api.nvidia.com/v1/chat/completions"
     nvidia_max_tokens: int = 600
     nvidia_timeout_seconds: float = 5
+    geocoding_url: str = ""
     routing_provider: str = "auto"
     osrm_base_url: str = "https://router.project-osrm.org"
     routing_timeout_seconds: float = 6
@@ -118,6 +119,7 @@ def get_config() -> Config:
     """Load configuration using defaults mirrored in ``.env.example``."""
     stage = _string("STAGE", "dev")
     return Config(
+        geocoding_url=_string("GEOCODING_URL", ""),
         stage=stage,
         routing_provider=_string("ROUTING_PROVIDER", "auto"),
         osrm_base_url=_string("OSRM_BASE_URL", "https://router.project-osrm.org"),

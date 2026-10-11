@@ -46,6 +46,7 @@ PROFILE_FIELDS = {
     "lat",
     "lng",
     "defaultLang",
+    "profileRevision",
     "supportedMaterial",
     "simulated",
     "locationSource",
@@ -211,7 +212,9 @@ class Service:
         result = {k: v for k, v in record.items() if k in PROFILE_FIELDS}
         result.setdefault("name", str(record["generatorId"]))
         result.setdefault("type", "unknown")
-        result.setdefault("defaultLang", "en")
+        result["defaultLang"] = (
+            "hi" if str(record.get("defaultLang", "en")).lower() == "hi" else "en"
+        )
         result.setdefault("address", f"Coordinates: {record.get('lat')}, {record.get('lng')}")
         result.setdefault("supportedMaterial", True)
         result.setdefault("simulated", False)
@@ -252,6 +255,13 @@ class Service:
 
     def snapshot(self, day: str) -> dict[str, Any]:
         """Read heads consistently and detect an edit during the snapshot operation."""
+        if self.config.auth_provider == "supabase" and self.config.supabase_account_management:
+            from feedsure.common.accounts import Accounts, public
+
+            registry = Accounts(self.config, self)
+            registry.identity(self.event)
+            for registered in registry.rpc("sites")["accounts"]:
+                registry.enroll(public(registered))
         for _ in range(3):
             before = self.meta(day)
             rows = self.db.query(
@@ -526,6 +536,22 @@ class Service:
             "plan", {}
         ).get("totals", {}):
             raise ApiError(503, "DEPENDENCY_NOT_READY", "Planner does not implement contract v3.")
+        route_ids = ["plant", *[stop["generatorId"] for stop in result["plan"]["stops"]], "plant"]
+        indices = {gid: index for index, gid in enumerate(matrix["pointIds"])}
+        result["travelLegs"] = (
+            [
+                {
+                    "fromId": a,
+                    "toId": b,
+                    "km": matrix["km"][indices[a]][indices[b]],
+                    "min": matrix["min"][indices[a]][indices[b]],
+                    "source": matrix["source"],
+                }
+                for a, b in zip(route_ids, route_ids[1:], strict=False)
+            ]
+            if result["plan"]["stops"]
+            else []
+        )
         short_id = "p-" + secrets.token_hex(8)
         result["roadRoute"] = road_route(
             snapshot["depot"], result["plan"]["stops"], matrix["source"], self.config
@@ -688,6 +714,44 @@ class Service:
             },
         }
 
+    def driver_expiry(self, plan: dict) -> int:
+        """Cover the collection shift in India time plus the configured grace period."""
+        end = datetime.fromisoformat(plan["collectionDate"] + "T" + plan["params"]["shiftEnd"])
+        end = end.replace(tzinfo=timezone(timedelta(hours=5, minutes=30)))
+        return int(
+            (max(self.now, end) + timedelta(hours=self.config.driver_token_hours)).timestamp()
+        )
+
+    def renew_access(self, plan_key: str, request: dict) -> dict:
+        """Rotate legacy access without changing the dispatched route or pickup records."""
+        self.admin()
+        fields(request, {"expectedVersion"})
+        plan = self.load_plan(plan_key)
+        if (
+            plan["state"] != "DISPATCHED"
+            or revision(request.get("expectedVersion")) != plan["version"]
+        ):
+            conflict("Refresh the dispatched trip before renewing access.")
+        day_end = datetime.fromisoformat(plan["collectionDate"] + "T23:59:59+05:30")
+        if self.now > day_end + timedelta(days=2):
+            conflict("This trip is too old to renew. Contact operational support.")
+        scope = "RENEW#" + plan_key
+        key, replay = self.replay(scope, request)
+        if replay is not None:
+            return self.access_response(plan)
+        old_expiry = plan["driverExpiresEpoch"]
+        plan["driverExpiresEpoch"] = max(old_expiry + 1, self.driver_expiry(plan))
+        plan["driverTokenHash"] = hashlib.sha256(self.driver_token(plan).encode()).hexdigest()
+        action = self.db.conditional_put("plans", plan, "driverExpiresEpoch = :expiry AND #v = :v")
+        action["Put"].update(
+            ExpressionAttributeNames={"#v": "version"},
+            ExpressionAttributeValues={":expiry": old_expiry, ":v": plan["version"]},
+        )
+        self.db.transact(
+            [action, *self.mutation_actions(scope, key, request, {"planKey": plan_key}, None)]
+        )
+        return self.access_response(plan)
+
     def dispatch(self, plan_key: str, request: dict) -> dict:
         """Freeze a reviewed draft atomically with its date revision and single active trip."""
         self.admin()
@@ -723,7 +787,7 @@ class Service:
             if g["generatorId"] in {s["generatorId"] for s in plan["plan"]["stops"]}
         ):
             conflict("An included waste supplier has an unresolved hazard.")
-        expiry = int((self.now + timedelta(hours=self.config.driver_token_hours)).timestamp())
+        expiry = self.driver_expiry(plan)
         stored = {
             **plan,
             "state": "DISPATCHED",
@@ -743,7 +807,26 @@ class Service:
         actions = self.mutation_actions(
             scope, key, request, {"planKey": stored["planKey"], "version": stored["version"]}, None
         )
-        self.db.transact([meta_action, plan_action, *actions])
+        profile_checks = []
+        for profile in plan["inputs"]["generators"]:
+            if "profileRevision" not in profile:
+                continue
+            current = self.db.get(
+                "generators", {"generatorId": profile["generatorId"]}, consistent_read=True
+            )
+            if not current or current.get("profileRevision") != profile["profileRevision"]:
+                conflict("A pickup location changed. Refresh and re-plan before dispatch.")
+            profile_checks.append(
+                {
+                    "ConditionCheck": {
+                        "TableName": self.db.table_name("generators"),
+                        "Key": {"generatorId": profile["generatorId"]},
+                        "ConditionExpression": "profileRevision = :revision",
+                        "ExpressionAttributeValues": {":revision": profile["profileRevision"]},
+                    }
+                }
+            )
+        self.db.transact([meta_action, plan_action, *actions, *profile_checks])
         return self.access_response(stored)
 
     def execution(
@@ -1055,10 +1138,17 @@ class Service:
             from feedsure.common.accounts import Accounts
 
             return Accounts(self.config).registration_ready()
-        if path.startswith("/auth/account"):
+        if path == "/locations/find" and method == "GET":
+            from feedsure.common.geocoding import find_locations
+
+            return find_locations(self.config, query)
+        if path.startswith("/auth/account") or path.startswith("/auth/drivers"):
             from feedsure.common.accounts import Accounts
 
             return Accounts(self.config, self).route(self.event, path, method)
+        renew_match = re.fullmatch(r"/plans/([^/]+)/renew-access", path)
+        if renew_match and method == "POST":
+            return self.renew_access(renew_match.group(1), body(self.event))
         if path == "/auth/session" and method == "GET":
             account = self.account()
             if account is None:

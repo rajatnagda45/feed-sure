@@ -311,10 +311,49 @@ def test_dispatch_retry_scoped_access_expiry_and_frozen_stops(api):
             driver_path,
             role="driver",
             token=response["driverAccess"]["token"],
-            now=NOW + timedelta(hours=13),
+            now=datetime.fromisoformat(response["driverAccess"]["expiresAt"].replace("Z", "+00:00"))
+            + timedelta(seconds=1),
         )[0]
         == 401
     )
+
+
+def test_next_day_driver_access_covers_shift_and_renewal_revokes_old_link(api):
+    response, path, _ = dispatch(api)
+    expiry = datetime.fromisoformat(response["driverAccess"]["expiresAt"].replace("Z", "+00:00"))
+    shift_end = datetime.fromisoformat(
+        DAY + "T" + response["plan"]["params"]["shiftEnd"] + "+05:30"
+    )
+    assert expiry >= shift_end + timedelta(hours=api.config.driver_token_hours)
+    renew = path.replace("/dispatch", "/renew-access")
+    request = {"expectedVersion": response["plan"]["version"]}
+    assert (
+        api(renew, "POST", request, role="driver", token=response["driverAccess"]["token"])[0]
+        == 401
+    )
+    status, result = api(renew, "POST", request, key="renew-1")
+    assert status == 200, result
+    assert result["plan"]["plan"] == response["plan"]["plan"]
+    assert result["driverAccess"]["token"] != response["driverAccess"]["token"]
+    driver_path = path.replace("/dispatch", "/driver")
+    assert api(driver_path, role="driver", token=response["driverAccess"]["token"])[0] == 401
+    assert api(driver_path, role="driver", token=result["driverAccess"]["token"])[0] == 200
+    assert api(renew, "POST", request, key="renew-1")[1] == result
+
+
+def test_profile_edit_invalidates_draft_but_keeps_existing_plan_snapshot(api):
+    for gid in ("hotel-a", "hostel-b"):
+        record = api.db.get("generators", {"generatorId": gid})
+        api.db.put("generators", {**record, "profileRevision": 1})
+    plan = draft(api)
+    record = api.db.get("generators", {"generatorId": "hotel-a"})
+    api.db.put("generators", {**record, "profileRevision": 2, "lat": 12.7})
+    status, result = api(
+        "/plans/" + plan["planKey"] + "/dispatch",
+        "POST",
+        {"expectedVersion": 1, "expectedInputRevision": plan["inputRevision"]},
+    )
+    assert status == 409, result
 
 
 def test_pickup_retry_correction_no_double_count_and_gps_unknown(api):

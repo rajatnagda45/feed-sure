@@ -82,8 +82,12 @@ Supabase registration and account management: open `/register` to request genera
 team access, `/login` to sign in, and `/accounts` as an Admin to approve, edit, reset, suspend or
 delete accounts. Run all Supabase migrations in order and bootstrap an Admin before enabling
 `SUPABASE_ACCOUNT_MANAGEMENT=true`. See [ACCOUNTS.md](docs/ACCOUNTS.md) for environment setup,
-testing, lifecycle behavior and the single pilot plant boundary. Public signup needs verification
-email delivery; for tests without SMTP, an Admin can create and approve accounts in `/accounts`.
+testing, lifecycle behavior and the single pilot plant boundary. The default pilot mode uses
+email/password login with Admin approval and no SMTP: turn Supabase **Confirm email OFF** and
+keep `VITE_AUTH_EMAIL_MODE=admin`. Admins handle forgotten passwords. Optional email confirmation
+and recovery require configured delivery and `VITE_AUTH_EMAIL_MODE=email`.
+Registration supports PIN/address lookup or live location with a confirmed pickup pin.
+Dispatchers assign approved driver accounts from the dispatched trip screen.
 
 Python 3.12+ and Node/npm are required. Install declared dependencies in a fresh checkout:
 
@@ -104,7 +108,7 @@ python scripts/local_demo.py --date 2026-10-12 --port 8787 --frontend-port 5173
 
 See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for the full local run. Never publish tokens or `.tmp/` files.
 
-**Latest QA (11 Oct 2026):** 325 backend tests, 101 frontend tests, 10 account SQL checks and the production build pass. Route evaluation covers 18 fixed scenarios. We claim no field savings or screening accuracy — only that the workflow executes correctly on synthetic data.
+**Latest QA (11 Oct 2026):** 355 backend tests, 111 frontend tests, 14 account SQL checks and the production build pass; three opt-in frontend tests are skipped. Route evaluation covers 18 fixed scenarios. Live Supabase signup, approval, login/logout and driver assignment were checked with synthetic accounts and local Moto collection data. See [user-flow validation](docs/USER-FLOW-FIXES.md). We claim no field savings or screening accuracy.
 
 ## Honest boundaries (what we do *not* claim)
 
