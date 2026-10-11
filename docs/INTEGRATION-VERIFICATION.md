@@ -8,13 +8,15 @@ Role entry identifies kitchens, dispatchers and drivers, explains their private 
 
 Kitchen details and collection records load independently. Failed reads show explicit retry states. Refreshing collection records preserves an unsaved readiness edit and photo preview. Readiness fields and language controls lock while saving; the saved confirmation identifies weight source and server save time in India time. Records distinguish loading, unavailable and empty states.
 
+The newly merged owner access screen offered an ID/password link to an absent `/login` route. The browser reproduced the not-found page; this PR removes that dead link and explains how to obtain the working plant credential. A regression assertion covers this access screen.
+
 ## Actual verification
 
 | Check | Result |
 | --- | --- |
-| Full backend suite on isolated PR snapshot | 275 passed in 33.36 s; one existing Starlette/httpx deprecation warning |
-| Frontend suite | 58 passed, 3 opt-in tests skipped |
-| Opt-in `local-workflow.test.ts` with a separate manifest | All 3 passed in 4.71 s |
+| Full backend suite on isolated PR snapshot | 280 passed in 29.67 s; one existing Starlette/httpx deprecation warning |
+| Frontend suite | 62 passed, 3 opt-in tests skipped |
+| Opt-in `local-workflow.test.ts` with a separate manifest | All 3 passed in 5.29 s |
 | `verify_repair_integration.py`, clean fixture | PASS on both initial and stable isolated APIs |
 | Same script, malformed fixture and `--expect-failed-analysis` | PASS; readiness survived failed analysis |
 | Production build | Passed; existing MapLibre bundle-size advisory |
@@ -30,6 +32,8 @@ The in-app browser exercised private role entry and rejected a link for another 
 
 A driver correction changed pickup from 100 kg to 90 kg, persisted revision 2 after refresh, and recalculated the 95 kg gate comparison to +5 kg. The kitchen's own record showed 90 kg. Refresh records retained an unsaved 222 kg kitchen edit; saving then persisted that value and its scale source. The dispatcher showed the changed-input alert and retained the frozen 100 kg stop.
 
+After rebasing onto the merged owner-role implementation, a fresh isolated API passed the clean verifier and all three API-client tests. Browser owner authentication rendered the dispatched trip. A gate correction from 95 kg to 90 kg saved revision 2 with actor `PLANT_OWNER`; the comparison recalculated to -10 kg against the 100 kg pickup. The owner layout fit at 320 px. Earlier dispatcher screenshots precede the move of intake controls to the separate owner desk; the current owner screenshot below records that later verification.
+
 The independent photo owner verified PNG select/preview/upload/analysis/reload, JPEG preview cancellation and replacement, invalid `.jpg` rejection, removal/reload and preserved 125 kg readiness. The browser-produced JPEG was 3,260 bytes; SHA-256 `c245eb3fc8a55140766a4d933c7d844020c720c7774bbbbf1ead2021e0602f70` matched authenticated retrieval and the private stored file. That fixture is synthetic image data, not a food photograph or model-accuracy evidence.
 
 Desktop screenshots show real OSM tiles, attribution, the numbered saved stop and depot return, an explicit straight-line label and a separately usable ordered list. Dispatcher, kitchen and driver layouts were inspected at 390 px and 320 px without horizontal page overflow. Screenshot images contain only disposable synthetic data.
@@ -42,8 +46,10 @@ Restarting only the isolated frontend with `VITE_LOCAL_DEMO_BASEMAP=off` showed 
 
 ![Map disabled; route still usable](evidence/final-integration/map-disabled-fallback.png)
 
+![Current plant-owner saved intake](evidence/final-integration/owner-desktop.png)
+
 ## Remaining verification
 
 Live S3, Bedrock and Amazon Location operation, SAM build/deployment, physical phone-camera and GPS behavior remain unverified. Tile/WebGL failure recovery and camera retention have automated lifecycle coverage; forced tile/WebGL failure was not exercised in this browser. Desktop file selection does not prove a physical camera works. No video, licence choice or hackathon submission was made here.
 
-The initial role-entry/photo-viewer improvements were pushed to main by a concurrent repository chat during this task. This follow-up PR preserves them and adds the final kitchen safeguards, verification evidence and corrected run instructions. Unfinished plant-owner/login changes and the separate design-polish PR are excluded.
+The initial role-entry/photo-viewer improvements were pushed to main by a concurrent repository chat during this task. This follow-up PR preserves them and adds the final kitchen safeguards, verification evidence and corrected run instructions. The subsequently merged design-polish and plant-owner PRs were preserved through rebasing and the combined suites rerun. Unfinished shared-checkout login changes remain excluded.

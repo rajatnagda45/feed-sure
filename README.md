@@ -30,7 +30,7 @@ npm run build
 
 For private kitchen links and the disposable local API/frontend, follow [DEPLOYMENT.md](docs/DEPLOYMENT.md). Preserve any running demo and its private access manifest. Never publish tokens or `.tmp/` files.
 
-QA on 11 October 2026: **275 backend tests**, **58 frontend tests**, all **3 opt-in live API-client tests**, clean and malformed-analysis HTTP workflows, and the production build passed. The final isolated backend run took 33.36 seconds. Actual browser checks covered role access, persisted photos, dispatcher evidence, driver corrections and narrow layouts. The 18 fixed route scenarios retain their published results: 16 ties, one shorter primary route at equal expected kg, and one trade-off where nearest-first collected more expected kg. No field savings or screening accuracy are claimed.
+QA on 11 October 2026: **280 backend tests**, **62 frontend tests**, all **3 opt-in live API-client tests**, clean and malformed-analysis HTTP workflows, and the production build passed. The final isolated backend run took 29.67 seconds. Actual browser checks covered role access, persisted photos, dispatcher evidence, driver corrections and narrow layouts. The 18 fixed route scenarios retain their published results: 16 ties, one shorter primary route at equal expected kg, and one trade-off where nearest-first collected more expected kg. No field savings or screening accuracy are claimed.
 
 Three evidence levels are kept separate throughout the repository: pure fixture/unit results,
 real HTTP handlers backed by disposable local Moto storage, and deployed AWS/browser-device evidence.

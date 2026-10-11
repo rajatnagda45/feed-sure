@@ -15,6 +15,8 @@ it("opens owner access without borrowing the dispatcher session", () => {
   expect(getItem).not.toHaveBeenCalledWith("feedsure:admin");
   expect(html).toContain("Plant owner token");
   expect(html).toContain("Open plant intake");
+  expect(html).toContain("Ask the plant operator");
+  expect(html).not.toContain('href="/login');
 });
 
 const trip: IntakeTrip = {

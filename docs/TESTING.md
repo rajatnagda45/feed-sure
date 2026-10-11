@@ -4,15 +4,15 @@ Updated 11 October 2026. Final integration uses disposable synthetic records, re
 
 ## Separate plant owner interface
 
-Main now includes a distinct owner desk at `/owner` and admin desk at `/admin`. Prior owner-role verification reported 280 backend tests, 62 frontend tests and a passing build. It covers separate credentials, intake-only access, actor attribution and revisioned gate writes. This integration branch will rerun the combined suites; results below record the product verification phase before that concurrent merge.
+Main includes a distinct owner desk at `/owner` and admin desk at `/admin`. This branch preserves those merged changes. The combined suites below were rerun after rebasing. Owner credentials, intake-only access, actor attribution and revisioned gate writes have automated coverage; actual owner login and gate correction were also exercised in the browser.
 
 ## Actual results
 
 | Check | Result |
 | --- | --- |
-| `python -m pytest -q -o faulthandler_timeout=30 -p no:cacheprovider` | 275 passed in 33.36 s on the isolated PR snapshot |
-| Frontend `npm.cmd run test` | 58 passed; 3 opt-in tests skipped |
-| Opt-in client workflow below | 3 passed in 4.71 s on a fresh isolated API |
+| `python -m pytest -q -o faulthandler_timeout=30 -p no:cacheprovider` | 280 passed in 29.67 s on the isolated PR snapshot |
+| Frontend `npm.cmd run test` | 62 passed; 3 opt-in tests skipped |
+| Opt-in client workflow below | 3 passed in 5.29 s on a fresh isolated API |
 | `scripts/verify_repair_integration.py`, clean and malformed fixtures | Both PASS; clean repeated on the isolated PR snapshot |
 | Independent `tests/integration/photo_live_smoke.py` | 13 checks passed, with exact PNG/JPEG retrieval |
 | `npm.cmd run build` | Passed; existing MapLibre bundle-size advisory |
