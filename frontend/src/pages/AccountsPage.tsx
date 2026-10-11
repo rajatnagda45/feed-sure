@@ -1,0 +1,169 @@
+import { FormEvent, useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { ApiError } from "../api";
+import { Account, accountLabels, accountRequest, clearAccountAccess } from "../accounts";
+
+function message(reason: unknown) {
+  return reason instanceof ApiError ? reason.message : "Could not connect. Check the connection and retry.";
+}
+
+function AccountEditor({ account, refresh }: { account: Account; refresh: (message: string) => void }) {
+  const [fields, setFields] = useState({ organisation: account.organisation, contact: account.contact, address: account.address });
+  const [password, setPassword] = useState("");
+  const [confirmation, setConfirmation] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  async function action(name: string, extra = {}) {
+    setBusy(true); setError(null); setNotice(null);
+    try {
+      await accountRequest<Account>(`/auth/accounts/${encodeURIComponent(account.loginId)}`, {
+        action: name, expectedRevision: account.revision, ...extra,
+      });
+      setPassword(""); setConfirmation("");
+      setNotice(name === "password" ? "Password reset. Existing sessions have been signed out." : "Account updated.");
+      refresh(name === "password" ? "Password reset. Existing sessions have been signed out."
+        : name === "delete" ? "Account deleted. Collection and intake records were retained."
+        : name === "activate" ? "Account approved and active. The user can now sign in."
+        : name === "suspend" ? "Account suspended. All its sessions have been signed out." : "Account details saved.");
+    } catch (reason) { setError(message(reason)); }
+    finally { setBusy(false); }
+  }
+  return <article className="account-row">
+    <div className="account-row-heading"><div><h2>{account.organisation}</h2><p>{account.loginId} · {accountLabels[account.role]}</p></div>
+      <span className={`account-status account-status-${account.status.toLowerCase()}`}>{account.status.toLowerCase()}</span></div>
+    <p>{account.contact || "No contact details"} · {account.address || "No address supplied"}</p>
+    {account.capacityKg && <p>Registered plant capacity: {account.capacityKg.toLocaleString("en-IN")} kg/day</p>}
+    {account.profile && <p>Pickup coordinates: {account.profile.lat}, {account.profile.lng} · {account.profile.type.replaceAll("_", " ")}</p>}
+    {account.status === "PENDING" && account.role !== "kitchen" && <p className="notice">Check the plant details before approval. Activating this account gives access to the existing pilot plant.</p>}
+    <div className="account-actions">
+      {account.status !== "ACTIVE" && <button type="button" className="button button-primary" disabled={busy} onClick={() => void action("activate")}>{account.status === "PENDING" ? "Approve account" : "Reactivate account"}</button>}
+      {account.status === "ACTIVE" && <button type="button" className="button button-secondary" disabled={busy} onClick={() => void action("suspend")}>Suspend account</button>}
+    </div>
+    <details><summary>Edit account details</summary><form onSubmit={(event) => { event.preventDefault(); void action("update", fields); }}>
+      <fieldset className="login-fields" disabled={busy}>
+        {(Object.keys(fields) as (keyof typeof fields)[]).map((key) => <label className="field" key={key}><span>{key === "organisation" ? "Organisation / plant name" : key === "contact" ? "Contact" : "Address"}</span>
+          <input required maxLength={200} value={fields[key]} onChange={(event) => setFields({ ...fields, [key]: event.currentTarget.value })} /></label>)}
+        <button className="button button-secondary" type="submit">Save details</button>
+      </fieldset>
+    </form></details>
+    <details><summary>Reset password</summary><form onSubmit={(event) => { event.preventDefault(); void action("password", { password }); }}>
+      <label className="field"><span>New password (at least 12 characters)</span><input type="password" required minLength={12} maxLength={256} autoComplete="new-password" value={password} disabled={busy} onChange={(event) => setPassword(event.currentTarget.value)} /></label>
+      <button className="button button-secondary" type="submit" disabled={busy}>Reset password and sign out sessions</button>
+    </form></details>
+    <details className="account-delete"><summary>Delete account</summary>
+      <p>This removes login access and signs out all sessions. Collection and intake records are retained.</p>
+      <label className="field"><span>Type {account.loginId} to confirm</span><input autoComplete="off" value={confirmation} disabled={busy} onChange={(event) => setConfirmation(event.currentTarget.value)} /></label>
+      <button className="button button-secondary" type="button" disabled={busy || confirmation !== account.loginId} onClick={() => void action("delete")}>Delete account</button>
+    </details>
+    {error && <p className="inline-error" role="alert">{error}</p>}
+    {notice && <p role="status">{notice}</p>}
+  </article>;
+}
+
+export function AccountsPage() {
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [revision, setRevision] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [filter, setFilter] = useState("ALL");
+  const [search, setSearch] = useState("");
+  useEffect(() => {
+    let active = true;
+    setLoading(true); setError(null);
+    accountRequest<{ accounts: Account[] }>("/auth/accounts").then((result) => { if (active) setAccounts(result.accounts); })
+      .catch((reason) => { if (active) { setAccounts([]); setError(message(reason)); } })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [revision]);
+  const visible = accounts.filter((account) => (filter === "ALL" || account.status === filter)
+    && `${account.organisation} ${account.loginId} ${accountLabels[account.role]}`.toLowerCase().includes(search.toLowerCase()));
+  return <main className="account-shell">
+    <div className="section-heading"><div><h1>Manage accounts</h1><p>Review registrations and manage access for generators and your CBG plant team.</p></div>
+      <Link className="button button-primary" to="/accounts/new">Create new login</Link></div>
+    <div className="account-toolbar">
+      <label className="field"><span>Search accounts</span><input type="search" value={search} onChange={(event) => setSearch(event.currentTarget.value)} /></label>
+      <label className="field"><span>Account status</span><select value={filter} onChange={(event) => setFilter(event.currentTarget.value)}><option value="ALL">All accounts</option><option value="PENDING">Pending approval</option><option value="ACTIVE">Active</option><option value="SUSPENDED">Suspended</option></select></label>
+      <button className="button button-secondary" disabled={loading} type="button" onClick={() => setRevision((value) => value + 1)}>Refresh accounts</button>
+    </div>
+    {notice && <p className="notice success" role="status">{notice}</p>}
+    {loading ? <p role="status">Loading accounts…</p> : error ? <div role="alert"><p className="inline-error">{error}</p><Link to="/login?role=admin">Sign in as an Admin</Link></div>
+      : visible.length === 0 ? <p>No accounts match this view. Choose another status or create a new login.</p>
+      : visible.map((account) => <AccountEditor key={`${account.loginId}:${account.revision}`} account={account} refresh={(result) => { setNotice(result); setRevision((value) => value + 1); }} />)}
+  </main>;
+}
+
+export function MyAccountPage() {
+  const navigate = useNavigate();
+  const [account, setAccount] = useState<Account | null>(null);
+  const [password, setPassword] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [confirmation, setConfirmation] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+    accountRequest<Account>("/auth/account").then((result) => { if (active) setAccount(result); })
+      .catch((reason) => { if (active) setError(message(reason)); });
+    return () => { active = false; };
+  }, []);
+  async function save(event: FormEvent, action: "password" | "delete") {
+    event.preventDefault();
+    if (!account) return;
+    setError(null);
+    if (action === "password" && password !== confirmPassword) { setError("The new passwords do not match."); return; }
+    setBusy(true);
+    try {
+      await accountRequest("/auth/account", { action, expectedRevision: account.revision, currentPassword,
+        ...(action === "password" ? { password } : {}),
+      });
+      clearAccountAccess(); navigate("/login", { replace: true });
+    } catch (reason) { setError(message(reason)); }
+    finally { setBusy(false); }
+  }
+  return <main className="auth-shell"><section className="token-panel">
+    <h1>My account</h1>
+    {account && <><p><strong>{account.loginId}</strong> · {accountLabels[account.role]}</p><p>{account.organisation}</p>
+      <form onSubmit={(event) => void save(event, "password")}><fieldset className="login-fields" disabled={busy}>
+        <label className="field"><span>Current password</span><input type="password" required maxLength={256} autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.currentTarget.value)} /></label>
+        <label className="field"><span>New password (at least 12 characters)</span><input type="password" required minLength={12} maxLength={256} autoComplete="new-password" value={password} onChange={(event) => setPassword(event.currentTarget.value)} /></label>
+        <label className="field"><span>Confirm new password</span><input type="password" required minLength={12} maxLength={256} autoComplete="new-password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.currentTarget.value)} /></label>
+        <button className="button button-primary" type="submit">Change password and sign out</button>
+      </fieldset></form>
+      <details className="account-delete"><summary>Delete my account</summary><p>Login access will be removed. Collection and intake records are retained.</p>
+        <form onSubmit={(event) => void save(event, "delete")}><fieldset className="login-fields" disabled={busy}>
+          <label className="field"><span>Current password</span><input type="password" required maxLength={256} autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.currentTarget.value)} /></label>
+          <label className="field"><span>Type {account.loginId} to confirm</span><input required value={confirmation} onChange={(event) => setConfirmation(event.currentTarget.value)} /></label>
+          <button className="button button-secondary" type="submit" disabled={confirmation !== account.loginId}>Delete my account</button>
+        </fieldset></form>
+      </details></>}
+    {error && <p className="inline-error" role="alert">{error}</p>}
+    {!account && <Link to="/login">Sign in to manage your account</Link>}
+    <Link className="text-button" to="/">Back to FeedSure</Link>
+  </section></main>;
+}
+
+export function AccountNavigation() {
+  const navigate = useNavigate();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  if (!sessionStorage.getItem("feedsure:account")) return null;
+  async function logout() {
+    setBusy(true);
+    try {
+      await accountRequest("/auth/logout", {}); clearAccountAccess(); navigate("/login", { replace: true });
+    } catch (reason) {
+      if (reason instanceof ApiError && reason.status === 401) {
+        clearAccountAccess(); navigate("/login", { replace: true });
+      } else { setError(message(reason)); }
+    } finally { setBusy(false); }
+  }
+  return <nav className="account-navigation" aria-label="Account navigation">
+    <span>{sessionStorage.getItem("feedsure:login-id")}</span><Link to="/account">My account</Link>
+    {sessionStorage.getItem("feedsure:account-role") === "admin" && <Link to="/accounts">Manage accounts</Link>}
+    <button className="text-button" disabled={busy} type="button" onClick={() => void logout()}>Sign out</button>
+    {error && <span role="alert">{error}</span>}
+  </nav>;
+}

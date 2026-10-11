@@ -26,6 +26,7 @@ export function RoleAccessPage({ role }: { role: "kitchen" | "driver" }) {
     <section className="token-panel">
       <Link className="brand" to="/">FeedSure CBG</Link>
       <h1>{kitchen ? "Kitchen access" : "Driver access"}</h1>
+      {kitchen && <Link className="button button-primary" to="/login?role=generator">Sign in with ID and password</Link>}
       <p>{kitchen ? "Confirm waste readiness and view your kitchen’s collection records."
         : "Open your assigned trip and record pickup outcomes while parked."}</p>
       <p>{kitchen ? "Ask your dispatcher for a kitchen-specific private link."

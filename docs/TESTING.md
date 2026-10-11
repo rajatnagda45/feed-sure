@@ -1,5 +1,15 @@
 # Testing and evidence
 
+## Registration and account PR — 11 October 2026
+
+The isolated registration branch passes 298 backend tests, including real local HTTP account
+lifecycle and owner gate/intake checks against Moto DynamoDB. Frontend: 60 passed, 3 skipped;
+production build passed. Ruff passed for changed Python files. Browser checks verified seeded
+Admin login, account navigation, CBG account filtering and registration layouts at wide and
+narrow panel sizes. Account endpoints remain loopback-only; no hosted login was deployed.
+
+See [ACCOUNTS.md](ACCOUNTS.md) for registration, persistence and lifecycle boundaries.
+
 Updated 11 October 2026. This document separates repeatable automated checks from earlier browser observations and pending repair integration.
 
 ## Session C: verified independent checks

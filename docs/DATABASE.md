@@ -1,5 +1,9 @@
 # DATABASE — FeedSure CBG (DynamoDB, on-demand)
 
+The local account registry is separate from DynamoDB. See [ACCOUNTS.md](ACCOUNTS.md) for
+hashed credentials, profiles, tombstones and restart behavior. Approval enrolls registered
+generators using existing v3 profiles in the disposable demo database.
+
 ## Shipped v3 storage
 
 Existing keys for Generators, History, Submissions and Plans are retained. Only `schemaVersion:3`

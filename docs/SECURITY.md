@@ -1,5 +1,9 @@
 # SECURITY — FeedSure CBG
 
+The local demo supports pending registration, Admin approval, salted hashes and revocable
+sessions. See [ACCOUNTS.md](ACCOUNTS.md) for lifecycle, legacy-token limits and storage. This
+account service is not hosted authentication.
+
 ## Shipped v3 controls and limits
 
 Admin, generator and driver credentials travel in separate headers. Blank/placeholder admin

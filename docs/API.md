@@ -1,5 +1,8 @@
 # API — FeedSure CBG
 
+Local login, registration, account lifecycle and owner intake contracts are in
+[ACCOUNTS.md](ACCOUNTS.md). `/auth/*` is enabled only by the loopback demo, never by SAM.
+
 ## Shipped v3 API
 
 Use [V3-CONTRACT.md](V3-CONTRACT.md) for the active payloads, headers, route table, revisions and

@@ -20,6 +20,9 @@ export function LandingPage() {
             driver records what was actually collected. Plant intake closes the loop.
           </p>
           <nav className="hero-actions" aria-label="FeedSure destinations">
+            <Link className="button button-primary" to="/login">Sign in</Link>
+            <Link className="button button-secondary" to="/register?role=generator">Register organic waste generator</Link>
+            <Link className="button button-secondary" to="/register?role=owner">Register CBG plant</Link>
             <Link className="button button-secondary" to="/kitchen-access">Kitchen access</Link>
             <Link className="button button-primary" to="/plant">Open operations desk</Link>
             <Link className="button button-secondary" to="/driver-access">Driver access</Link>

@@ -56,6 +56,11 @@ Parameters:
     Type: String
     Default: CHANGE_ME
     NoEcho: true
+  PlantOwnerToken:
+    Type: String
+    Default: ""
+    NoEcho: true
+    Description: Distinct intake-only credential for the CBG plant owner
   BedrockModelId:
     Type: String
     Default: global.anthropic.claude-haiku-4-5-20251001-v1:0
@@ -224,6 +229,7 @@ Globals:
         MOCK_BEDROCK: !Ref MockBedrock
         MOCK_BEDROCK_FIXTURE: !Ref MockBedrockFixture
         ADMIN_TOKEN: !Ref AdminToken
+        PLANT_OWNER_TOKEN: !Ref PlantOwnerToken
         ALLOWED_ORIGIN: !Ref AllowedOrigin
         PLANT_LAT: !Ref PlantLat
         PLANT_LNG: !Ref PlantLng
@@ -250,6 +256,7 @@ Resources:
         AllowHeaders:
           - content-type
           - x-admin-token
+          - x-plant-token
           - x-generator-token
           - x-driver-token
           - idempotency-key
@@ -411,6 +418,12 @@ Resources:
             ApiId: !Ref HttpApi
             Method: POST
             Path: /gate-logs
+        PlantIntake:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Method: GET
+            Path: /intake
         AttachPhoto:
           Type: HttpApi
           Properties:

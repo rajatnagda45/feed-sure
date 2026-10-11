@@ -1,0 +1,34 @@
+.login-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
+.registration-panel { width: min(100%, 640px); }
+.registration-panel .login-fields { display: grid; gap: 16px; }
+.account-shell { max-width: 1100px; margin: 0 auto; padding: 32px var(--gutter); }
+.account-navigation { display: flex; flex-wrap: wrap; align-items: center; gap: 20px; padding: 12px var(--gutter); background: var(--surface); border-bottom: 1px solid var(--line); }
+.account-navigation span { margin-right: auto; overflow-wrap: anywhere; }
+.account-toolbar { display: flex; flex-wrap: wrap; align-items: end; gap: 16px; margin: 24px 0; }
+.account-toolbar .field { flex: 1 1 220px; margin: 0; }
+.account-row { padding: 24px 0; border-bottom: 1px solid var(--line); }
+.account-row h2 { font-size: 1.35rem; margin: 0; }
+.account-row-heading { display: flex; align-items: start; justify-content: space-between; gap: 16px; }
+.account-row p { overflow-wrap: anywhere; }
+.account-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+.account-row details { margin: 12px 0; max-width: 640px; }
+.account-row form .login-fields { display: grid; gap: 14px; }
+.account-row summary, .account-delete summary { cursor: pointer; padding: 8px 0; font-weight: 600; }
+.account-status { border: 1px solid var(--line); padding: 5px 12px; border-radius: 20px; text-transform: capitalize; }
+.account-status-active { color: #135c36; background: #e4f4eb; }
+.account-status-pending { color: #715000; background: #fff3d0; }
+.account-status-suspended { color: #842b2b; background: #fde8e8; }
+.account-delete { margin-top: 24px; }
+.account-field-pair, .owner-trip-body { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.owner-content { max-width: 1280px; margin: 0 auto; padding: 28px var(--gutter); }
+.owner-trip { margin-top: 24px; padding: 24px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.owner-gate-fields { display: grid; gap: 14px; padding: 0; margin: 0; border: 0; min-width: 0; }
+.owner-records { list-style: none; padding: 0; }
+.owner-records li { display: flex; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.owner-records span { display: block; color: var(--muted); font-size: .85rem; }
+@media (max-width: 700px) {
+  .account-field-pair, .owner-trip-body { grid-template-columns: 1fr; }
+  .account-shell .section-heading { display: block; }
+  .account-navigation { gap: 12px; }
+  .owner-trip { padding: 18px; }
+}

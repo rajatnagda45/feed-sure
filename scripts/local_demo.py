@@ -61,6 +61,7 @@ def main() -> None:
         MOCK_BEDROCK="true",
         MOCK_BEDROCK_FIXTURE=args.photo_fixture,
         ADMIN_TOKEN=secrets.token_urlsafe(32),
+        PLANT_OWNER_TOKEN=secrets.token_urlsafe(32),
         DRIVER_TOKEN_SECRET=secrets.token_urlsafe(48),
         ALLOWED_ORIGIN=f"http://localhost:{args.frontend_port}",
     )
@@ -80,6 +81,18 @@ def main() -> None:
 
         dev_server.app.state.config = config
         dev_server.app.state.database = DynamoDB(config, resource)
+        from local_accounts import LocalAccounts, prepare_accounts
+
+        accounts = prepare_accounts(ROOT / "docs", list(tokens), config.allowed_origin)
+        dev_server.app.state.local_accounts = LocalAccounts(
+            accounts,
+            tokens,
+            config.admin_token,
+            config.plant_owner_token,
+            args.date.isoformat(),
+            registry=ROOT / ".tmp/accounts.local.json",
+            database=dev_server.app.state.database,
+        )
         from feedsure.handlers.photos import LocalPhotoStore
 
         access_file = args.manifest.resolve()
@@ -93,6 +106,7 @@ def main() -> None:
                     "apiBaseUrl": f"http://localhost:{args.port}",
                     "frontendOrigin": config.allowed_origin,
                     "adminToken": config.admin_token,
+                    "plantOwnerToken": config.plant_owner_token,
                     "generatorTokens": tokens,
                     "generatorLinks": {
                         gid: f"http://localhost:{args.frontend_port}/g/{gid}?t={token}"
@@ -104,10 +118,14 @@ def main() -> None:
             encoding="utf-8",
         )
         print(
-            f"Synthetic kitchens; Moto DynamoDB; local photo bytes; "
+            f"Synthetic organic waste generators; Moto DynamoDB; local photo bytes; "
             f"mock screening ({args.photo_fixture}); fallback matrix. Date {args.date}."
         )
         print(f"Private access: {access_file}. DynamoDB state is discarded on process stop.")
+        print(
+            f"ID/password login: {config.allowed_origin}/login. "
+            "Credentials: docs/LOGIN-CREDENTIALS.local.md"
+        )
         print(f"Photo bytes persist privately in {photo_dir} until retention or manual cleanup.")
         server = uvicorn.Server(
             uvicorn.Config(dev_server.app, host="127.0.0.1", port=args.port, access_log=False)

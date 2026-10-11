@@ -14,6 +14,12 @@ The optional photo and map repairs are undergoing independent integration verifi
 
 ## Run and verify
 
+Local registration and account management: open `/register` to request generator or CBG plant
+team access, `/login` to sign in, and `/accounts` as an Admin to approve, edit, reset, suspend or
+delete accounts. Start `python scripts/local_demo.py`; initial private credentials are saved in
+`docs/LOGIN-CREDENTIALS.local.md`. See [ACCOUNTS.md](docs/ACCOUNTS.md) for lifecycle behavior
+and the single-plant/local-only boundaries.
+
 Python 3.12+ and Node/npm are required. Install declared dependencies in a fresh checkout:
 
 ```powershell

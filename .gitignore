@@ -16,6 +16,7 @@ frontend/dist/
 frontend/.vite/
 *.tsbuildinfo
 seed_links.local.txt
+docs/LOGIN-CREDENTIALS.local.*
 eval/results.local.*
 .DS_Store
 
