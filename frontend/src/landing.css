@@ -29,6 +29,7 @@
 
   position: relative;
   min-height: 100vh;
+  overflow-x: clip; /* safety net against any wide child (e.g. the 3D canvas) */
   color: var(--fs-ink);
   background: var(--fs-ivory);
   font-family: var(--fs-sans);
@@ -289,52 +290,50 @@
   opacity: 0;
 }
 
-/* Hero visual — custom collection-journey illustration */
+/* Hero visual — living, code-generated 3D collection ecosystem */
 .fs-hero__visual { min-width: 0; }
-.fs-journey {
+.fs-scene { margin: 0; min-width: 0; max-width: 100%; }
+.fs-scene__stage {
   position: relative;
-  padding: clamp(20px, 2.4vw, 30px);
-  border: 1px solid var(--fs-line);
-  border-radius: 20px;
-  background: linear-gradient(180deg, #fff 0%, var(--fs-ivory-2) 100%);
-  box-shadow: 0 30px 60px -36px rgb(13 46 37 / 40%);
+  aspect-ratio: 16 / 11;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  /* Feather the scene edges into the ivory background — no visible canvas box */
+  -webkit-mask-image: radial-gradient(125% 125% at 50% 44%, #000 70%, transparent 100%);
+  mask-image: radial-gradient(125% 125% at 50% 44%, #000 70%, transparent 100%);
 }
-.fs-journey__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-.fs-journey__id { font-size: 0.78rem; color: var(--fs-moss); letter-spacing: 0.08em; }
-.fs-route { display: block; width: 100%; height: auto; }
-.fs-route__grid line { stroke: rgb(21 63 50 / 7%); stroke-width: 1; }
-.fs-route__path { stroke: var(--fs-forest); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
-.fs-route__way circle { fill: var(--fs-lime); stroke: var(--fs-forest); stroke-width: 1.4; }
-.fs-node rect { fill: #fff; stroke: var(--fs-forest); stroke-width: 1.8; }
-.fs-node--plant rect { fill: var(--fs-forest); }
-.fs-node__glyph { stroke: var(--fs-forest); }
-.fs-node--plant .fs-node__glyph { stroke: var(--fs-lime); }
-.fs-vehicle rect { fill: var(--fs-forest); }
-.fs-vehicle__wheel { fill: var(--fs-ink); }
-.fs-vehicle { offset-path: path("M44 46 C 110 46, 120 120, 180 128 S 250 180, 286 176"); offset-distance: 100%; offset-rotate: auto; }
+.fs-scene__stage canvas { display: block; width: 100% !important; height: 100% !important; }
+.fs-scene__static { display: block; width: 100%; height: 100%; }
 
-.fs-journey__steps { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 18px 0 0; padding: 0; list-style: none; }
-.fs-journey__step {
+.fs-scene__caption {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  margin-top: 8px;
+  padding: 0 4px;
+}
+.fs-scene__stages { flex: 1 1 auto; min-width: 220px; }
+.fs-scene__track { position: relative; height: 2px; margin-bottom: 12px; background: var(--fs-line); border-radius: 2px; overflow: hidden; }
+.fs-scene__fill { position: absolute; inset: 0 auto 0 0; background: var(--fs-forest); border-radius: 2px; transition: width 600ms cubic-bezier(0.2, 0.7, 0.2, 1); }
+.fs-scene__stages ol { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 0; padding: 0; list-style: none; }
+.fs-scene__stages li {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.8rem;
-  font-weight: 650;
-  color: var(--fs-forest);
+  gap: 7px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--fs-moss);
+  transition: color 300ms ease;
 }
-.fs-journey__step .fs-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--fs-moss); }
-.fs-journey__step:last-child .fs-dot { background: var(--fs-lime); box-shadow: 0 0 0 3px rgb(199 236 99 / 35%); }
-.fs-journey__readout {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
-  margin-top: 20px;
-  padding-top: 18px;
-  border-top: 1px solid var(--fs-line);
-}
-.fs-journey__kg { display: block; font-size: 1.9rem; font-weight: 600; color: var(--fs-forest); line-height: 1; }
-.fs-journey__kglabel { display: block; margin-top: 6px; font-size: 0.76rem; color: var(--fs-moss); }
+.fs-scene__dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; transition: background-color 300ms ease, box-shadow 300ms ease; }
+.fs-scene__stages li.is-done { color: var(--fs-forest); }
+.fs-scene__stages li.is-active { color: var(--fs-forest); }
+.fs-scene__stages li.is-active .fs-scene__dot { background: var(--fs-lime); box-shadow: 0 0 0 3px rgb(199 236 99 / 40%); }
+.fs-scene__demotag { margin-left: auto; align-self: flex-start; }
 
 /* ============================ PROBLEM (dark) =============================== */
 .fs-problem { background: var(--fs-forest); color: var(--fs-ivory); }
@@ -569,7 +568,7 @@
 
 /* ============================ RESPONSIVE =================================== */
 @media (min-width: 980px) {
-  .fs-hero { grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr); }
+  .fs-hero { grid-template-columns: minmax(0, 1fr) minmax(0, 0.95fr); align-items: center; }
   .fs-workflow__track { grid-template-columns: repeat(2, 1fr); gap: 56px 64px; }
   .fs-stage:nth-child(odd) .fs-stage__bar::before { display: none; }
   .fs-ops__grid { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); }
@@ -591,7 +590,7 @@
   .fs-ledger__row--head { display: none; }
   .fs-ledger__name { font-size: 0.95rem; }
   .fs-stage__body h3 { font-size: 1.5rem; }
-  .fs-journey__kg { font-size: 1.5rem; }
+  .fs-scene__caption { gap: 8px 12px; }
 }
 
 /* ============================================================================
@@ -628,34 +627,18 @@
 .fs--motion .fs-hero__copy.is-in .fs-hero__line:nth-child(2) { transition-delay: 0.1s; }
 .fs--motion .fs-hero__copy.is-in .fs-hero__line:nth-child(3) { transition-delay: 0.2s; }
 
-/* Hero route illustration */
-.fs--motion .fs-hero__visual .fs-route__path { stroke-dasharray: 560; stroke-dashoffset: 560; }
-.fs--motion .fs-hero__visual.is-in .fs-route__path { transition: stroke-dashoffset 1.7s ease 0.25s; stroke-dashoffset: 0; }
-.fs--motion .fs-hero__visual .fs-route__way { opacity: 0; transform-box: fill-box; transform-origin: center; transform: scale(0.3); }
-.fs--motion .fs-hero__visual.is-in .fs-route__way { animation: fs-pop 0.45s cubic-bezier(0.2, 1.3, 0.4, 1) forwards; animation-delay: calc(0.7s + var(--i) * 0.35s); }
-.fs--motion .fs-hero__visual .fs-vehicle { offset-distance: 0%; opacity: 0; }
-.fs--motion .fs-hero__visual.is-in .fs-vehicle { animation: fs-drive 2.6s cubic-bezier(0.45, 0, 0.3, 1) 0.55s forwards; }
-.fs--motion .fs-hero__visual .fs-node { opacity: 0; transform-box: fill-box; transform-origin: center; transform: scale(0.6); }
-.fs--motion .fs-hero__visual.is-in .fs-node { animation: fs-pop 0.5s ease forwards; }
-.fs--motion .fs-hero__visual.is-in .fs-node--plant { animation-delay: 1.9s; }
-
-/* Hero quiet pulse (restrained, single ring) */
+/* Hero quiet pulse (restrained, single ring). The 3D collection scene runs
+   its own entrance + loop inside the canvas (see scene/SceneCanvas.tsx). */
 .fs--motion .fs-pulse::after { animation: fs-ring 2.6s ease-out infinite; }
 
 @keyframes fs-fadein { to { opacity: 1; } }
 @keyframes fs-slidedown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
-@keyframes fs-pop { from { opacity: 0; transform: scale(0.3); } to { opacity: 1; transform: scale(1); } }
-@keyframes fs-drive { 0% { offset-distance: 0%; opacity: 0; } 8% { opacity: 1; } 92% { opacity: 1; } 100% { offset-distance: 100%; opacity: 1; } }
 @keyframes fs-ring { 0% { opacity: 0.5; transform: scale(0.6); } 100% { opacity: 0; transform: scale(1.8); } }
 
 @media (prefers-reduced-motion: reduce) {
   .fs--motion .fs-reveal,
   .fs--motion .fs-reveal .fs-stagger > *,
   .fs--motion .fs-reveal.fs-stagger > *,
-  .fs--motion .fs-hero__copy .fs-hero__line,
-  .fs--motion .fs-hero__visual .fs-node,
-  .fs--motion .fs-hero__visual .fs-route__way { opacity: 1 !important; transform: none !important; }
-  .fs--motion .fs-hero__visual .fs-route__path { stroke-dasharray: none !important; stroke-dashoffset: 0 !important; }
-  .fs--motion .fs-hero__visual .fs-vehicle { offset-distance: 100% !important; opacity: 1 !important; }
+  .fs--motion .fs-hero__copy .fs-hero__line { opacity: 1 !important; transform: none !important; }
   .fs * { animation: none !important; }
 }
