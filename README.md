@@ -58,7 +58,7 @@ Photos can assist with visible items only; they cannot establish whole-load safe
 
 ## AI tools used
 
-OpenAI Codex was used for implementation, review, tests and documentation. Confirm any additional AI tools used by the team before submission. Runtime Bedrock is a separate optional service; this local QA does not establish a live model call.
+OpenAI Codex was used for implementation, review, tests and documentation. Confirm any additional AI tools used by the team before submission. Runtime Bedrock and NVIDIA Nemotron Nano 12B v2 VL are optional photo-analysis services; this local QA does not establish a live model call. NVIDIA setup is documented in [DEPLOYMENT.md](docs/DEPLOYMENT.md#optional-nvidia-image-analysis).
 
 ## Credits and licence
 

@@ -43,6 +43,42 @@ From `frontend/`, set `VITE_API_BASE_URL=http://localhost:8793` and start Vite w
 
 Use matching API base URL, frontend port and allowed origin. Always use Vite `--strictPort`; do not silently fall onto another origin. Set `FEEDSURE_LOCAL_ACCESS_FILE` to the separate manifest when enabling the opt-in tests. Never copy or overwrite current demo credentials for tests. The home page explains each role: kitchen and driver links remain private, and the dispatcher enters the credential from this runtime manifest. Share neither the manifest nor access links publicly.
 
+## Optional NVIDIA image analysis
+
+The v3 photo screen can use NVIDIA's hosted
+[Nemotron Nano 12B v2 VL](https://docs.api.nvidia.com/nim/reference/nvidia-nemotron-nano-12b-v2-vl).
+The adapter follows NVIDIA's [chat completions API](https://docs.api.nvidia.com/nim/reference/nvidia-nemotron-nano-12b-v2-vl-infer)
+and uses the existing visible-item observation prompt and validation. It adds no Python dependencies.
+The key stays on the backend; photos are sent to NVIDIA when the user requests analysis.
+
+For the ordinary local shim or Lambda, set `PHOTO_ANALYSIS_PROVIDER=nvidia`,
+`NVIDIA_API_KEY` to your private key, and `MOCK_BEDROCK=false`. The defaults are
+`NVIDIA_MODEL_ID=nvidia/nemotron-nano-12b-v2-vl`,
+`NVIDIA_API_URL=https://integrate.api.nvidia.com/v1/chat/completions`,
+`NVIDIA_MAX_TOKENS=600`, and `NVIDIA_TIMEOUT_SECONDS=5`.
+Keep the timeout at five seconds or less to leave room for one retry inside the Lambda budget.
+`MOCK_BEDROCK=true` still overrides both providers with fixtures.
+Missing keys, failed requests or invalid observations leave the photo `NOT_CHECKED` and
+readiness saved. Existing unresolved hazards still require human resolution.
+
+To use NVIDIA with a **new disposable Moto demo**, first set `NVIDIA_API_KEY` in the server
+process environment, then run the command below with unused ports and a separate manifest:
+
+```powershell
+python scripts/local_demo.py --photo-provider nvidia --port 8795 --frontend-port 5195 --manifest .tmp/nvidia-demo-access.json --photo-dir .tmp/nvidia-demo-photos
+```
+
+Use `VITE_API_BASE_URL=http://localhost:8795` and frontend port 5195 with `--strictPort`.
+The usual photo upload and **Analyze photo** control invoke NVIDIA. This option makes real
+NVIDIA requests; the collection data and AWS storage remain synthetic/local.
+The runner's default `--photo-provider mock` remains offline.
+
+SAM exposes matching parameters `PhotoAnalysisProvider`, `NvidiaApiKey` (NoEcho),
+`NvidiaModelId`, `NvidiaApiUrl`, `NvidiaMaxTokens` and `NvidiaTimeoutSeconds`.
+Supply the private key through secure deployment configuration, never a checked-in file,
+frontend variable, access manifest or recording. Mocked HTTP tests verify request bytes,
+persisted observations and timeout handling; no live NVIDIA model call has been verified.
+
 ## Cloud preparation: not a deployment claim
 
 `backend/template.yaml` is the source of truth for resources and routes. Production uses Lambda/API Gateway, DynamoDB and private S3, with Bedrock visible-item assistance and Amazon Location routing/map adapters. The frontend has Amplify build configuration. Review the final [API](API.md), [security](SECURITY.md) and environment examples before any authorised deployment.

@@ -48,7 +48,10 @@ returns 409. A model is attempted at most twice; malformed/failed analysis persi
 `GET /submissions/{encodedSubmissionId}/evidence` returns an authenticated, no-store
 `{url,transport}` response: local validated bytes as a data URL, or a short-lived private S3 GET.
 Cross-kitchen reads/mutations are rejected. Presigned GET links remain bearer access until expiry.
-Analysis explicitly reports `mode:mock|aws`; mock fixtures do not describe the selected photo.
+Analysis explicitly reports `mode:mock|aws|nvidia`; mock fixtures do not describe the selected photo.
+`PHOTO_ANALYSIS_PROVIDER=nvidia` selects NVIDIA for this optional v3 screen endpoint.
+The observation schema, one retry, `NOT_CHECKED` failure state and human hazard resolution
+are shared with Bedrock. Hazard records use `source:nvidia` for NVIDIA observations.
 Neither analysis failure nor removal resolves a hazard or changes readiness quantities.
 
 The following v1 descriptions are preserved as historical reference and are not active contracts.
