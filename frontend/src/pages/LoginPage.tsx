@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
+import { AuthShell } from "./auth/AuthShell";
 import { accountPath, useAccount } from "../auth";
 import { supabase, supabaseEnabled } from "../supabase";
 import { authMessage } from "../network";
@@ -37,7 +38,7 @@ export function LoginPage() {
     } catch (issue) { setError(authMessage(issue)); }
     finally { setBusy(false); }
   }
-  return <main className="auth-shell"><section className="token-panel">
+  return <AuthShell><section className="token-panel">
     <Link className="brand" to="/"><span className="brand-mark">F</span><span>FeedSure CBG</span></Link>
     <h1>Sign in</h1>
     <p>Sign in with your email after your registration has been approved.</p>
@@ -58,5 +59,5 @@ export function LoginPage() {
     {supabase && <><Link className="text-button" to="/forgot-password">Forgot password</Link>
       {emailDeliveryEnabled && <button className="text-button" disabled={busy || cooldown > 0 || !email.trim()} onClick={() => void resend()}>{cooldown ? `Resend available in ${cooldown}s` : "Resend confirmation"}</button>}
       <Link className="text-button" to="/register">Register your organisation or CBG team</Link></>}
-  </section></main>;
+  </section></AuthShell>;
 }

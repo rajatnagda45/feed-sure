@@ -1,3 +1,4 @@
+import { AuthShell } from "./auth/AuthShell";
 import { LocationPicker } from "../components/LocationPicker";
 import { emailDeliveryEnabled } from "../authEmail";
 import { FormEvent, useEffect, useState } from "react";
@@ -62,7 +63,7 @@ export function RegistrationPage({ admin = false }: { admin?: boolean }) {
       : reason.message : reason instanceof Error ? reason.message : "Could not save registration. Check your connection and retry."); }
     finally { setBusy(false); }
   }
-  return <main className="auth-shell"><section className="token-panel registration-panel">
+  return <AuthShell><section className="token-panel registration-panel">
     <Link className="brand" to="/">FeedSure CBG</Link>
     <h1>{admin ? "Create an account" : "Create a new login"}</h1>
     {saved ? <div role="status"><h2>Registration saved</h2>
@@ -99,5 +100,5 @@ export function RegistrationPage({ admin = false }: { admin?: boolean }) {
       {error && <p className="inline-error" role="alert">{error}</p>}
     </form>}
     <Link className="text-button" to={admin ? "/accounts" : "/login"}>{admin ? "Back to accounts" : "Already registered? Sign in"}</Link>
-  </section></main>;
+  </section></AuthShell>;
 }
