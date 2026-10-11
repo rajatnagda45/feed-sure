@@ -269,7 +269,14 @@ class Accounts:
             "profileRevision": account["revision"],
             "generatorId": gid,
             "name": account["organisation"],
-            "address": account["address"],
+            "address": account["address"]
+            + (
+                f" (Approximate PIN-code area {profile.get('pincode', '')}; entrance unconfirmed)"
+                if profile.get("locationAccuracy") == "pincode"
+                else ""
+            ),
+            "locationAccuracy": profile.get("locationAccuracy", "entrance"),
+            "pincode": profile.get("pincode"),
             "lat": lat,
             "lng": lng,
             "type": profile["type"],
@@ -359,7 +366,15 @@ class Accounts:
             profile = payload["profile"]
             if target["role"] != "kitchen" or not isinstance(profile, dict):
                 invalid("Pickup details apply only to a generator account.")
-            fields(profile, {"lat", "lng", "type"})
+            fields(profile, {"lat", "lng", "type", "pincode", "locationAccuracy"})
+            accuracy = profile.get("locationAccuracy")
+            if accuracy not in {None, "pincode", "entrance"}:
+                invalid("Choose a valid pickup location accuracy.")
+            if "pincode" in profile or accuracy == "pincode":
+                if not isinstance(profile.get("pincode"), str) or not re.fullmatch(
+                    r"[1-9]\d{5}", profile["pincode"]
+                ):
+                    invalid("Enter a valid six-digit PIN code.")
             if profile.get("type") not in {"hotel", "hostel_mess", "pg", "restaurant", "canteen"}:
                 invalid("Choose a valid generator type.")
             self.enroll({**public(target), "profile": profile}, validate_only=True)

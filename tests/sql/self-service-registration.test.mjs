@@ -40,6 +40,7 @@ before(async () => {
   await user(60, { ...registration, address: "", profile: { type: "hotel" } });
   assert.equal((await rpc(60, "self_update", 60, 1, { address: registration.address, profile: registration.profile })).status, "PENDING");
   await db.exec(await migration());
+  await db.exec(await readFile(new URL("../../supabase/migrations/20261011190000_pincode_profile.sql", import.meta.url), "utf8"));
 });
 
 test("profiles completed before the migration become active even when signup details were incomplete", async () => {
@@ -168,4 +169,24 @@ test("readiness reports the installed policy without granting browser access to 
       await assert.rejects(db.query("select public.feedsure_accounts_workflow(null,null,'identity')"), /permission denied/);
     } finally { await db.exec("reset role"); }
   }
+});
+
+
+test("PIN-area profile activates access and persists its approximation across reload", async () => {
+  await user(80, { ...registration, profile: {type: "hotel"} });
+  const profile = {...registration.profile, pincode: "560004", locationAccuracy: "pincode"};
+  const saved = await rpc(80, "self_update", 80, 1, {profile});
+  assert.equal(saved.status, "ACTIVE");
+  assert.deepEqual((await rpc(80, "identity")).profile, profile);
+  const exact = await rpc(80, "self_update", 80, 2, {profile: {...registration.profile, locationAccuracy: "entrance"}});
+  assert.equal(exact.status, "ACTIVE");
+  assert.equal(exact.profile.locationAccuracy, "entrance");
+  assert.equal(exact.profile.pincode, undefined);
+});
+test("invalid PIN metadata cannot activate an incomplete profile", async () => {
+  await user(81, { ...registration, profile: {type: "hotel"} });
+  for (const metadata of [{locationAccuracy:"pincode"}, {locationAccuracy:"pincode",pincode:"123"}, {locationAccuracy:"pincode",pincode:560004}, {locationAccuracy:"verified"}]) {
+    assert.equal((await rpc(81,"self_update",81,1,{profile:{...registration.profile,...metadata}})).status,400);
+  }
+  assert.equal((await rpc(81,"identity")).status,"PENDING");
 });

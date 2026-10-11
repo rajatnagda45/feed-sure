@@ -73,7 +73,7 @@ export function RegistrationPage({ admin = false }: { admin?: boolean }) {
         : "Your login is ready. Complete your profile and pickup location to activate access automatically. No email verification or Admin approval is required."}</p>
       <Link className="button button-primary" to={admin ? "/accounts" : userId ? "/account" : "/login"}>{admin ? "Manage accounts" : userId ? "Complete my profile" : "Sign in to complete my profile"}</Link>
     </div> : <form onSubmit={(event) => void submit(event)}>
-      <p>Create your login first. Complete your address and pickup location in My profile to activate access automatically.</p>
+      <p>Create your login first. Complete your address and find your PIN-code area in My profile to activate access automatically.</p>
       {checking && <p role="status">Checking registration setup…</p>}
       {setupError && <div role="alert"><p className="inline-error">Registration unavailable: {setupError}</p>
         <button className="button button-secondary" type="button" onClick={() => setSetupAttempt((value) => value + 1)}>Try again</button>
@@ -91,7 +91,7 @@ export function RegistrationPage({ admin = false }: { admin?: boolean }) {
             <option value="hotel">Hotel</option><option value="hostel_mess">Hostel / mess</option>
             <option value="pg">PG</option><option value="restaurant">Restaurant</option><option value="canteen">Canteen</option>
           </select></label>
-          <p className="muted">No map or GPS is needed to create your login. Confirm the pickup entrance in My profile to activate access automatically.</p>
+          <p className="muted">No map or GPS is needed to create your login. Find your PIN-code area in My profile to activate access; the exact entrance can be added later.</p>
         </> : (role === "cbg" || role === "owner") && <>{field("capacityKg", "Plant intake capacity (kg/day)", "number", { min: 0.01, max: 1000000000, step: "any" })}
           <p className="muted">You are joining the existing pilot plant. This does not create a separate plant. Registered capacity does not change route settings.</p></>}
         {field("email", "Email address", "email", { autoComplete: "username", autoCapitalize: "none", spellCheck: false })}
