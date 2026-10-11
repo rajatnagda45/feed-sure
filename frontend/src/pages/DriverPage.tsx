@@ -1,3 +1,4 @@
+import { useAccount } from "../auth";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
@@ -31,8 +32,9 @@ interface PendingAttempt {
 }
 
 export function DriverPage() {
+  const { account } = useAccount();
   const { planKey = "" } = useParams();
-  const [token] = useState(() => consumeBootstrapToken("t", `feedsure:driver:${planKey}`));
+  const [token] = useState(() => account ? "supabase-account" : consumeBootstrapToken("t", `feedsure:driver:${planKey}`));
   const [trip, setTrip] = useState<DriverTripResponse | null>(null);
   const [forms, setForms] = useState<Record<string, PickupDraft>>({});
   const [errors, setErrors] = useState<Record<string, Record<string, string>>>({});

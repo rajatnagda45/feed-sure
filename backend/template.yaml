@@ -3,6 +3,27 @@ Transform: AWS::Serverless-2016-10-31
 Description: FeedSure CBG v3 operational backend
 
 Parameters:
+  AuthProvider:
+    Type: String
+    Default: tokens
+    AllowedValues: [tokens, supabase]
+  PhotoStorageProvider:
+    Type: String
+    Default: s3
+    AllowedValues: [s3, supabase]
+  SupabaseUrl:
+    Type: String
+    Default: ""
+  SupabasePublishableKey:
+    Type: String
+    Default: ""
+  SupabaseServiceRoleKey:
+    Type: String
+    Default: ""
+    NoEcho: true
+  SupabasePhotosBucket:
+    Type: String
+    Default: feedsure-photos
   Stage:
     Type: String
     Default: dev
@@ -258,6 +279,12 @@ Globals:
         NVIDIA_TIMEOUT_SECONDS: !Ref NvidiaTimeoutSeconds
         MOCK_BEDROCK: !Ref MockBedrock
         MOCK_BEDROCK_FIXTURE: !Ref MockBedrockFixture
+        AUTH_PROVIDER: !Ref AuthProvider
+        PHOTO_STORAGE_PROVIDER: !Ref PhotoStorageProvider
+        SUPABASE_URL: !Ref SupabaseUrl
+        SUPABASE_PUBLISHABLE_KEY: !Ref SupabasePublishableKey
+        SUPABASE_SERVICE_ROLE_KEY: !Ref SupabaseServiceRoleKey
+        SUPABASE_PHOTOS_BUCKET: !Ref SupabasePhotosBucket
         ADMIN_TOKEN: !Ref AdminToken
         PLANT_OWNER_TOKEN: !Ref PlantOwnerToken
         ALLOWED_ORIGIN: !Ref AllowedOrigin
@@ -285,6 +312,7 @@ Resources:
           - !Ref AllowedOrigin
         AllowHeaders:
           - content-type
+          - authorization
           - x-admin-token
           - x-plant-token
           - x-generator-token
@@ -358,6 +386,12 @@ Resources:
               Action: geo-routes:CalculateRouteMatrix
               Resource: "*"
       Events:
+        AuthSession:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /auth/session
+            Method: GET
         Route0:
           Type: HttpApi
           Properties:

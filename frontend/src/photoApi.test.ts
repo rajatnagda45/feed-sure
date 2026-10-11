@@ -64,6 +64,18 @@ describe("authenticated optional photo client", () => {
     await pending;
   });
 
+  it("saves bytes through a Supabase signed PUT without forwarding credentials", async () => {
+    const request = new Request();
+    const pending = uploadPhoto({ ...upload, transport: "supabase",
+      url: "https://project.supabase.co/storage/v1/object/upload/sign/photo?token=capability" },
+      blob, "private-supplier-token", vi.fn(), () => request);
+    expect(request.method).toBe("PUT");
+    expect(request.body).toBe(blob);
+    expect(request.headers).toEqual({ "Content-Type": "image/jpeg" });
+    request.status = 200; request.onload?.(event);
+    await pending;
+  });
+
   it.each([403, 409, 500])("reports HTTP upload failure %i for retry", async (status) => {
     const request = new Request();
     const pending = uploadPhoto(upload, blob, "token", vi.fn(), () => request);

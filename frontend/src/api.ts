@@ -1,3 +1,5 @@
+import { accessToken } from "./supabase";
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8787";
 
 export type ErrorCode = "INVALID_INPUT" | "UNAUTHORIZED" | "NOT_FOUND" | "CONFLICT"
@@ -35,10 +37,12 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   if (init.body !== undefined && !headers.has("content-type")) {
     headers.set("content-type", "application/json");
   }
-  if (adminToken) headers.set("X-Admin-Token", adminToken);
-  if (plantToken) headers.set("X-Plant-Token", plantToken);
-  if (generatorToken) headers.set("X-Generator-Token", generatorToken);
-  if (driverToken) headers.set("X-Driver-Token", driverToken);
+  const bearer = await accessToken();
+  if (bearer) headers.set("Authorization", `Bearer ${bearer}`);
+  if (!bearer && adminToken) headers.set("X-Admin-Token", adminToken);
+  if (!bearer && plantToken) headers.set("X-Plant-Token", plantToken);
+  if (!bearer && generatorToken) headers.set("X-Generator-Token", generatorToken);
+  if (!bearer && driverToken) headers.set("X-Driver-Token", driverToken);
   if (idempotencyKey) headers.set("Idempotency-Key", idempotencyKey);
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,

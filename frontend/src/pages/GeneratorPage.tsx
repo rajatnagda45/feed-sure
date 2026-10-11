@@ -1,3 +1,4 @@
+import { useAccount } from "../auth";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
@@ -28,9 +29,10 @@ function errorMessage(error: unknown): string {
 }
 
 export function GeneratorPage() {
+  const { account } = useAccount();
   const { id = "" } = useParams();
   const storageKey = `feedsure:generator:${id}`;
-  const [token] = useState(() => consumeBootstrapToken("t", storageKey));
+  const [token] = useState(() => account ? "supabase-account" : consumeBootstrapToken("t", storageKey));
   const [profile, setProfile] = useState<GeneratorProfile | null>(null);
   const [receipts, setReceipts] = useState<GeneratorReceipt[]>([]);
   const [loading, setLoading] = useState(Boolean(token));

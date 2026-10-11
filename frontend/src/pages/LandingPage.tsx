@@ -1,3 +1,4 @@
+import { supabaseEnabled } from "../supabase";
 import { Link } from "react-router-dom";
 import { KitchenHeroMedia, WorkflowMedia } from "../components/WorkflowMedia";
 
@@ -10,6 +11,7 @@ export function LandingPage() {
           <span>FeedSure CBG</span>
         </Link>
         <span className="data-tag">Operational pilot</span>
+        {supabaseEnabled && <Link className="button button-primary" to="/login">Sign in</Link>}
       </header>
 
       <section className="hero" aria-labelledby="hero-title">
@@ -27,8 +29,8 @@ export function LandingPage() {
             <Link className="button button-secondary" to="/driver-access">Driver access</Link>
           </nav>
           <p className="private-link-note">
-            Waste suppliers use a private link issued by the dispatcher. Drivers receive a trip link after dispatch.
-            Admins and plant owners enter separate access credentials. <a href="#demo-guide">Explore the local demo</a>.
+            {supabaseEnabled ? "Sign in with your assigned account to confirm readiness, manage dispatch or record intake."
+              : "Waste suppliers use a private link issued by the dispatcher. Drivers receive a trip link after dispatch. Admins and plant owners enter separate access credentials."} <a href="#demo-guide">Explore the local demo</a>.
           </p>
         </div>
 

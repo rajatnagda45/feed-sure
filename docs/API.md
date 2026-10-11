@@ -224,3 +224,7 @@ per-manifest directory. Same-key identical-byte retries are accepted; altered by
 Upload tickets expire after the configured five-minute default. Retrieval rejects expired photo
 retention; local file cleanup is access-triggered, not a background sweeper. DynamoDB in the
 runner remains disposable in-process Moto; byte files persist until retention cleanup/deletion.
+
+## Supabase bearer authentication
+
+With `AUTH_PROVIDER=supabase`, all operational routes require `Authorization: Bearer <session JWT>`. Roles and assignments come from Supabase Auth-verified app_metadata. Invalid/missing login returns 401, incorrect role/scope returns 403, and upstream failures return 502. `GET /auth/session` returns `{ "account": { "id": "user-id", "role": "GENERATOR", "generatorId": "hotel-a" } }`; drivers use `planKey` instead. Upload/evidence responses may include `transport: "supabase"`; signed upload URLs accept a raw image PUT without application credentials. See [Supabase configuration](SUPABASE.md).

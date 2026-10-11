@@ -1,3 +1,5 @@
+import { supabase } from "../supabase";
+import { useAccount } from "../auth";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -81,7 +83,8 @@ function displayError(error: unknown): string {
 }
 
 export function PlantPage() {
-  const [adminToken, setAdminToken] = useState(() => sessionStorage.getItem("feedsure:admin") ?? "");
+  const { account } = useAccount();
+  const [adminToken, setAdminToken] = useState(() => account ? "supabase-account" : sessionStorage.getItem("feedsure:admin") ?? "");
   const [tokenDraft, setTokenDraft] = useState("");
   const [date, setDate] = useState(() => sessionStorage.getItem("feedsure:demo-date") ?? serviceDateInIndia());
   const [snapshot, setSnapshot] = useState<OperationsSnapshot | null>(null);
@@ -183,6 +186,7 @@ export function PlantPage() {
   };
 
   const clearToken = () => {
+    if (account) { void supabase?.auth.signOut({ scope: "local" }); return; }
     sessionStorage.removeItem("feedsure:admin");
     setAdminToken("");
     setSnapshot(null);

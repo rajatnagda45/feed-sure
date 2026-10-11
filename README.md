@@ -73,3 +73,7 @@ Runtime Bedrock and NVIDIA Nemotron Nano 12B v2 VL are optional photo-analysis s
 ## Credits and licence
 
 React, React Router, Vite, TypeScript, MapLibre GL JS, boto3, FastAPI, uvicorn, pytest, Moto and Vitest are external dependencies; retain their respective licences. A project licence file is currently missing; the owner should select and add it before publication.
+
+## Supabase login and private images
+
+Optional Supabase email/password login opens each operator-assigned dashboard. Suppliers can save JPEG/PNG evidence in a private Supabase bucket through the existing photo flow. See [setup and account assignments](docs/SUPABASE.md). AWS collection data and Bedrock assistance remain in place. Live Supabase verification requires your project credentials; offline boundary tests do not establish deployment.

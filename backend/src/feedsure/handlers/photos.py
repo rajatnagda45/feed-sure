@@ -259,6 +259,16 @@ class Photos:
             config=BotoConfig(connect_timeout=1, read_timeout=3, retries={"max_attempts": 0}),
         )
 
+    def supabase(self) -> Any:
+        """Select cloud transport independently from disposable local photo injection."""
+        if self.s.config.photo_storage_provider not in {"s3", "supabase"}:
+            raise ApiError(503, "DEPENDENCY_NOT_READY", "Unknown PHOTO_STORAGE_PROVIDER.")
+        if self.s.config.photo_storage_provider == "supabase":
+            from feedsure.common.supabase import Storage
+
+            return Storage(self.s.config)
+        return None
+
     def key(self, value: Any, gid: str) -> str:
         if not isinstance(value, str) or not re.fullmatch(
             rf"submissions/{re.escape(gid)}/[a-f0-9]{{32}}\.(jpg|png)", value
@@ -277,7 +287,16 @@ class Photos:
             invalid("Choose JPEG or PNG.")
         extension = "jpg" if content_type == "image/jpeg" else "png"
         key = f"submissions/{gid}/{secrets.token_hex(16)}.{extension}"
-        if self.s.photo_store:
+        storage = self.supabase()
+        if storage:
+            upload = {
+                "slot": "top",
+                "key": key,
+                "url": storage.signed(key, upload=True),
+                "fields": {},
+                "transport": "supabase",
+            }
+        elif self.s.photo_store:
             self.s.photo_store.issue(key, content_type, self.s)
             upload = {
                 "slot": "top",
@@ -305,6 +324,11 @@ class Photos:
         return {"uploads": [upload]}
 
     def load(self, key: str) -> tuple[bytes, str]:
+        storage = self.supabase()
+        if storage:
+            data, content_type = storage.get(key)
+            validate_image(data, content_type, self.s.config)
+            return data, content_type
         if self.s.photo_store:
             return self.s.photo_store.get(key, self.s)
         try:
@@ -343,6 +367,12 @@ class Photos:
             raise ApiError(404, "NOT_FOUND", "No evidence attached.")
         data, content_type = self.load(record["photoKeys"][0])
         self.verify_evidence(record, data)
+        storage = self.supabase()
+        if storage:
+            return {
+                "url": storage.signed(record["photoKeys"][0], upload=False),
+                "transport": "supabase",
+            }
         if self.s.photo_store:
             return {
                 "url": f"data:{content_type};base64," + base64.b64encode(data).decode(),
@@ -391,17 +421,21 @@ class Photos:
             if photo is not None:
                 data, content_type = self.load(self.key(photo, gid))
                 sha256 = hashlib.sha256(data).hexdigest()
-                if not self.s.photo_store:
+                storage = self.supabase()
+                if storage or not self.s.photo_store:
                     # Signed upload forms can overwrite their key until expiry. Freeze a
                     # separate private copy whose key has never been issued for upload.
                     extension = "jpg" if content_type == "image/jpeg" else "png"
                     photo = f"submissions/{gid}/{secrets.token_hex(16)}.{extension}"
-                    self.s3().put_object(
-                        Bucket=self.s.config.photos_bucket,
-                        Key=photo,
-                        Body=data,
-                        ContentType=content_type,
-                    )
+                    if storage:
+                        storage.put(photo, data, content_type)
+                    else:
+                        self.s3().put_object(
+                            Bucket=self.s.config.photos_bucket,
+                            Key=photo,
+                            Body=data,
+                            ContentType=content_type,
+                        )
             updated.update(
                 photoKeys=[photo] if photo else [],
                 photoSha256=sha256,

@@ -23,6 +23,7 @@ app.add_middleware(
     allow_methods=["GET", "POST"],
     allow_headers=[
         "content-type",
+        "authorization",
         "x-admin-token",
         "x-plant-token",
         "x-generator-token",
