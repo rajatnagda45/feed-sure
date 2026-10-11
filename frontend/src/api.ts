@@ -341,6 +341,7 @@ export interface RoadRoute {
 }
 
 export interface PlanEnvelope {
+  plantDistances?: Record<string, number | null>;
   travelLegs?: { fromId: string; toId: string; km: number; min: number; source: string }[];
   roadRoute?: RoadRoute;
   schemaVersion: 3;

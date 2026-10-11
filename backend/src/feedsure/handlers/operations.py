@@ -538,6 +538,9 @@ class Service:
             raise ApiError(503, "DEPENDENCY_NOT_READY", "Planner does not implement contract v3.")
         route_ids = ["plant", *[stop["generatorId"] for stop in result["plan"]["stops"]], "plant"]
         indices = {gid: index for index, gid in enumerate(matrix["pointIds"])}
+        result["plantDistances"] = {
+            gid: matrix["km"][0][index] for gid, index in indices.items() if gid != "plant"
+        }
         result["travelLegs"] = (
             [
                 {
@@ -1173,8 +1176,28 @@ class Service:
                 {"collectionDate": day, "recordKey": "HAZARD#" + gid},
                 consistent_read=True,
             )
+            plans = [
+                p
+                for p in self.db.query(
+                    "plans", KeyConditionExpression=Key("date").eq(day), ConsistentRead=True
+                )
+                if p.get("schemaVersion") == 3
+            ]
+            meta = self.meta(day)
+            active = next((p for p in plans if p["planKey"] == meta.get("activePlanKey")), None)
+            latest = active or (
+                max(plans, key=lambda p: (p["createdAt"], p["planId"])) if plans else None
+            )
+            own_plan = None
+            if latest and any(s["generatorId"] == gid for s in latest["plan"]["stops"]):
+                own_plan = {
+                    "state": latest["state"],
+                    "stale": latest["state"] == "DRAFT"
+                    and latest["inputRevision"] != meta["inputRevision"],
+                }
             return {
                 "submission": row["submission"] if row else None,
+                "collectionPlan": own_plan,
                 "unresolvedHazard": hazard["hazard"]
                 if hazard and hazard["hazard"]["action"] == "ENTER"
                 else None,

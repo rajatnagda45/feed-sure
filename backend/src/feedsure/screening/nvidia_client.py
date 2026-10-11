@@ -38,12 +38,13 @@ def invoke_screening(
     payload = {
         "model": active.nvidia_model_id,
         "messages": [
-            {"role": "system", "content": "/no_think\n" + prompt.system},
+            {"role": "system", "content": prompt.system},
             {"role": "user", "content": content},
         ],
         "max_tokens": active.nvidia_max_tokens,
         "temperature": 0,
         "stream": False,
+        "chat_template_kwargs": {"enable_thinking": False},
     }
     request = Request(
         active.nvidia_api_url,

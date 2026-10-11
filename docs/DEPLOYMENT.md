@@ -46,17 +46,17 @@ Use matching API base URL, frontend port and allowed origin. Always use Vite `--
 ## Optional NVIDIA image analysis
 
 The v3 photo screen can use NVIDIA's hosted
-[Nemotron Nano 12B v2 VL](https://docs.api.nvidia.com/nim/reference/nvidia-nemotron-nano-12b-v2-vl).
-The adapter follows NVIDIA's [chat completions API](https://docs.api.nvidia.com/nim/reference/nvidia-nemotron-nano-12b-v2-vl-infer)
+[Nemotron 3 Nano Omni 30B A3B Reasoning](https://docs.api.nvidia.com/nim/reference/nvidia-nemotron-3-nano-omni-30b-a3b-reasoning).
+The adapter follows NVIDIA's [chat completions API](https://docs.api.nvidia.com/nim/reference/nvidia-nemotron-3-nano-omni-30b-a3b-reasoning)
 and uses the existing visible-item observation prompt and validation. It adds no Python dependencies.
-The key stays on the backend; photos are sent to NVIDIA when the user requests analysis.
+The key stays on the backend; photos are sent to NVIDIA when the user chooses **Save photo and check visible items** or retries **Check visible items**.
 
 For the ordinary local shim or Lambda, set `PHOTO_ANALYSIS_PROVIDER=nvidia`,
 `NVIDIA_API_KEY` to your private key, and `MOCK_BEDROCK=false`. The defaults are
-`NVIDIA_MODEL_ID=nvidia/nemotron-nano-12b-v2-vl`,
+`NVIDIA_MODEL_ID=nvidia/nemotron-3-nano-omni-30b-a3b-reasoning`,
 `NVIDIA_API_URL=https://integrate.api.nvidia.com/v1/chat/completions`,
-`NVIDIA_MAX_TOKENS=600`, and `NVIDIA_TIMEOUT_SECONDS=5`.
-Keep the timeout at five seconds or less to leave room for one retry inside the Lambda budget.
+`NVIDIA_MAX_TOKENS=1024`, and `NVIDIA_TIMEOUT_SECONDS=10`.
+The ten-second per-attempt timeout leaves room for one retry inside the 29-second Lambda budget. Existing stacks must explicitly update their saved parameter values. The request uses `chat_template_kwargs.enable_thinking=false` to obtain the validated JSON observation without reasoning text.
 `MOCK_BEDROCK=true` still overrides both providers with fixtures.
 Missing keys, failed requests or invalid observations leave the photo `NOT_CHECKED` and
 readiness saved. Existing unresolved hazards still require human resolution.
@@ -69,7 +69,7 @@ python scripts/local_demo.py --photo-provider nvidia --port 8795 --frontend-port
 ```
 
 Use `VITE_API_BASE_URL=http://localhost:8795` and frontend port 5195 with `--strictPort`.
-The usual photo upload and **Analyze photo** control invoke NVIDIA. This option makes real
+Saving a photo automatically requests analysis; **Check visible items** retries it. This option makes real
 NVIDIA requests; the collection data and AWS storage remain synthetic/local.
 The runner's default `--photo-provider mock` remains offline.
 
@@ -77,7 +77,7 @@ SAM exposes matching parameters `PhotoAnalysisProvider`, `NvidiaApiKey` (NoEcho)
 `NvidiaModelId`, `NvidiaApiUrl`, `NvidiaMaxTokens` and `NvidiaTimeoutSeconds`.
 Supply the private key through secure deployment configuration, never a checked-in file,
 frontend variable, access manifest or recording. Mocked HTTP tests verify request bytes,
-persisted observations and timeout handling; no live NVIDIA model call has been verified.
+persisted observations and timeout handling. Live NVIDIA and a complete synthetic local collection workflow passed on 12 October 2026; see [collection review results](COLLECTION-REVIEW-QA.md). This does not verify the deployed AWS environment.
 
 ## Cloud preparation: not a deployment claim
 

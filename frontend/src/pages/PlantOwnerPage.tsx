@@ -85,7 +85,7 @@ export function IntakeTripPanel({ trip, token, refresh, onSaving }: {
           <label className="field"><span>Net received kg</span><input required type="number" min="0" step="any" value={netKg} onChange={(event) => setNetKg(event.currentTarget.value)} /></label>
           <label className="field"><span>Weight source</span><select value={source} onChange={(event) => setSource(event.currentTarget.value as WeightSource)}><option value="SCALE">Scale</option><option value="ESTIMATE">Estimate</option></select></label>
           <label className="field"><span>Weighbridge reference (optional)</span><input value={reference} onChange={(event) => setReference(event.currentTarget.value)} /></label>
-          {trip.gate && <label className="field"><span>Correction reason</span><input required value={correction} onChange={(event) => setCorrection(event.currentTarget.value)} /></label>}
+          {trip.gate && <label className="field"><span>Correction reason</span><input required placeholder="Example: corrected a typing error using the weighbridge slip" value={correction} onChange={(event) => setCorrection(event.currentTarget.value)} /><small>Explain why you are changing the saved intake. The previous weight and this reason remain in the audit history.</small></label>}
           <button className="button button-primary button-full" type="submit">{saving ? "Saving intake…" : trip.gate ? "Save correction" : "Save net intake"}</button>
         </fieldset>
         {error && <p className="notice error" role="alert">{error}</p>}

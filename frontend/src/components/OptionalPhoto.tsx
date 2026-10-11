@@ -82,12 +82,12 @@ export function OptionalPhoto({ generatorId, token, language, submission, onSave
     if (file) await prepare(file).catch(() => {});
   };
 
-  const runMutation = async (action: "attach" | "screen", photoKey: string | null = null) => {
-    if (!submission) return;
+  const runMutation = async (action: "attach" | "screen", photoKey: string | null = null, record = submission) => {
+    if (!record) return;
     const previous = pending.current;
     const work = previous?.action === action && previous.photoKey === photoKey
-      && previous.record.submissionId === submission.submissionId ? previous
-      : { record: submission, photoKey, action, key: createIdempotencyKey(`photo-${action}`) };
+      && previous.record.submissionId === record.submissionId ? previous
+      : { record, photoKey, action, key: createIdempotencyKey(`photo-${action}`) };
     pending.current = work;
     const result = action === "screen" ? await analyzePhoto(work.record, token, work.key)
       : await attachPhoto(work.record, token, work.photoKey, work.key);
@@ -108,8 +108,12 @@ export function OptionalPhoto({ generatorId, token, language, submission, onSave
           uploaded.current = true;
         }
         setPhase(copy.photoLinking);
-        await runMutation("attach", upload.current.key);
+        const attached = await runMutation("attach", upload.current.key);
         setPhoto(null); upload.current = null; uploaded.current = false;
+        if (attached) {
+          setPhase(copy.photoAnalyzing);
+          await runMutation("screen", null, attached);
+        }
       } else if (action === "screen") {
         setPhase(copy.photoAnalyzing);
         await runMutation("screen");
@@ -164,9 +168,10 @@ export function OptionalPhoto({ generatorId, token, language, submission, onSave
           onClick={() => chooser.current?.click()}>{copy.chooseImage}</button>
       </details>
     </>}
-    {(preview || evidence) && <figure><img src={preview ?? evidence ?? ""} alt={preview ? "Selected waste photo preview" : "Saved supplier waste photo"} /><figcaption>{preview ? copy.photoPreview : copy.photoSaved}</figcaption></figure>}
+    {(preview || evidence) && <figure><img src={preview ?? evidence ?? ""} alt={preview ? "Selected photo preview" : "Uploaded supplier photo — not verified evidence"} /><figcaption>{preview ? copy.photoPreview : "Uploaded photo — saving does not verify that it shows waste"}</figcaption></figure>}
     {preview && <div className="photo-actions">
-      <button type="button" className="button button-primary" disabled={busy || cameraOpen || !submission} onClick={() => void operate("upload")}>{error ? copy.retry : copy.uploadPhoto}</button>
+      <p>Saving sends this photo to the configured AI provider for a visible-item check. Readiness is already saved even if analysis fails.</p>
+      <button type="button" className="button button-primary" disabled={busy || cameraOpen || !submission} onClick={() => void operate("upload")}>{error ? copy.retry : language === "hi" ? "फोटो सहेजें और जाँचें" : "Save photo and check visible items"}</button>
       <button type="button" className="button button-secondary" disabled={busy || cameraOpen} onClick={() => { setPhoto(null); pending.current = null; upload.current = null; uploaded.current = false; setError(null); }}>{copy.removePhoto}</button>
     </div>}
     {!submission && <p>{copy.photoSaveFirst}</p>}
@@ -180,6 +185,8 @@ export function OptionalPhoto({ generatorId, token, language, submission, onSave
     {submission && <div className="photo-result" aria-live="polite">
       {hazard && <strong className="photo-hazard">Unresolved hazard: human dispatcher review is still required, even if a photo is removed or analysis fails.</strong>}
       <p>{photoStatusText[submission.photoStatus]}</p>
+      {submission.photoKeys.length > 0 && submission.photoStatus === "NOT_CHECKED" && <p>Photo not verified. Use Check visible items to analyse it; collection readiness is saved separately.</p>}
+      {submission.analysis?.observations?.image_quality === "not_waste" && <p className="field-error" role="alert">This image does not show waste suitable for a collection check. Remove it or take a clear photo of the actual food waste. Your readiness is still saved.</p>}
       {submission.analysis && <>
         <strong>{submission.analysis.mode === "mock" ? "MOCK MODEL — configured fixture, not analysis of this photo" : submission.analysis.mode === "nvidia" ? "NVIDIA visible-item assistance" : "Amazon Bedrock visible-item assistance"}</strong>
         <p>{submission.analysis.state === "FAILED" ? "Analysis failed after one retry. Readiness is saved." : submission.analysis.observations?.notes}</p>

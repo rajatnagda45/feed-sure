@@ -92,5 +92,12 @@ def build_photo_prompt() -> ScreeningPrompt:
             "Glass, sharp metal, batteries and medical waste are potential hazards, even in a poor "
             "image. No visible issues only means no issue observed on this visible surface."
         ),
-        user="Inspect the attached image and return only the specified observations.",
+        user=(
+            "First check whether the image actually shows collected food waste. "
+            "Posters, screenshots, illustrations, selfies and unrelated scenes must be "
+            "image_quality=not_waste; an empty contaminant list does not make them valid "
+            "waste photos. "
+            "Describe that mismatch in notes. Inspect the attached image and return only "
+            "the specified observations."
+        ),
     )

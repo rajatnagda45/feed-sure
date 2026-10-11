@@ -560,3 +560,30 @@ def test_dimension_and_decoded_scanline_limits(photo_http):
         validate_image(
             png(), "image/png", replace(photo_http.state.config, photo_max_decoded_bytes=100)
         )
+
+
+def test_unrelated_photo_is_advice_not_approval_and_keeps_readiness(photo_http, monkeypatch):
+    http = photo_http
+    record, _ = attached(http)
+    http.state.config = replace(
+        http.state.config, mock_bedrock=False, photo_analysis_provider="nvidia"
+    )
+    monkeypatch.setattr(
+        "feedsure.handlers.photos.invoke_screening",
+        lambda *args: json.dumps(
+            {
+                "items": [],
+                "hazard": False,
+                "image_quality": "not_waste",
+                "confidence": 0.99,
+                "notes": "A movie poster, not collected food waste.",
+            }
+        ),
+    )
+    result = mutation(http, record, "screen", key="unrelated-screen")
+    assert result.status_code == 200
+    saved_record = result.json()["submission"]
+    assert saved_record["photoStatus"] == "ADVICE"
+    assert saved_record["analysis"]["mode"] == "nvidia"
+    assert saved_record["analysis"]["observations"]["image_quality"] == "not_waste"
+    assert saved_record["status"] == "READY" and saved_record["confirmedKg"] == 100

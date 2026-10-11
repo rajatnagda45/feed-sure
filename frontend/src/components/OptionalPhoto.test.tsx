@@ -15,6 +15,16 @@ it("makes browser capture primary and existing-image upload a secondary disclosu
   expect(html).not.toContain("private-test-token");
 });
 
+it("flags unrelated images without claiming readiness failed", () => {
+  const submission = { photoKeys: ["private/photo.jpg"], photoStatus: "ADVICE", analysis: {
+    state: "COMPLETE", mode: "nvidia", observations: { items: [], image_quality: "not_waste", notes: "A poster." },
+  } } as unknown as PhotoRecord;
+  const html = renderToStaticMarkup(<OptionalPhoto generatorId="hotel-a" token="test-only"
+    language="en" submission={submission} onSaved={() => {}} />);
+  expect(html).toContain("does not show waste");
+  expect(html).toContain("Your readiness is still saved");
+});
+
 it("shows NVIDIA observations with the correct provider label and visible items", () => {
   const submission = { generatorId: "hotel-a", collectionDate: "2026-10-12", photoKeys: ["private/photo.jpg"],
     photoStatus: "ADVICE", photoRevision: 1, analysis: { state: "COMPLETE", mode: "nvidia",

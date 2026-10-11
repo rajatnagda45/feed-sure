@@ -38,6 +38,7 @@ export function PhotoEvidence({ submission, adminToken }: { submission: Readines
         <figcaption>Uploaded evidence for {submission.collectionDate}. Visible surface only; no whole-load safety certification.</figcaption></figure>}
       {error && <><p className="inline-error" role="alert">{error}</p><button type="button" className="button button-secondary" onClick={() => setRetry(retry + 1)}>Retry saved photo</button></>}
       <p>{photoStatusText[submission.photoStatus]}</p>
+      {analysis?.observations?.image_quality === "not_waste" && <p role="alert">Unrelated image: ask the supplier for a photo of the actual waste. This upload is not valid waste-photo evidence.</p>}
       {analysis && <p>{analysis.mode === "mock" ? "Mock observations are configured fixtures unrelated to this image."
         : analysis.state === "FAILED" ? "Analysis failed. A human pickup check is still needed." : analysis.observations?.notes}</p>}
       <p>Inspect the evidence and confirm with the waste supplier. Record an explicit reason in the hazard controls below.</p>

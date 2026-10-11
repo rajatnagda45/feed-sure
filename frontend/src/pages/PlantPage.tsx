@@ -26,6 +26,7 @@ import { RouteMap } from "../components/RouteMap";
 import { PhotoEvidence } from "../components/PhotoEvidence";
 import {
   exclusionAction,
+  currentExclusion,
   confirmedSupplyKg,
   formatKg,
   formatServiceDate,
@@ -151,7 +152,7 @@ export function PlantPage() {
   const activePlan = details?.plan ?? plan;
   const execution = details?.execution ?? null;
   const points = useMemo(
-    () => planMapPoints(activePlan, snapshot?.generators ?? [], snapshot?.depot ?? null),
+    () => planMapPoints(activePlan, snapshot?.generators ?? [], snapshot?.depot ?? null, snapshot?.inputRevision),
     [activePlan, snapshot],
   );
   const statusCounts = snapshot?.generators.reduce<Record<string, number>>((counts, generator) => {
@@ -178,6 +179,13 @@ export function PlantPage() {
   const currentDriverAccess = driverAccess?.planKey === activePlan?.planKey ? driverAccess : null;
   const driverLink = currentDriverAccess && activePlan
     ? `${window.location.origin}/driver/${encodeURIComponent(activePlan.planKey)}?t=${encodeURIComponent(currentDriverAccess.token)}` : "";
+
+  const changeDate = (value: string) => {
+    if (!value || value === date) return;
+    setDate(value); setControlsTouched(false); setMandatoryIds([]); setSnapshot(null);
+    setPlan(null); setDetails(null); setDriverAccess(null); setDriverLinkVisible(false);
+    setPhone(null); setMessage(null);
+  };
 
   const authenticate = (event: FormEvent) => {
     event.preventDefault();
@@ -369,7 +377,9 @@ export function PlantPage() {
       </header>
 
       <section className="operations-toolbar">
-        <label className="field compact"><span>Planning date · India time</span><input type="date" disabled={planning || dispatching} value={date} onChange={(event) => { const value = event.currentTarget.value; if (!value) return; setDate(value); setControlsTouched(false); setMandatoryIds([]); setSnapshot(null); setPlan(null); setDetails(null); setDriverAccess(null); setDriverLinkVisible(false); setPhone(null); setMessage(null); }} /></label>
+        <label className="field compact"><span>Planning date · India time</span><input type="date" disabled={planning || dispatching} value={date} onChange={(event) => changeDate(event.currentTarget.value)} /></label>
+        <button className="text-button" type="button" disabled={planning || dispatching} onClick={() => changeDate(serviceDateInIndia(new Date(), 0))}>Today</button>
+        <button className="text-button" type="button" disabled={planning || dispatching} onClick={() => changeDate(serviceDateInIndia())}>Tomorrow</button>
         <button className="button button-secondary" type="button" onClick={() => setRefreshKey((value) => value + 1)} disabled={loading}>Refresh data</button>
         {snapshot && <div className="mode-line"><span>Database {snapshot.serviceMode.database}</span><span>Matrix {activePlan?.matrixSource ?? snapshot.serviceMode.matrix}</span><span>Screening {snapshot.serviceMode.screening}</span></div>}
       </section>
@@ -401,7 +411,7 @@ export function PlantPage() {
               {([
                 ["targetKg", "Target kg"], ["truckCapacityKg", "Truck capacity kg"],
                 ["capacityBuffer", "Capacity buffer"], ["serviceMin", "Service min"],
-                ["maxRadiusKm", "Maximum radius km"],
+                ["maxRadiusKm", "Maximum distance from plant (km)"],
               ] as const).map(([key, label]) => (
                 <label className="field compact" key={key}><span>{label}</span><input type="number" min="0" step={key === "capacityBuffer" ? "0.01" : "1"} value={controls[key]} onChange={(event) => { const value = event.currentTarget.value; setControlsTouched(true); setControls((current) => ({ ...current, [key]: value })); }} /></label>
               ))}
@@ -460,22 +470,29 @@ export function PlantPage() {
 
           <section className="supply-panel" id="supply-actions">
             <div className="section-heading"><div><p className="context-line">Authoritative date snapshot</p><h2>Waste suppliers and next actions</h2></div><label className="field compact"><span>Show waste suppliers</span><select value={supplyFilter} onChange={(event) => setSupplyFilter(event.currentTarget.value)}><option value="all">All waste suppliers</option><option value="action">Need attention</option><option value="route">On this route</option></select></label></div>
-            <p className="muted">Mark a promised pickup mandatory before building the draft. A mandatory stop that cannot fit blocks dispatch.</p>
+            <p className="muted">Ready sites are considered automatically. Select Required pickup to ensure a promised site is included; a constraint conflict blocks dispatch.</p>
+            {activePlan?.state === "DISPATCHED" && <p className="notice warning" id="route-locked">This trip has already been dispatched. Pickup choices are locked to protect the driver’s saved route. Choose another planning date for a new route; later confirmations do not add stops to this trip.</p>}
+            <p className="muted">Plant: {snapshot.depot.lat.toFixed(5)}, {snapshot.depot.lng.toFixed(5)}. The distance limit uses the routing matrix, not a map circle. Check approximate PIN locations in My profile before dispatch.</p>
             <div className="supply-list">
               {snapshot.generators.filter((generator) => supplyFilter === "all" || (supplyFilter === "route"
                 ? activePlan?.plan.stops.some((stop) => stop.generatorId === generator.generatorId)
                 : generator.unresolvedHazards.length || generator.readinessStatus !== "READY" || activePlan?.excluded.some((item) => item.generatorId === generator.generatorId))).map((generator) => {
                 const excluded = activePlan?.excluded.find((item) => item.generatorId === generator.generatorId);
                 const hazardous = generator.unresolvedHazards.length > 0;
+                const reason = currentExclusion(generator, activePlan, snapshot.inputRevision);
+                const historical = activePlan && activePlan.inputRevision !== snapshot.inputRevision;
+                const distance = activePlan?.plantDistances?.[generator.generatorId];
                 return (
                   <article key={generator.generatorId}>
                     <div className="supply-main">
-                      <label className="check-field"><input type="checkbox" disabled={activePlan?.state === "DISPATCHED"} checked={activePlan?.state === "DISPATCHED" ? activePlan.params.mandatoryIds.includes(generator.generatorId) : mandatoryIds.includes(generator.generatorId)} onChange={(event) => { const checked = event.currentTarget.checked; setControlsTouched(true); setMandatoryIds((current) => checked ? [...current, generator.generatorId] : current.filter((id) => id !== generator.generatorId)); }} /><span>Mandatory</span></label>
+                      <label className="check-field"><input type="checkbox" aria-label={`Required pickup: ${generator.name}`} aria-describedby={activePlan?.state === "DISPATCHED" ? "route-locked" : undefined} disabled={planning || dispatching || activePlan?.state === "DISPATCHED"} checked={activePlan?.state === "DISPATCHED" ? activePlan.params.mandatoryIds.includes(generator.generatorId) : mandatoryIds.includes(generator.generatorId)} onChange={(event) => { const checked = event.currentTarget.checked; setControlsTouched(true); setMandatoryIds((current) => checked ? [...current, generator.generatorId] : current.filter((id) => id !== generator.generatorId)); }} /><span>Required pickup</span></label>
                       <div><strong>{generator.name}</strong><span>{generator.address}</span></div>
                       <span className={`status-badge readiness-${generator.readinessStatus.toLowerCase()}`}>{generator.readinessStatus}</span>
                       <div><strong>{formatKg(generator.readiness?.confirmedKg)}</strong><span>{generator.readiness?.window ? `${generator.readiness.window.start}–${generator.readiness.window.end}` : "No confirmed window"}</span></div>
                     </div>
-                    {(excluded || hazardous || generator.readinessStatus !== "READY") && <p className="next-action">{hazardous ? "HAZARD_REVIEW" : excluded?.reason ?? generator.readinessStatus} · {exclusionAction(hazardous ? "HAZARD_REVIEW" : excluded?.reason ?? generator.readinessStatus)}</p>}
+                    {reason && <p className="next-action">{reason} · {exclusionAction(reason)}</p>}
+                    {historical && excluded && <p className="notice warning">Saved {activePlan.state === "DISPATCHED" ? "dispatched trip" : "draft"} excluded this site: {excluded.reason}. Inputs have changed since that plan. Current readiness is shown above. {activePlan.state === "DISPATCHED" ? "Arrange a later collection; this trip stays frozen." : "Re-plan to use the updated confirmation."}</p>}
+                    {distance != null && <p className="muted">Plant-to-site distance in saved plan: {distance.toFixed(1)} km · limit {activePlan?.params.maxRadiusKm} km · {activePlan?.matrixSource === "fallback" ? "estimated fallback, not measured road distance" : activePlan?.matrixSource}. Pickup: {generator.lat.toFixed(5)}, {generator.lng.toFixed(5)}.</p>}
                     {hazardous && <p className="hazard-detail">Unresolved hazard: {generator.unresolvedHazards.map((hazard) => hazard.reason).join("; ")}</p>}
                     {generator.readiness && <PhotoEvidence key={generator.readiness.submissionId} submission={generator.readiness} adminToken={adminToken} />}
                     <div className="row-actions">
