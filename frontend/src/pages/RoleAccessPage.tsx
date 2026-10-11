@@ -24,7 +24,7 @@ export function RoleAccessPage({ role }: { role: "kitchen" | "driver" }) {
   }
   return <main className="auth-shell">
     <section className="token-panel">
-      <Link className="brand" to="/">FeedSure CBG</Link>
+      <Link className="brand" to="/" aria-label="FeedSure CBG home"><span className="brand-mark" aria-hidden="true">F</span><span>FeedSure CBG</span></Link>
       <h1>{kitchen ? "Kitchen access" : "Driver access"}</h1>
       <p>{kitchen ? "Confirm waste readiness and view your kitchen’s collection records."
         : "Open your assigned trip and record pickup outcomes while parked."}</p>

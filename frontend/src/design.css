@@ -21,7 +21,7 @@
 }
 
 html { scroll-behavior: smooth; scroll-padding-top: 96px; }
-body { line-height: 1.5; -webkit-font-smoothing: antialiased; }
+body { min-width: 0; line-height: 1.5; -webkit-font-smoothing: antialiased; }
 button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
 h1, h2, h3, .brand, .metric-grid strong, .status-rail strong, .driver-metrics strong {
   font-family: "Bahnschrift", "Aptos Display", "Segoe UI", sans-serif;
@@ -40,7 +40,7 @@ h3 { font-size: 1.05rem; letter-spacing: -.015em; }
   background: #fff;
   border-color: var(--line);
 }
-.brand { gap: 12px; font-size: 1.05rem; letter-spacing: -.025em; }
+.brand { min-height: 44px; gap: 12px; font-size: 1.05rem; letter-spacing: -.025em; }
 .brand-mark {
   width: 38px; height: 40px; border-radius: 12px 12px 12px 3px;
   background: var(--green-dark); font-family: "Bahnschrift", sans-serif;
@@ -195,7 +195,7 @@ button:disabled { opacity: .52; }
 .map-explanation, .map-policy { padding-inline: 22px; font-size: .72rem; }
 .map-marker { box-shadow: 0 2px 8px rgb(23 63 50 / 16%); }
 .map-marker-excluded { color: #795d52; background: #f8f1e9; border-color: #c4b1a4; box-shadow: 0 1px 4px rgb(59 41 28 / 9%); }
-.legend-excluded { color: #795d52 !important; background: #f0e5da; }
+.map-legend .legend-excluded { color: #795d52; background: #f0e5da; }
 
 /* Kitchen: one clear form, generous quantity input, quiet collection history. */
 .generator-shell { background: white; }
@@ -286,13 +286,15 @@ button:disabled { opacity: .52; }
 @keyframes saved-arrival { from { opacity: .4; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes loading-turn { to { transform: rotate(360deg); } }
 
-@media (min-width: 1280px) {
-  .control-grid { grid-template-columns: repeat(7, minmax(0, 1fr)) minmax(135px, 1.1fr); }
+@media (min-width: 1100px) {
   .operations-grid { grid-template-columns: minmax(0, 1.4fr) minmax(390px, 1fr); }
   .map-panel { position: sticky; top: 90px; }
   .hero { grid-template-columns: minmax(0, 1.6fr) minmax(310px, .9fr); }
 }
-@media (min-width: 700px) and (max-width: 1279px) {
+@media (min-width: 1280px) {
+  .control-grid { grid-template-columns: repeat(7, minmax(0, 1fr)) minmax(135px, 1.1fr); }
+}
+@media (min-width: 700px) and (max-width: 1099px) {
   .hero { grid-template-columns: minmax(0, 1fr); }
   .process-band { padding-top: 0; padding-left: 0; grid-template-columns: repeat(3, 1fr); background: none; }
   .process-band > div { grid-template-columns: 1fr; gap: 8px; padding-right: 20px; }
@@ -307,7 +309,7 @@ button:disabled { opacity: .52; }
   .plant-header { align-items: center; }
   .header-actions { gap: 0; }
   .header-actions .data-tag { max-width: 115px; font-size: .65rem; }
-  .header-actions .text-button { min-height: 32px; }
+  .header-actions .text-button { min-height: 44px; }
   .field input, .field select, .field textarea, .row-actions input, .time-fields input { font-size: 16px; }
   .operations-toolbar { gap: 12px; padding: 18px; align-items: end; }
   .operations-toolbar .field { grid-template-columns: 1fr; gap: 6px; flex: 1; }
