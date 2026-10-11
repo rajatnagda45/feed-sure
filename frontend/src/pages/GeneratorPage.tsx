@@ -416,8 +416,10 @@ export function GeneratorPage() {
             {saved && !editing && !readinessLoading && !readinessError && saved.status === "READY" && <>
             <a className="waste-skip" href="#records-title">{saved.photoKeys.length ? words.record : words.skip}</a>
             <OptionalPhoto key={saved.submissionId} generatorId={id} token={token} language={language}
-              submission={saved} onSaved={(record) => setSaved((current) =>
-                current?.submissionId === saved?.submissionId ? record : current)} />
+              submission={saved} onSaved={(record) => {
+                setSaved((current) => current?.submissionId === saved?.submissionId ? record : current);
+                setCollectionPlan((current) => current?.state === "DRAFT" ? { ...current, stale: true } : current);
+              }} />
             </>}
             </div>
             <WasteGuide language={language} />

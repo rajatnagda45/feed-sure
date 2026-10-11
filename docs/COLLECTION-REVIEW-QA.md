@@ -52,3 +52,17 @@ Local routing used labelled fallback estimates. This run does not verify hosted 
 Dispatcher supplier actions now provide **Mark human verified — resolve hazard**. Review the saved photo, check with the supplier or on site, tick the explicit confirmation, and enter the verification reason. The action removes the planning hold and displays the saved reviewer, timestamp and reason after refresh. Keep the hold when the issue remains; replace unrelated images. Drafts require re-planning, and dispatched routes stay frozen.
 
 Automated coverage checks that both the checkbox and reason are required, the specific flag ID is submitted, attribution is shown, unauthorised suppliers cannot resolve holds, empty reasons are rejected, changed flag IDs are rejected, and the resolved review persists in the operations snapshot. No migration is required.
+
+## Independent open-PR integration review
+
+PRs #17 and #18 merge into main `c62b5f9` and into each other without conflicts.
+Combined checks passed: 369 backend tests, 131 frontend tests (three existing opt-in
+skips), 28 SQL migration checks, Ruff, and the production build. An independent live
+NVIDIA run of `verify_collection_review.py` passed all six synthetic HTTP scenarios,
+including unrelated-image detection and preservation of readiness.
+
+The review found one additional progress bug: saving or screening a photo changes
+planning inputs but left a draft's Planned stage highlighted until refresh. Photo
+updates now immediately mark the local draft stale. Two component regression checks
+verify the draft becomes pending while a dispatched trip retains its recorded state.
+No hosted users or data were changed. Live model examples do not establish accuracy.
