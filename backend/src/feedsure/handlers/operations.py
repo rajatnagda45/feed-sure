@@ -543,7 +543,7 @@ class Service:
                 {
                     "code": "INPUTS_CHANGED",
                     "inputRevision": current,
-                    "message": "Kitchen or hazard state changed; review.",
+                    "message": "Supplier readiness or hazard state changed; review.",
                 }
             ]
         )
@@ -669,7 +669,7 @@ class Service:
             for g in plan["inputs"]["generators"]
             if g["generatorId"] in {s["generatorId"] for s in plan["plan"]["stops"]}
         ):
-            conflict("An included kitchen has an unresolved hazard.")
+            conflict("An included waste supplier has an unresolved hazard.")
         expiry = int((self.now + timedelta(hours=self.config.driver_token_hours)).timestamp())
         stored = {
             **plan,
@@ -791,7 +791,7 @@ class Service:
         gid = request.get("generatorId")
         stop = next((s for s in plan["plan"]["stops"] if s["generatorId"] == gid), None)
         if not stop:
-            raise ApiError(401, "UNAUTHORIZED", "Kitchen is not assigned to this trip.")
+            raise ApiError(401, "UNAUTHORIZED", "Waste supplier is not assigned to this trip.")
         scope = "PICKUP#" + plan["planKey"] + "#" + gid
         key, replay = self.replay(scope, request)
         if replay is not None:

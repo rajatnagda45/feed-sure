@@ -225,7 +225,7 @@ export function planMapPoints(
   for (const [index, stop] of (plan?.plan.stops ?? []).entries()) {
     const current = generators.find((generator) => generator.generatorId === stop.generatorId);
     const alert = current?.unresolvedHazards.length ? "Current hazard hold — contact dispatch before loading"
-      : current?.readinessStatus === "NOT_READY" ? (plan?.state === "DISPATCHED" ? "Kitchen cancelled — contact dispatch; route remains frozen" : "Kitchen cancelled — re-plan before dispatch") : undefined;
+      : current?.readinessStatus === "NOT_READY" ? (plan?.state === "DISPATCHED" ? "Waste supplier cancelled — contact dispatch; route remains frozen" : "Waste supplier cancelled — re-plan before dispatch") : undefined;
     points.push({ id: stop.generatorId, name: stop.name, lat: stop.lat, lng: stop.lng, kind: "stop", order: index + 1,
       address: stop.address, window: stop.window, serviceStartAt: stop.serviceStartAt, serviceEndAt: stop.serviceEndAt,
       confirmedKg: stop.confirmedKg, expectedCollectionKg: stop.expectedCollectionKg, reservedLoadKg: stop.reservedLoadKg, alert });

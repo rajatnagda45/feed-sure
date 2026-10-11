@@ -263,7 +263,7 @@ class Photos:
         if not isinstance(value, str) or not re.fullmatch(
             rf"submissions/{re.escape(gid)}/[a-f0-9]{{32}}\.(jpg|png)", value
         ):
-            invalid("Provide an issued own-kitchen photo key.")
+            invalid("Provide a photo key issued for your supplier account.")
         return value
 
     def uploads(self, request: dict) -> dict:

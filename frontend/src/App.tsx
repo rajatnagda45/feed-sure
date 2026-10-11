@@ -18,6 +18,7 @@ export function App() {
       <Route path={ROUTES.admin} element={<PlantPage />} />
       <Route path={ROUTES.owner} element={<PlantOwnerPage />} />
       <Route path={ROUTES.driver} element={<DriverPage />} />
+      <Route path="/supplier-access" element={<RoleAccessPage role="kitchen" />} />
       <Route path="/kitchen-access" element={<RoleAccessPage role="kitchen" />} />
       <Route path="/driver-access" element={<RoleAccessPage role="driver" />} />
       <Route path="*" element={<main className="auth-shell"><section className="token-panel"><h1>This page could not be found</h1><p>Open your dispatcher-issued private link, or choose your role from the home page.</p><Link className="button button-primary" to="/">Choose my role</Link></section></main>} />

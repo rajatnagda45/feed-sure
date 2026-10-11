@@ -2,6 +2,10 @@
 
 Updated 11 October 2026. Final integration uses disposable synthetic records, real HTTP/domain handlers, Moto and private local photo bytes. Mock observations are configured fixtures unrelated to the selected image. See [browser evidence and limitations](INTEGRATION-VERIFICATION.md).
 
+## Waste supplier terminology follow-up
+
+The supplier naming change passed 280 backend tests, 62 frontend tests (3 opt-in skipped), the two focused role-access/landing tests, and the production build. Existing private `/g/:id` links and `/kitchen-access` remain valid; navigation now uses `/supplier-access`. API IDs, payload fields and permissions are unchanged. No new browser walkthrough was performed.
+
 ## Separate plant owner interface
 
 Main includes a distinct owner desk at `/owner` and admin desk at `/admin`. This branch preserves those merged changes. The combined suites below were rerun after rebasing. Owner credentials, intake-only access, actor attribution and revisioned gate writes have automated coverage; actual owner login and gate correction were also exercised in the browser.

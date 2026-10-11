@@ -22,7 +22,7 @@ export function PhotoEvidence({ submission, adminToken }: { submission: Readines
         }
         setUrl(result.url);
       }).catch(() => {
-        if (!controller.signal.aborted) setError("Could not load the saved photo. Retry or ask the kitchen for evidence before resolving a hazard.");
+        if (!controller.signal.aborted) setError("Could not load the saved photo. Retry or ask the waste supplier for evidence before resolving a hazard.");
       }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
   }, [open, retry, adminToken, submission.submissionId, submission.photoKeys.join("|")]);
@@ -33,14 +33,14 @@ export function PhotoEvidence({ submission, adminToken }: { submission: Readines
     </button>
     {open && <div>
       {loading && <p role="status">Loading private photo evidence…</p>}
-      {url && <figure><img src={url} alt="Kitchen’s uploaded waste photo evidence" referrerPolicy="no-referrer"
+      {url && <figure><img src={url} alt="Waste supplier’s uploaded waste photo evidence" referrerPolicy="no-referrer"
         onError={() => { setUrl(null); setError("The saved image could not be displayed. Retry to retrieve it again."); }} />
         <figcaption>Uploaded evidence for {submission.collectionDate}. Visible surface only; no whole-load safety certification.</figcaption></figure>}
       {error && <><p className="inline-error" role="alert">{error}</p><button type="button" className="button button-secondary" onClick={() => setRetry(retry + 1)}>Retry saved photo</button></>}
       <p>{photoStatusText[submission.photoStatus]}</p>
       {analysis && <p>{analysis.mode === "mock" ? "Mock observations are configured fixtures unrelated to this image."
         : analysis.state === "FAILED" ? "Analysis failed. A human pickup check is still needed." : analysis.observations?.notes}</p>}
-      <p>Inspect the evidence and confirm with the kitchen. Record an explicit reason in the hazard controls below.</p>
+      <p>Inspect the evidence and confirm with the waste supplier. Record an explicit reason in the hazard controls below.</p>
     </div>}
   </div>;
 }
