@@ -36,10 +36,14 @@ Create a premium photorealistic editorial landscape illustration 16:9 for FeedSu
 
 Run `python scripts/build_workflow_video.py --ffmpeg <local-ffmpeg-executable> --font <local-font-file>` from the repository. The generation run used FFmpeg 7.1 from the temporary `imageio-ffmpeg==0.6.0` build tool and Windows Segoe UI. Neither package nor font binary is a shipped application dependency. Each image is shown for six seconds with short fades and explanatory text. Different font/encoder versions can produce different bytes.
 
-## Validation
+## Original media validation
 
 - Frontend: 58 passed, three opt-in live tests skipped; production build passed. Existing MapLibre bundle-size warning remains.
 - Backend: 275 passed with the existing Starlette/httpx deprecation warning.
 - Browser: image decoded at 1280 pixels; video initially paused with readyState 0, then keyboard playback reached all 18 seconds at 1280 × 720. English captions displayed and the transcript expanded.
 - Responsive checks: 1440, 390 and 320 pixel iframe viewports had matching document/client widths (no horizontal page overflow). Desktop hero evidence is `docs/evidence/frontend-design/media-hero.png`.
-- This validates the isolated design branch. Shared login/plant-owner integration is owned by the concurrent integration chat; its navigation must be retained when combining changes. No deployment or shared demo reseeding was performed.
+- These browser checks used the original isolated design branch. No deployment or shared demo reseeding was performed.
+
+## Follow-up PR validation
+
+The media commit was applied to main at `f2eb064`, preserving its waste-supplier, admin, plant-owner and driver navigation. On this updated branch, 82 frontend tests and 286 backend tests passed; three opt-in live frontend tests were skipped. The production build passed. The existing MapLibre bundle-size and Starlette/httpx warnings remain. The screenshot above records the original media preview, before the newer navigation was incorporated.
