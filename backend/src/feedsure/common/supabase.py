@@ -79,6 +79,12 @@ def request(
                 429, "RATE_LIMITED", "Too many attempts. Wait before retrying."
             ) from None
         if error.code == 404:
+            if path.startswith("/rest/v1/rpc/"):
+                raise ApiError(
+                    503, "DEPENDENCY_NOT_READY", "Run the Supabase account migration."
+                ) from None
+            if path.startswith("/auth/"):
+                raise ApiError(404, "NOT_FOUND", "Account is unavailable.") from None
             raise ApiError(404, "NOT_FOUND", "Saved image is unavailable.") from None
         raise ApiError(502, "UPSTREAM_FAILED", "Supabase request failed. Retry safely.") from None
     except (URLError, TimeoutError, OSError):

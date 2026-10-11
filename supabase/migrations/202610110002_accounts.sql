@@ -42,7 +42,10 @@ begin
     case when assigned in ('ADMIN', 'PLANT_OWNER', 'GENERATOR', 'DRIVER') then 'ACTIVE' else 'PENDING' end,
     left(coalesce(r->>'organisation', u.email, ''), 200),
     left(coalesce(r->>'contact', u.email, ''), 200), left(coalesce(r->>'address', ''), 200),
-    case when jsonb_typeof(r->'profile') = 'object' then r->'profile' else '{}'::jsonb end,
+    case when jsonb_typeof(r->'profile') = 'object' then jsonb_build_object(
+      'lat', case when jsonb_typeof(r->'profile'->'lat') = 'number' then r->'profile'->'lat' end,
+      'lng', case when jsonb_typeof(r->'profile'->'lng') = 'number' then r->'profile'->'lng' end,
+      'type', left(r->'profile'->>'type', 64)) else '{}'::jsonb end,
     case when jsonb_typeof(r->'capacityKg') = 'number' then (r->>'capacityKg')::numeric end,
     case when assigned = 'GENERATOR' then m->>'generator_id'
       when account_role = 'kitchen' then 'registered-' || replace(u.id::text, '-', '') end,

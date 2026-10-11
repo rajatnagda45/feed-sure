@@ -128,14 +128,15 @@ export function MyAccountPage() {
   return <main className="auth-shell"><section className="token-panel">
     <h1>My account</h1>
     {account && <><p><strong>{account.loginId}</strong> · {accountLabels[account.role]}</p><p>{account.organisation}</p>
-      <form onSubmit={(event) => void save(event, "password")}><fieldset className="login-fields" disabled={busy}>
+      {account.status === "PENDING" && <p role="status">Your registration is waiting for Admin approval. Account changes become available after approval.</p>}
+      <form onSubmit={(event) => void save(event, "password")}><fieldset className="login-fields" disabled={busy || account.status !== "ACTIVE"}>
         <label className="field"><span>Current password</span><input type="password" required maxLength={256} autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.currentTarget.value)} /></label>
         <label className="field"><span>New password (at least 12 characters)</span><input type="password" required minLength={12} maxLength={256} autoComplete="new-password" value={password} onChange={(event) => setPassword(event.currentTarget.value)} /></label>
         <label className="field"><span>Confirm new password</span><input type="password" required minLength={12} maxLength={256} autoComplete="new-password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.currentTarget.value)} /></label>
         <button className="button button-primary" type="submit">Change password and sign out</button>
       </fieldset></form>
       <details className="account-delete"><summary>Delete my account</summary><p>Login access will be removed. Collection and intake records are retained.</p>
-        <form onSubmit={(event) => void save(event, "delete")}><fieldset className="login-fields" disabled={busy}>
+        <form onSubmit={(event) => void save(event, "delete")}><fieldset className="login-fields" disabled={busy || account.status !== "ACTIVE"}>
           <label className="field"><span>Current password</span><input type="password" required maxLength={256} autoComplete="current-password" value={currentPassword} onChange={(event) => setCurrentPassword(event.currentTarget.value)} /></label>
           <label className="field"><span>Type {account.loginId} to confirm</span><input required value={confirmation} onChange={(event) => setConfirmation(event.currentTarget.value)} /></label>
           <button className="button button-secondary" type="submit" disabled={confirmation !== account.loginId}>Delete my account</button>

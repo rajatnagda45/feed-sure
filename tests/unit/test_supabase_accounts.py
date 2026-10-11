@@ -187,6 +187,12 @@ def test_conflicting_reset_never_reaches_privileged_auth_update(managed):
     assert not any(path.startswith("/auth/v1/admin") for path, *_ in managed.calls)
 
 
+def test_stale_approval_does_not_enroll_a_generator(managed):
+    response = mutate(managed, "activate", expectedRevision=2)
+    assert response.status_code == 409
+    assert managed.state.database.get("generators", {"generatorId": GID}) is None
+
+
 def test_self_change_requires_matching_current_password_identity(managed):
     managed.wrong_password_identity = True
     payload = {

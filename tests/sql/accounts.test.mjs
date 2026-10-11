@@ -45,6 +45,11 @@ test("imports trusted assignments and ignores public Admin escalation", async ()
 });
 
 test("browser roles cannot select, mutate, call RPC, or call capture helpers", async () => {
+  const grants = await db.query(`select
+    has_function_privilege('authenticated', 'public.feedsure_capture_user(auth.users)', 'EXECUTE') as capture,
+    has_function_privilege('anon', 'public.feedsure_user_created()', 'EXECUTE') as trigger,
+    has_function_privilege('service_role', 'public.feedsure_accounts_api(uuid,uuid,text,uuid,integer,jsonb,uuid)', 'EXECUTE') as backend`);
+  assert.deepEqual(grants.rows[0], { capture: false, trigger: false, backend: true });
   for (const role of ["anon", "authenticated"]) {
     await db.exec(`set role ${role}`);
     try {
@@ -54,6 +59,9 @@ test("browser roles cannot select, mutate, call RPC, or call capture helpers", a
       await assert.rejects(db.query("select public.feedsure_capture_user(null::auth.users)"), /permission denied/);
     } finally { await db.exec("reset role"); }
   }
+  await db.exec("set role service_role");
+  try { assert.equal((await rpc(1, "identity")).role, "admin"); }
+  finally { await db.exec("reset role"); }
 });
 
 test("approval checks revisions; CBG operators cannot manage accounts", async () => {

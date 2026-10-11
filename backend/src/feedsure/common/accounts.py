@@ -194,7 +194,7 @@ class Accounts:
         )
         return public(self.rpc("inspect", p_target=uuid(user["id"])))
 
-    def enroll(self, account: dict) -> None:
+    def enroll(self, account: dict, *, validate_only: bool = False) -> None:
         """Idempotently restore approved generator profiles into AWS/local DynamoDB."""
         profile = account.get("profile") or {}
         gid = account.get("generatorId")
@@ -204,6 +204,8 @@ class Accounts:
         lng = number(profile.get("lng"), "lng", -180, 180)
         if profile.get("type") not in {"hotel", "hostel_mess", "pg", "restaurant", "canteen"}:
             invalid("Generator registration needs valid pickup details.")
+        if validate_only:
+            return
         if self.service.db.get("generators", {"generatorId": gid}, consistent_read=True):
             return
         record = {
@@ -296,11 +298,13 @@ class Accounts:
             for key in ("organisation", "contact", "address"):
                 text(target[key], key, required=True, limit=200)
             if target["role"] == "kitchen":
-                self.enroll(public(target))
+                self.enroll(public(target), validate_only=True)
             elif target["role"] in {"cbg", "owner"}:
                 number(target.get("capacity_kg"), "capacityKg", 0.01, 1e9)
         result = self.rpc(action, p_target=target["id"], p_revision=expected, p_changes=changes)
-        if action == "password":
+        if action == "activate" and target["role"] == "kitchen":
+            self.enroll(public(result))
+        elif action == "password":
             try:
                 request(
                     self.config,
