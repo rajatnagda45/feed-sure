@@ -166,7 +166,7 @@ export type ReadinessStatus = "READY" | "NOT_READY" | "UNCONFIRMED";
 export type WeightSource = "SCALE" | "ESTIMATE";
 export type PhotoStatus = "NOT_CHECKED" | "ADVICE" | "REVIEW_HAZARD" | "NO_ISSUE_OBSERVED";
 export type PlanStatus = "FEASIBLE" | "MANDATORY_CONFLICT";
-export type PlanState = "DRAFT" | "DISPATCHED" | "CLOSED";
+export type PlanState = "DRAFT" | "DISPATCHED" | "CLOSED" | "CANCELLED";
 export type PickupOutcome = "COLLECTED" | "PARTIAL" | "NOT_READY" | "SKIPPED";
 export type GpsStatus = "UNKNOWN" | "IN_RANGE" | "OUT_OF_RANGE";
 export type ReconciliationStatus =
@@ -344,6 +344,7 @@ export interface RoadRoute {
 }
 
 export interface PlanEnvelope {
+  cancellation?: { reason: string; actor: Actor; recordedAt: string };
   plantDistances?: Record<string, number | null>;
   travelLegs?: { fromId: string; toId: string; km: number; min: number; source: string }[];
   roadRoute?: RoadRoute;
@@ -463,6 +464,8 @@ export interface GeneratorReceipt {
 }
 
 export interface IntakeTrip {
+  state?: PlanState;
+  cancellation?: {reason:string;actor:Actor;recordedAt:string};
   planKey: string;
   collectionDate: string;
   dispatchedAt: string;

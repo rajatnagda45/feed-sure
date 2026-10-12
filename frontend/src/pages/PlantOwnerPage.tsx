@@ -68,6 +68,7 @@ export function IntakeTripPanel({ trip, token, refresh, onSaving }: {
       <div><span>Difference %</span><strong>{formatPercent(reconciliation.deltaPct)}</strong></div>
     </div>
     {reconciliation.provisional && <p className="notice warning">Provisional comparison: at least one weight is estimated.</p>}
+    {trip.state === "CANCELLED" && <p className="notice warning">Trip cancelled: {trip.cancellation?.reason}. Record only waste actually delivered. Earlier pickups remain recorded; unvisited stops were not collected.</p>}
     {reconciliation.pendingStopIds.length > 0 && <p className="notice warning">Pickup outcomes still pending: {reconciliation.pendingStopIds.join(", ")}. Intake can be recorded, but reconciliation remains incomplete.</p>}
     <div className="owner-trip-body">
       <div className="owner-pickups">

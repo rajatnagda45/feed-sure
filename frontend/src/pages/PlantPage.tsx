@@ -104,6 +104,11 @@ export function PlantPage() {
   const [phone, setPhone] = useState<PhoneForm | null>(null);
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [phoneSaving, setPhoneSaving] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelConfirmed, setCancelConfirmed] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [replacementChecked, setReplacementChecked] = useState(false);
+  const cancellationAttempt = useRef<{body:string;key:string} | null>(null);
   const [driverAccess, setDriverAccess] = useState<{ token: string; expiresAt: string; planKey: string } | null>(null);
   const [supplyFilter, setSupplyFilter] = useState("all");
   const [driverLinkVisible, setDriverLinkVisible] = useState(false);
@@ -168,6 +173,7 @@ export function PlantPage() {
   const staleDraft = activePlan?.state === "DRAFT" && activePlan.inputRevision !== snapshot?.inputRevision;
   const pendingOutcomes = activePlan?.plan.stops.filter((stop) => !execution?.pickups.some((pickup) => pickup.generatorId === stop.generatorId)) ?? [];
   const nextStep = !activePlan ? "Review the confirmations and build a draft route."
+    : activePlan.state === "CANCELLED" ? "Trip cancelled. Confirm remaining supply, then build and review a replacement plan."
     : activePlan.state === "DISPATCHED" ? pendingOutcomes.length
       ? `Hand off the frozen trip. ${pendingOutcomes.length} stop outcomes are still pending.`
       : execution?.gate ? "Review the pickup and net intake reconciliation." : "All stop outcomes are recorded. Ask the plant owner to record net intake."
@@ -210,6 +216,10 @@ export function PlantPage() {
 
   const replan = async () => {
     if (!snapshot || !adminToken) return;
+    if (activePlan?.state === "CANCELLED" && !replacementChecked) {
+      setError("Check remaining supply and confirm the replacement-plan checklist before re-planning.");
+      return;
+    }
     setPlanning(true);
     setError(null);
     setMessage(null);
@@ -236,6 +246,21 @@ export function PlantPage() {
     } finally {
       setPlanning(false);
     }
+  };
+
+  const cancelTrip = async () => {
+    if (!activePlan || cancelling || !cancelConfirmed || !cancelReason.trim()) return;
+    const body = JSON.stringify({expectedVersion:activePlan.version,reason:cancelReason.trim()});
+    if (cancellationAttempt.current?.body !== body) cancellationAttempt.current={body,key:createIdempotencyKey("cancel-dispatch")};
+    setCancelling(true);setError(null);
+    try {
+      const result = await apiRequest<{plan:PlanEnvelope}>(`/plans/${encodeURIComponent(activePlan.planKey)}/cancel`,
+        {method:"POST",adminToken,body,idempotencyKey:cancellationAttempt.current.key});
+      setPlan(result.plan);setDetails(null);setDriverAccess(null);setCancelReason("");setCancelConfirmed(false);setReplacementChecked(false);
+      cancellationAttempt.current=null;setMessage("Dispatch cancelled. Contact the driver directly to stop collection. Existing pickups are preserved; review remaining supply before re-planning.");
+      setRefreshKey((value)=>value+1);
+    } catch (issue) {setError(displayError(issue));}
+    finally {setCancelling(false);}
   };
 
   const dispatch = async () => {
@@ -437,10 +462,13 @@ export function PlantPage() {
                   {account && activePlan.state === "DISPATCHED" && <DriverAssignment planKey={activePlan.planKey} />}
                   {activePlan.state === "DISPATCHED" && <button className="button button-secondary" disabled={dispatching} onClick={() => void renewAccess()}>Renew driver access</button>}
                   <div className="plan-actions">
+                    {activePlan.state === "CANCELLED" && <><label className="check-field"><input type="checkbox" checked={replacementChecked} onChange={(event)=>setReplacementChecked(event.currentTarget.checked)} /><span>I checked remaining waste and updated confirmations so recorded pickups are not counted again.</span></label><button className="button button-primary" type="button" disabled={planning || loading || !replacementChecked} onClick={() => void replan()}>Re-plan after cancellation</button></>}
                     <button className="button button-primary" type="button" onClick={() => void dispatch()} disabled={loading || dispatching || !controlsMatchPlan || activePlan.inputRevision !== snapshot.inputRevision || activePlan.status !== "FEASIBLE" || activePlan.mandatoryConflicts.length > 0 || activePlan.plan.stops.length === 0 || activePlan.state !== "DRAFT"}>{dispatching ? "Dispatching…" : activePlan.state === "DISPATCHED" ? "Dispatched" : "Dispatch reviewed version"}</button>
                     {activePlan.state === "DISPATCHED" && !account && !currentDriverAccess && <button className="button button-secondary" type="button" onClick={() => void dispatch()} disabled={dispatching}>Retrieve private driver link</button>}
                     {!account && currentDriverAccess && <button className="button button-secondary" type="button" onClick={() => void copyDriverLink()}>Copy private driver link</button>}
                   </div>
+                  {activePlan.cancellation && <p className="notice warning">Cancelled: {activePlan.cancellation.reason}. Recorded by {activePlan.cancellation.actor.id} at {activePlan.cancellation.recordedAt}. Previous pickup and gate records remain available; cancellation does not mean a load was received.</p>}
+                  {activePlan.state === "DISPATCHED" && <details className="notice warning"><summary>Cancel this dispatch</summary><p>Contact the driver directly. Cancellation stops further driver updates, preserves recorded pickups and allows a replacement draft. Confirm remaining waste before re-planning; already collected waste must not be scheduled again.</p><label className="field"><span>Cancellation reason (required)</span><input value={cancelReason} disabled={cancelling} onChange={(event)=>setCancelReason(event.currentTarget.value)} /></label><label className="check-field"><input type="checkbox" checked={cancelConfirmed} disabled={cancelling} onChange={(event)=>setCancelConfirmed(event.currentTarget.checked)} /><span>I intend to cancel this trip and will notify the driver.</span></label><button type="button" className="button button-secondary" disabled={cancelling || !cancelConfirmed || !cancelReason.trim()} onClick={()=>void cancelTrip()}>{cancelling ? "Cancelling..." : "Confirm cancellation"}</button></details>}
                   {activePlan.state === "DISPATCHED" && !account && !currentDriverAccess && <p className="muted">Retrieve the existing private driver link after a refresh. Its original expiry is retained; expired access requires operational support.</p>}
                   {!account && currentDriverAccess && <aside className="driver-handoff"><h3>Driver handoff</h3><p>Share the private link with the assigned driver. Ask them to check the stop windows, record every outcome while parked, and return to the plant.</p><p>Access expires {new Date(currentDriverAccess.expiresAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })} India time.</p><button type="button" className="text-button" onClick={() => setDriverLinkVisible((value) => !value)}>{driverLinkVisible ? "Hide private link" : "Show private link for manual copy"}</button>{driverLinkVisible && <label className="field"><span>Private driver link · keep off public recordings</span><input readOnly value={driverLink} onFocus={(event) => event.currentTarget.select()} /></label>}</aside>}
                 </>

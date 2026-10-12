@@ -24,7 +24,7 @@ export interface PhotoUpload {
   fields: Record<string, string>;
   transport: "local" | "s3" | "supabase";
 }
-export interface CollectionPlanStatus { state: "DRAFT" | "DISPATCHED" | "CLOSED"; stale: boolean }
+export interface CollectionPlanStatus { state: "DRAFT" | "DISPATCHED" | "CLOSED" | "CANCELLED"; stale: boolean }
 
 export function getKitchenReadiness(id: string, date: string, token: string, signal?: AbortSignal) {
   return apiRequest<{ submission: PhotoRecord | null; unresolvedHazard: unknown; collectionPlan?: CollectionPlanStatus | null }>(

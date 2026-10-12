@@ -16,7 +16,7 @@ export function collectionJourney(date: string, ready: boolean, plan: Collection
   const today = receipts.filter((r) => r.collectionDate === date);
   return [
     { key: "ready", label: "Ready", done: ready },
-    { key: "planned", label: "Planned", done: Boolean(plan && !plan.stale) || today.length > 0 },
+    { key: "planned", label: "Planned", done: Boolean(plan && plan.state !== "CANCELLED" && !plan.stale) || today.length > 0 },
     { key: "collected", label: "Collected", done: today.some((r) => r.pickup.kg > 0) },
     { key: "received", label: "Trip intake recorded", done: today.some((r) => r.pickup.kg > 0 && r.gateRecorded) },
   ];
