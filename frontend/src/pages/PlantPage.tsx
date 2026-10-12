@@ -102,6 +102,8 @@ export function PlantPage() {
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [phone, setPhone] = useState<PhoneForm | null>(null);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [phoneSaving, setPhoneSaving] = useState(false);
   const [driverAccess, setDriverAccess] = useState<{ token: string; expiresAt: string; planKey: string } | null>(null);
   const [supplyFilter, setSupplyFilter] = useState("all");
   const [driverLinkVisible, setDriverLinkVisible] = useState(false);
@@ -110,6 +112,7 @@ export function PlantPage() {
   const phoneEditor = useRef<HTMLElement>(null);
 
   useEffect(() => {
+    setPhoneError(null);
     if (!phone) return;
     phoneEditor.current?.scrollIntoView({ block: "start" });
     phoneEditor.current?.querySelector<HTMLSelectElement>("select")?.focus({ preventScroll: true });
@@ -301,15 +304,17 @@ export function PlantPage() {
 
   const submitPhone = async (event: FormEvent) => {
     event.preventDefault();
-    if (!phone || !adminToken) return;
+    if (!phone || !adminToken || phoneSaving) return;
+    setPhoneError(null);
     const kg = Number(phone.kg);
     if (!phone.confirmedBy.trim() || !phone.reason.trim()
-      || (phone.status === "READY" && (!Number.isFinite(kg) || kg <= 0 || phone.start >= phone.end))) {
-      setError("Phone confirmations require a supervisor label, reason, and valid READY quantity/window.");
+      || (phone.status === "READY" && (!Number.isFinite(kg) || kg <= 0 || kg > 5000 || phone.start >= phone.end))) {
+      setPhoneError("Enter confirmed kg, a valid pickup window, who confirmed availability, and a call note. Selecting Ready alone does not save confirmation.");
       return;
     }
+    setPhoneSaving(true);
     try {
-      await saveReadiness({
+      const response = await saveReadiness({
         generatorId: phone.generatorId,
         collectionDate: date,
         status: phone.status,
@@ -323,12 +328,17 @@ export function PlantPage() {
         reason: phone.reason.trim(),
         lang: "en",
       }, { adminToken });
+      setSnapshot((current) => current?.collectionDate === response.submission.collectionDate ? {
+        ...current, inputRevision: response.inputRevision,
+        generators: current.generators.map((generator) => generator.generatorId === response.submission.generatorId
+          ? { ...generator, readiness: response.submission, readinessStatus: response.submission.status } : generator),
+      } : current);
       setPhone(null);
       setMessage("Phone confirmation saved. Input revision advanced; re-plan before dispatch.");
       setRefreshKey((value) => value + 1);
     } catch (reason) {
-      setError(displayError(reason));
-    }
+      setPhoneError(displayError(reason));
+    } finally { setPhoneSaving(false); }
   };
 
   if (!adminToken) {
@@ -492,13 +502,15 @@ export function PlantPage() {
             <section className="inline-editor" ref={phoneEditor} aria-label="Phone confirmation editor">
               <form onSubmit={(event) => void submitPhone(event)}>
                 <div className="section-heading"><div><p className="context-line">Attributable dispatcher call</p><h2>Phone confirmation</h2><p>{snapshot.generators.find((generator) => generator.generatorId === phone.generatorId)?.name} · {formatServiceDate(date)}</p></div><button className="text-button" type="button" onClick={() => setPhone(null)}>Cancel</button></div>
-                <div className="control-grid">
+                <p>Opening this form does not confirm availability. Complete the required details, then save. The supplier status will change to READY for this date.</p>
+                {phoneError && <p className="notice error" role="alert">{phoneError}</p>}
+                <fieldset className="control-grid login-fields" disabled={phoneSaving}>
                   <label className="field compact"><span>Status</span><select value={phone.status} onChange={(event) => setPhone({ ...phone, status: event.currentTarget.value as PhoneForm["status"] })}><option value="READY">Ready</option><option value="NOT_READY">Not ready</option></select></label>
-                  {phone.status === "READY" && <><label className="field compact"><span>Confirmed kg</span><input type="number" min="0.1" value={phone.kg} onChange={(event) => setPhone({ ...phone, kg: event.currentTarget.value })} /></label><label className="field compact"><span>Source</span><select value={phone.source} onChange={(event) => setPhone({ ...phone, source: event.currentTarget.value as WeightSource })}><option value="SCALE">Scale</option><option value="ESTIMATE">Estimate</option></select></label><label className="field compact"><span>Window start</span><input type="time" value={phone.start} onChange={(event) => setPhone({ ...phone, start: event.currentTarget.value })} /></label><label className="field compact"><span>Window end</span><input type="time" value={phone.end} onChange={(event) => setPhone({ ...phone, end: event.currentTarget.value })} /></label></>}
-                  <label className="field compact"><span>Confirmed by</span><input value={phone.confirmedBy} onChange={(event) => setPhone({ ...phone, confirmedBy: event.currentTarget.value })} /></label>
-                  <label className="field compact"><span>Reason / call note</span><input value={phone.reason} onChange={(event) => setPhone({ ...phone, reason: event.currentTarget.value })} /></label>
-                  <button className="button button-primary" type="submit">Save phone confirmation</button>
-                </div>
+                  {phone.status === "READY" && <><label className="field compact"><span>Confirmed kg (required)</span><input required type="number" min="0.1" max="5000" step="any" value={phone.kg} onChange={(event) => setPhone({ ...phone, kg: event.currentTarget.value })} /></label><label className="field compact"><span>Source</span><select value={phone.source} onChange={(event) => setPhone({ ...phone, source: event.currentTarget.value as WeightSource })}><option value="SCALE">Scale</option><option value="ESTIMATE">Estimate</option></select></label><label className="field compact"><span>Window start (required)</span><input required type="time" value={phone.start} onChange={(event) => setPhone({ ...phone, start: event.currentTarget.value })} /></label><label className="field compact"><span>Window end (required)</span><input required type="time" value={phone.end} onChange={(event) => setPhone({ ...phone, end: event.currentTarget.value })} /></label></>}
+                  <label className="field compact"><span>Confirmed by (required)</span><input required placeholder="Supplier supervisor name" value={phone.confirmedBy} onChange={(event) => setPhone({ ...phone, confirmedBy: event.currentTarget.value })} /></label>
+                  <label className="field compact"><span>Reason / call note (required)</span><input required placeholder="E.g. supervisor confirmed 69.1 kg for tomorrow" value={phone.reason} onChange={(event) => setPhone({ ...phone, reason: event.currentTarget.value })} /></label>
+                  <button className="button button-primary" type="submit">{phoneSaving ? "Saving confirmation..." : "Save phone confirmation"}</button>
+                </fieldset>
               </form>
             </section>
           )}

@@ -93,3 +93,9 @@ opt-in frontend skips remain. Production build, Ruff and whitespace checks passe
 live NVIDIA verifier passed all six collection scenarios. A fresh synthetic photo rejection
 through the human-review HTTP endpoint preserved READY/80 kg, recorded reviewer/time and
 replayed idempotently. No hosted records were changed.
+
+Phone-confirmation usability follow-up: required fields are labelled and validated, failed
+saves appear next to the form, duplicate clicks are blocked during saving, and the supplier
+row immediately uses the server-saved readiness before the full snapshot refresh. A component
+regression test checks incomplete saves and UNCONFIRMED-to-READY with 69.1 kg. The operations
+header now stays in normal flow. All 134 frontend tests and the production build pass.
