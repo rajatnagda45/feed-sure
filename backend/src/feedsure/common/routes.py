@@ -29,6 +29,7 @@ ROUTES = [
     ("GET", "/plans/{date}"),
     ("GET", "/plans/{planKey}/details"),
     ("POST", "/plans/{planKey}/dispatch"),
+    ("POST", "/plans/{planKey}/cancel"),
     ("GET", "/plans/{planKey}/driver"),
     ("POST", "/pickups"),
     ("POST", "/gate-logs"),

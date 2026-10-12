@@ -11,7 +11,7 @@ export interface PhotoRecord extends ReadinessRecord {
     observations: { items: { type: string; count: number; confidence: number }[];
       image_quality: string; confidence: number; notes: string; hazard: boolean } | null;
     limit: string;
-    failure?: { code: string; message: string; retryable: boolean } | null;
+    failure?: { code: string; message: string; retryable: boolean; providerStatus?: number } | null;
     attempts?: number;
   } | null;
 }
@@ -24,7 +24,7 @@ export interface PhotoUpload {
   fields: Record<string, string>;
   transport: "local" | "s3" | "supabase";
 }
-export interface CollectionPlanStatus { state: "DRAFT" | "DISPATCHED" | "CLOSED"; stale: boolean }
+export interface CollectionPlanStatus { state: "DRAFT" | "DISPATCHED" | "CLOSED" | "CANCELLED"; stale: boolean }
 
 export function getKitchenReadiness(id: string, date: string, token: string, signal?: AbortSignal) {
   return apiRequest<{ submission: PhotoRecord | null; unresolvedHazard: unknown; collectionPlan?: CollectionPlanStatus | null }>(

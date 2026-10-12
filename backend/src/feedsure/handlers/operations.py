@@ -144,13 +144,18 @@ class Service:
         )
         trips = []
         for plan in sorted(rows, key=lambda row: (row.get("createdAt", ""), row["planId"])):
-            if plan.get("schemaVersion") != 3 or plan.get("state") != "DISPATCHED":
+            if plan.get("schemaVersion") != 3 or plan.get("state") not in {
+                "DISPATCHED",
+                "CANCELLED",
+            }:
                 continue
             execution = self.execution(plan)
             stops = {stop["generatorId"]: stop for stop in plan["plan"]["stops"]}
             trips.append(
                 {
                     "planKey": plan["planKey"],
+                    "state": plan["state"],
+                    "cancellation": plan.get("cancellation"),
                     "collectionDate": day,
                     "dispatchedAt": plan["dispatchedAt"],
                     "returnAt": plan["plan"]["returnAt"],
@@ -637,6 +642,10 @@ class Service:
 
     def driver(self, plan: dict) -> dict:
         """Validate token generation, expiry and dispatched trip scope."""
+        if plan["state"] == "CANCELLED":
+            raise ApiError(
+                401, "UNAUTHORIZED", "This dispatch was cancelled. Contact the dispatcher."
+            )
         actor = self.account_actor("DRIVER", plan["planKey"])
         if actor:
             if plan["state"] != "DISPATCHED" or self.now.timestamp() >= plan.get(
@@ -769,6 +778,8 @@ class Service:
         scope = "DISPATCH#" + plan["planKey"]
         key, replay = self.replay(scope, request)
         if replay is not None:
+            if plan["state"] != "DISPATCHED":
+                conflict("This trip is cancelled. Build and review a replacement plan.")
             return self.access_response(plan)
         if plan["state"] == "DISPATCHED":
             if expected not in {plan["version"], plan["version"] - 1}:
@@ -835,6 +846,60 @@ class Service:
             )
         self.db.transact([meta_action, plan_action, *actions, *profile_checks])
         return self.access_response(stored)
+
+    def cancel_dispatch(self, plan_key: str, request: dict) -> dict:
+        """Cancel atomically, revoke driver writes and release the date for a new reviewed draft."""
+        actor = self.admin()
+        fields(request, {"expectedVersion", "reason"})
+        reason = text(request.get("reason"), "reason", required=True)
+        plan = self.load_plan(plan_key)
+        scope = "CANCEL#" + plan["planKey"]
+        key, replay = self.replay(scope, request)
+        if replay is not None:
+            return replay
+        expected = revision(request.get("expectedVersion"))
+        if plan["state"] != "DISPATCHED" or expected != plan["version"]:
+            conflict("Refresh the dispatched trip before cancelling it.")
+        before = self.meta(plan["collectionDate"])
+        if before.get("activePlanKey") != plan["planKey"]:
+            conflict("The active trip changed. Refresh before cancelling.")
+        stored = {
+            **plan,
+            "state": "CANCELLED",
+            "version": expected + 1,
+            "executionRevision": plan.get("executionRevision", 0) + 1,
+            "driverTokenHash": "",
+            "driverExpiresEpoch": 0,
+            "cancellation": {"reason": reason, "actor": actor, "recordedAt": stamp(self.now)},
+        }
+        action = self.db.conditional_put(
+            "plans", stored, "#s = :s AND #v = :v AND executionRevision = :r"
+        )
+        action["Put"].update(
+            ExpressionAttributeNames={"#s": "state", "#v": "version"},
+            ExpressionAttributeValues={
+                ":s": "DISPATCHED",
+                ":v": expected,
+                ":r": plan.get("executionRevision", 0),
+            },
+        )
+        after = {**before, "inputRevision": before["inputRevision"] + 1}
+        after.pop("activePlanKey", None)
+        response = {"plan": self.public_plan(stored)}
+        self.db.transact(
+            [
+                action,
+                self.meta_action(before, after),
+                *self.mutation_actions(
+                    scope,
+                    key,
+                    request,
+                    response,
+                    {"planKey": plan["planKey"], "state": plan["state"]},
+                ),
+            ]
+        )
+        return response
 
     def execution(
         self, plan: dict, replacements: dict | None = None, gate_override: dict | None = None
@@ -1029,7 +1094,7 @@ class Service:
         )
         action["Put"].update(
             ExpressionAttributeNames={"#s": "state"},
-            ExpressionAttributeValues={":r": plan.get("executionRevision", 0), ":s": "DISPATCHED"},
+            ExpressionAttributeValues={":r": plan.get("executionRevision", 0), ":s": plan["state"]},
         )
         return action
 
@@ -1056,7 +1121,7 @@ class Service:
             },
         )
         plan = self.load_plan(request.get("planKey"))
-        if plan["state"] != "DISPATCHED":
+        if plan["state"] not in {"DISPATCHED", "CANCELLED"}:
             conflict("Gate logging requires a dispatched trip.")
         scope = "GATE#" + plan["planKey"]
         key, replay = self.replay(scope, request)
@@ -1247,9 +1312,11 @@ class Service:
                 return {"generator": self.profile(record)}
         if path == "/plans" and method == "POST":
             return self.create_plan(body(self.event))
-        match = re.fullmatch(r"/plans/([^/]+)(?:/(details|dispatch|driver))?", path)
+        match = re.fullmatch(r"/plans/([^/]+)(?:/(details|dispatch|driver|cancel))?", path)
         if match:
             value, suffix = match.groups()
+            if suffix == "cancel" and method == "POST":
+                return self.cancel_dispatch(value, body(self.event))
             if suffix == "dispatch" and method == "POST":
                 return self.dispatch(value, body(self.event))
             if suffix == "driver" and method == "GET":

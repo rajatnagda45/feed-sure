@@ -9,6 +9,8 @@ import json
 from dataclasses import replace
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
+from unittest.mock import Mock
+from urllib.error import HTTPError
 from urllib.parse import quote
 
 import boto3
@@ -697,3 +699,37 @@ def test_unrelated_image_cannot_be_human_verified_but_can_be_rejected(photo_http
     assert result.status_code == 200
     assert result.json()["submission"]["photoReview"]["decision"] == "REJECTED"
     assert result.json()["submission"]["status"] == "READY"
+
+
+def test_provider_503_waits_then_recovers_without_losing_readiness(photo_http, monkeypatch):
+    http = photo_http
+    record, _ = attached(http)
+    http.state.config = replace(
+        http.state.config, mock_bedrock=False, photo_analysis_provider="nvidia"
+    )
+    invoke = Mock(
+        side_effect=[
+            HTTPError("https://private-url", 503, "private-key", {}, None),
+            json.dumps(
+                {
+                    "items": [],
+                    "hazard": False,
+                    "image_quality": "ok",
+                    "confidence": 0.9,
+                    "notes": "Synthetic test observation",
+                }
+            ),
+        ]
+    )
+    pause = Mock()
+    monkeypatch.setattr("feedsure.handlers.photos.invoke_screening", invoke)
+    monkeypatch.setattr("feedsure.handlers.photos.sleep", pause)
+    result = mutation(http, record, "screen", key="recover-after-503")
+    assert result.status_code == 200
+    saved_record = result.json()["submission"]
+    assert saved_record["analysis"]["state"] == "COMPLETE"
+    assert saved_record["analysis"]["attempts"] == 2
+    assert saved_record["analysis"]["failure"] is None
+    assert saved_record["status"] == "READY" and saved_record["confirmedKg"] == 100
+    pause.assert_called_once_with(0.75)
+    assert "private-key" not in result.text

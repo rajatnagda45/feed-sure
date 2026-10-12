@@ -19,6 +19,7 @@ it("does not use another date's receipt or NOT_READY to mark progress complete",
   expect(collectionJourney("2026-10-12", false, null, previous).map(s => s.done)).toEqual([false, false, false, false]);
   expect(collectionJourney("2026-10-12", true, { state: "DRAFT", stale: false }, previous).map(s => s.done)).toEqual([true, true, false, false]);
   expect(collectionJourney("2026-10-12", true, { state: "DRAFT", stale: true }, previous)[1].done).toBe(false);
+  expect(collectionJourney("2026-10-12", true, { state: "CANCELLED", stale: false }, previous)[1].done).toBe(false);
 });
 
 it("zero pickup is not collected and a gate record is only trip-level evidence", () => {

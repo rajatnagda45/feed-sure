@@ -258,3 +258,24 @@ credentials/configuration stop immediately. No provider exception text or creden
 The selected NVIDIA model uses concise observation output and a 12-second per-attempt timeout;
 keep the two-attempt budget below the existing 29-second Lambda limit. Human review and pickup
 checks are required when screening cannot complete. A photo review is not a load certificate.
+
+### Cancel dispatch and create a replacement
+
+POST `/plans/{planKey}/cancel` requires dispatcher access, an idempotency key,
+`expectedVersion` and a nonblank `reason`. It atomically changes DISPATCHED to CANCELLED,
+records authenticated actor/time/reason, revokes driver access and releases the active date.
+Concurrent pickup/gate writes are checked through executionRevision; earlier evidence remains.
+Identical retries replay; stale or non-dispatched requests return 409. Cancelled trips cannot
+be dispatched again or renewed. Intake can still be recorded for waste actually delivered.
+
+Notify the driver directly: cancellation does not send messages or stop a moving vehicle.
+Check remaining waste and update confirmations to avoid counting earlier pickups again.
+Re-plan after cancellation uses POST `/plans` to create a NEW DRAFT from current inputs.
+Review and dispatch that new plan separately. The cancelled plan remains in audit/history.
+No migration is needed; deploy frontend, backend and the new SAM route together.
+
+Screening failure diagnostics include optional `providerStatus` for HTTP failures. Provider
+429/5xx responses pause 0.75 seconds before the single retry, within the bounded request
+budget. No provider response body is exposed. Live testing reproduced one NVIDIA HTTP 503
+followed by two successful identical synthetic-image checks; transient availability can
+still require a later retry or human verification.

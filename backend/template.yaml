@@ -540,6 +540,12 @@ Resources:
             ApiId: !Ref HttpApi
             Method: POST
             Path: /plans/{planKey}/dispatch
+        CancelDispatch:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Method: POST
+            Path: /plans/{planKey}/cancel
         Route12:
           Type: HttpApi
           Properties:
