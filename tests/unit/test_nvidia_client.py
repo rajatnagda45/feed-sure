@@ -58,7 +58,8 @@ def test_nvidia_request_sends_actual_images_and_observation_prompt(monkeypatch):
     assert payload["model"] == "configured-vision-model"
     assert payload["max_tokens"] == config.nvidia_max_tokens
     assert payload["stream"] is False and payload["temperature"] == 0
-    assert payload["messages"][0]["content"].startswith("/no_think\n")
+    assert payload["chat_template_kwargs"] == {"enable_thinking": False}
+    assert not payload["messages"][0]["content"].startswith("/no_think")
     assert "mass percentage" in payload["messages"][0]["content"]
     parts = payload["messages"][1]["content"]
     for part, data, mime in zip(parts, images, ("jpeg", "png"), strict=False):

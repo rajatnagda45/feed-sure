@@ -47,7 +47,7 @@ revision is zero. Same key/payload replays; changed payload, stale revision or n
 returns 409. A model is attempted at most twice; malformed/failed analysis persists NOT_CHECKED.
 
 `GET /generators/{generatorId}/readiness?date=YYYY-MM-DD` returns
-`{submission:record|null,unresolvedHazard:record|null}` for the owning kitchen/admin.
+`{submission:record|null,unresolvedHazard:record|null,collectionPlan:{state,stale}|null}` for the owning kitchen/admin.
 `GET /submissions/{encodedSubmissionId}/evidence` returns an authenticated, no-store
 `{url,transport}` response: local validated bytes as a data URL, or a short-lived private S3 GET.
 Cross-kitchen reads/mutations are rejected. Presigned GET links remain bearer access until expiry.
@@ -197,7 +197,7 @@ paired-photo/verdict examples in this document. JSON uses camelCase and header a
 | POST /submissions/{id}/photo | owning kitchen or admin | `{photoKey:string|null,expectedPhotoRevision:0..}` plus Idempotency-Key -> `{submission,inputRevision}`; null detaches |
 | POST /submissions/{id}/screen | owning kitchen or admin | `{expectedPhotoRevision}` plus Idempotency-Key -> `{submission,inputRevision}` |
 | GET /submissions/{id}/evidence | owning kitchen or admin | `{url,transport}`; local authenticated data URL or short-lived private S3 GET URL |
-| GET /generators/{id}/readiness?date=YYYY-MM-DD | owning kitchen or admin | `{submission:record|null,unresolvedHazard:record|null}` for refresh |
+| GET /generators/{id}/readiness?date=YYYY-MM-DD | owning kitchen or admin | `{submission:record|null,unresolvedHazard:record|null,collectionPlan:{state,stale}|null}` for refresh |
 
 Encode the entire submission ID in paths. Photo revision defaults to 0 on older v3 records.
 Exact scoped key/payload retries replay the saved response; changed payload, stale photo revision,
@@ -231,3 +231,30 @@ runner remains disposable in-process Moto; byte files persist until retention cl
 ## Supabase bearer authentication
 
 With `AUTH_PROVIDER=supabase`, all operational routes require `Authorization: Bearer <session JWT>`. With account management enabled, roles and assignments come from the private Supabase account registry; otherwise they come from Auth-verified app_metadata. Invalid/missing login returns 401, incorrect role/scope returns 403, and upstream failures return 502. `GET /auth/session` returns `{ "account": { "id": "user-id", "role": "GENERATOR", "generatorId": "hotel-a" } }`; drivers use `planKey` instead. Upload/evidence responses may include `transport: "supabase"`; signed upload URLs accept a raw image PUT without application credentials. See [Supabase configuration](SUPABASE.md).
+
+### Collection review additions
+
+Readiness `collectionPlan` only describes a plan containing the requesting supplier on the requested collection date. `state` is DRAFT, DISPATCHED or CLOSED; `stale` identifies a draft whose input revision changed. Other suppliers, stops and driver credentials are not exposed.
+
+Plan envelopes include `plantDistances`, a generator-ID map of outbound plant-to-site matrix distances in km (null where unavailable). These are the distances used for the maximum-distance exclusion, not total route distances or necessarily straight-line distances. The existing matrix source labels still distinguish estimates from road routing. Older saved plans may omit this additive field.
+
+### Human verification of a hazard
+
+The admin-only hazard review endpoint accepts optional `expectedHazardId` on `RESOLVE`; a changed flag returns 409. New AI-generated flags also have a stable `hazardId`. Operations generator rows expose nullable `lastHazardReview` after resolution, including the server-authenticated actor, time and reason. The UI requires a reason and explicit human confirmation, displays the saved review, and refreshes planning inputs. Resolution clears the hold but never rewrites the model observation, automatically dispatches a route, or certifies a load. Existing historical flags without IDs remain reviewable.
+
+### Waste-photo verification and screening failures
+
+POST `/submissions/{submissionId}/review` is dispatcher-only. Send `expectedPhotoRevision`,
+`decision` (`VERIFIED` or `REJECTED`), `evidenceChecked:true`, and a nonblank `reason`, with
+an idempotency key. A human check records `photoReview` with authenticated reviewer, UTC time,
+reason and the reviewed image hash. It preserves readiness and never clears a hazard.
+Unrelated-image observations cannot be verified; replace the photo first. Photo changes or
+re-screening invalidate the earlier review. Stale revisions return 409. No migration is needed.
+
+Failed analysis keeps `NOT_CHECKED` and provides `analysis.failure` with a safe code, message
+and retryable flag, plus attempt count. Codes distinguish timeout, credentials, rate limit,
+service outage, configuration and invalid response. Transient failures retry once; rejected
+credentials/configuration stop immediately. No provider exception text or credential is returned.
+The selected NVIDIA model uses concise observation output and a 12-second per-attempt timeout;
+keep the two-attempt budget below the existing 29-second Lambda limit. Human review and pickup
+checks are required when screening cannot complete. A photo review is not a load certificate.

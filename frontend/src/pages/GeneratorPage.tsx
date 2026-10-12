@@ -17,9 +17,9 @@ import { t } from "../i18n";
 import { OptionalPhoto } from "../components/OptionalPhoto";
 import { WasteGuide } from "../components/WasteGuide";
 import { wasteCopy } from "../wasteCopy";
-import { getKitchenReadiness } from "../photoApi";
+import { CollectionPlanStatus, getKitchenReadiness } from "../photoApi";
 import { consumeBootstrapToken } from "../session";
-import { ReadinessDraft, formatServiceDate, isCollectionDate, monthForDate, readinessRequest, serviceDateInIndia } from "../workflow";
+import { collectionJourney, ReadinessDraft, formatServiceDate, isCollectionDate, monthForDate, readinessRequest, serviceDateInIndia } from "../workflow";
 
 function errorMessage(error: unknown): string {
   if (error instanceof ApiError) {
@@ -61,6 +61,7 @@ export function GeneratorPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState<ReadinessRecord | null>(null);
+  const [collectionPlan, setCollectionPlan] = useState<CollectionPlanStatus | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [editing, setEditing] = useState(true);
   const saveGeneration = useRef(0);
@@ -77,15 +78,17 @@ export function GeneratorPage() {
     setReadinessLoading(true);
     setReadinessError(null);
     setSaved(null);
+    setCollectionPlan(null);
     getKitchenReadiness(id, draft.collectionDate, token, controller.signal).then((result) => {
       if (controller.signal.aborted || generation !== saveGeneration.current) return;
       setSaved(result.submission);
+      setCollectionPlan(result.collectionPlan ?? null);
       setEditing(!result.submission);
     }).catch(() => {
       if (!controller.signal.aborted) setReadinessError("Could not retrieve the saved confirmation. Retry before entering another confirmation.");
     }).finally(() => { if (!controller.signal.aborted) setReadinessLoading(false); });
     return () => controller.abort();
-  }, [id, token, draft.collectionDate, refreshKey]);
+  }, [id, token, draft.collectionDate, refreshKey, recordsRefreshKey]);
 
   useEffect(() => {
     if (!token || !id) {
@@ -141,21 +144,17 @@ export function GeneratorPage() {
   const readyKg = saved && saved.status === "READY" ? saved.confirmedKg : null;
   const collectedKg = receipts.reduce((sum, r) => sum + (Number.isFinite(r.pickup?.kg) ? r.pickup.kg : 0), 0);
   const gateVerified = receipts.filter((r) => r.gateRecorded).length;
-  const stageReady = Boolean(saved);
-  const stagePlanned = receipts.length > 0;
-  const stageCollected = receipts.some((r) => r.pickup && Number.isFinite(r.pickup.kg));
-  const stageReceived = receipts.some((r) => r.gateRecorded);
-  const journey = [
-    { key: "ready", label: "Ready", done: stageReady },
-    { key: "planned", label: "Planned", done: stagePlanned },
-    { key: "collected", label: "Collected", done: stageCollected },
-    { key: "received", label: "Received", done: stageReceived },
-  ];
-  const dashMessage = saved
+  const journey = collectionJourney(draft.collectionDate, saved?.status === "READY", collectionPlan, receipts);
+  const progressMessage = journey[3].done
+    ? "Your pickup and the trip's plant intake are recorded. View your collection record below."
+    : journey[2].done ? "Your pickup is recorded. The trip's plant intake is still pending."
+    : journey[1].done ? "Your site is included in a collection plan. Pickup has not been recorded yet."
+    : null;
+  const dashMessage = progressMessage ?? (saved
     ? saved.status === "READY"
       ? `Your ${saved.collectionDate} collection is confirmed at ${saved.confirmedKg} kg — we'll plan a route around it.`
       : `You've marked ${saved.collectionDate} as not ready. You can update it any time before the cutoff.`
-    : `Confirm whether your food waste is ready. Your dispatcher plans the route around confirmed sites.`;
+    : `Confirm whether your food waste is ready. Your dispatcher plans the route around confirmed sites.`);
   const updateDraft = <K extends keyof ReadinessDraft>(key: K, value: ReadinessDraft[K]) => {
     if (key === "collectionDate" && value === draft.collectionDate) return;
     if (key === "collectionDate") {
@@ -182,6 +181,7 @@ export function GeneratorPage() {
     try {
       const response = await saveReadiness(normalized.request, { generatorToken: token });
       setSaved(response.submission);
+      setCollectionPlan((current) => current?.state === "DRAFT" ? { ...current, stale: true } : current);
       setEditing(false);
       getGeneratorReceipts(id, token, monthForDate(draft.collectionDate))
         .then((receiptResponse) => setReceipts(receiptResponse.records)).catch(() => {});
@@ -238,16 +238,16 @@ export function GeneratorPage() {
             <section className="gen-dash reveal-up" aria-label="Collection overview">
               <p className="gen-dash__msg">{dashMessage}</p>
               <div className="gen-dash__stats">
-                <div className="gen-stat"><span className="gen-stat__n">{readyKg != null ? readyKg : "—"}<small>kg</small></span><span className="gen-stat__l">Ready for collection</span></div>
+                <div className="gen-stat"><span className="gen-stat__n">{readyKg != null ? readyKg : "—"}<small>kg</small></span><span className="gen-stat__l">Reported ready quantity</span></div>
                 <div className="gen-stat"><span className="gen-stat__n">{receipts.length}</span><span className="gen-stat__l">Collections{monthLabel ? ` · ${monthLabel}` : ""}</span></div>
                 <div className="gen-stat"><span className="gen-stat__n">{Math.round(collectedKg)}<small>kg</small></span><span className="gen-stat__l">Collected to date</span></div>
-                <div className="gen-stat"><span className="gen-stat__n">{gateVerified}</span><span className="gen-stat__l">Gate-verified trips</span></div>
+                <div className="gen-stat"><span className="gen-stat__n">{gateVerified}</span><span className="gen-stat__l">Trips with gate records</span></div>
               </div>
               <ol className="gen-timeline" aria-label="Collection journey">
                 {journey.map((stage, i) => (
                   <li key={stage.key} className={stage.done ? "is-done" : ""}>
                     <span className="gen-timeline__dot" aria-hidden="true" />
-                    <span className="gen-timeline__label">{stage.label}</span>
+                    <span className="gen-timeline__label">{stage.label}<span className="visually-hidden">{stage.done ? " — recorded" : " — pending"}</span></span>
                     {i < journey.length - 1 && <span className="gen-timeline__line" aria-hidden="true" />}
                   </li>
                 ))}
@@ -299,7 +299,7 @@ export function GeneratorPage() {
                   {saved.status === "NOT_READY" && saved.reason && <p>{words.savedReason}: {saved.reason}</p>}
                   {saved.late && <p>Saved after the normal cutoff; the dispatcher can still review it.</p>}
                   <h3 className="waste-next-title">{words.next}</h3>
-                  <p>{saved.status === "READY" ? words.nextReady : words.nextNotReady}</p>
+                  <p>{progressMessage ?? (saved.status === "READY" ? words.nextReady : words.nextNotReady)}</p>
                   <p className="muted">{words.dispatched}</p>
                 </div>
                 <button className="button button-secondary" type="button" onClick={() => {
@@ -416,8 +416,10 @@ export function GeneratorPage() {
             {saved && !editing && !readinessLoading && !readinessError && saved.status === "READY" && <>
             <a className="waste-skip" href="#records-title">{saved.photoKeys.length ? words.record : words.skip}</a>
             <OptionalPhoto key={saved.submissionId} generatorId={id} token={token} language={language}
-              submission={saved} onSaved={(record) => setSaved((current) =>
-                current?.submissionId === saved?.submissionId ? record : current)} />
+              submission={saved} onSaved={(record) => {
+                setSaved((current) => current?.submissionId === saved?.submissionId ? record : current);
+                setCollectionPlan((current) => current?.state === "DRAFT" ? { ...current, stale: true } : current);
+              }} />
             </>}
             </div>
             <WasteGuide language={language} />

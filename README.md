@@ -131,3 +131,9 @@ Built for Environmental Hacks 2026 (Track 3: Waste & Energy) by:
 - [Planner policy](docs/PLANNER-V3.md), [synthetic route evaluation](eval/route-results.md)
 - [Tests & evidence](docs/TESTING.md), [local run / deployment](docs/DEPLOYMENT.md)
 - [Demo script](docs/DEMO-SCRIPT.md), [submission checklist](docs/SUBMISSION.md), [media provenance](docs/FRONTEND-MEDIA.md)
+
+## AI tools used
+
+OpenAI Codex assisted implementation, debugging and tests. Optional visible-item screening supports NVIDIA Nemotron 3 Nano Omni 30B A3B Reasoning; observations require validation and hazards require human review. Local mock screening is clearly labelled and makes no claim about the uploaded image.
+
+**Collection review QA (12 Oct 2026):** 364 backend tests and 123 frontend tests passed (three opt-in tests skipped), production build passed, and the complete synthetic collection flow passed with live NVIDIA analysis. See [fixes, evidence and deployment limits](docs/COLLECTION-REVIEW-QA.md).

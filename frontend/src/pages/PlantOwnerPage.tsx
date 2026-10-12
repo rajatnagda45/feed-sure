@@ -85,7 +85,7 @@ export function IntakeTripPanel({ trip, token, refresh, onSaving }: {
           <label className="field"><span>Net received kg</span><input required type="number" min="0" step="any" value={netKg} onChange={(event) => setNetKg(event.currentTarget.value)} /></label>
           <label className="field"><span>Weight source</span><select value={source} onChange={(event) => setSource(event.currentTarget.value as WeightSource)}><option value="SCALE">Scale</option><option value="ESTIMATE">Estimate</option></select></label>
           <label className="field"><span>Weighbridge reference (optional)</span><input value={reference} onChange={(event) => setReference(event.currentTarget.value)} /></label>
-          {trip.gate && <label className="field"><span>Correction reason</span><input required value={correction} onChange={(event) => setCorrection(event.currentTarget.value)} /></label>}
+          {trip.gate && <label className="field"><span>Correction reason</span><input required placeholder="Example: corrected a typing error using the weighbridge slip" value={correction} onChange={(event) => setCorrection(event.currentTarget.value)} /><small>Explain why you are changing the saved intake. The previous weight and this reason remain in the audit history.</small></label>}
           <button className="button button-primary button-full" type="submit">{saving ? "Saving intake…" : trip.gate ? "Save correction" : "Save net intake"}</button>
         </fieldset>
         {error && <p className="notice error" role="alert">{error}</p>}
@@ -165,7 +165,7 @@ export function PlantOwnerPage() {
       {loading && <p role="status">Loading dispatched trips…</p>}
       {error && <p className="notice error" role="alert">{error}</p>}
       {notice && <p className="notice" role="status">{notice}</p>}
-      {data && data.trips.length === 0 && <section className="owner-trip"><h2>No dispatched trips for {formatServiceDate(date)}</h2><p>The admin must review and dispatch a route before it appears here.</p></section>}
+      {data && data.trips.length === 0 && <section className="owner-trip"><h2>No dispatched trips for {formatServiceDate(date)}</h2><p>This desk records net waste received at the plant and compares it with driver pickup records. A saved draft is not a dispatched trip.</p><ol><li>Confirm supplier availability for this same date.</li><li>Build, review and dispatch the route in Operations.</li><li>The driver records pickup outcomes; return here to record net received kg and its weight source.</li></ol><p>If the trip was dispatched for another date, select that date above and refresh. Local demo trips reset when its API restarts; account profiles remain saved.</p><Link className="button button-secondary" to="/admin">Open collection operations</Link></section>}
       {data?.trips.map((trip) => <IntakeTripPanel key={trip.planKey} trip={trip} token={token} refresh={refreshAfterWrite} onSaving={setSaving} />)}
     </div>
   </main>;

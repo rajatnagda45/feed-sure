@@ -60,6 +60,12 @@ def test_corrections_refresh_both_driver_and_own_receipt_without_changing_snapsh
             )
             assert response.status_code == 200, response.text
             plan = response.json()
+            own_headers = {"X-Generator-Token": tokens[gid]}
+            ready_path = f"/generators/{gid}/readiness?date=2026-10-12"
+            status = http.get(ready_path, headers=own_headers).json()["collectionPlan"]
+            assert status == {"state": "DRAFT", "stale": False}
+            assert set(status) == {"state", "stale"}  # No other suppliers or driver credentials.
+            assert plan["plantDistances"][gid] >= 0
             path = "/plans/" + quote(plan["planKey"], safe="")
             response = http.post(
                 path + "/dispatch",
@@ -68,6 +74,17 @@ def test_corrections_refresh_both_driver_and_own_receipt_without_changing_snapsh
             )
             assert response.status_code == 200, response.text
             driver = {"X-Driver-Token": response.json()["driverAccess"]["token"]}
+            assert http.get(ready_path, headers=own_headers).json()["collectionPlan"] == {
+                "state": "DISPATCHED",
+                "stale": False,
+            }
+            assert (
+                http.get(
+                    f"/generators/{gid}/readiness?date=2026-10-13", headers=own_headers
+                ).json()["collectionPlan"]
+                is None
+            )
+
             pickup = {
                 "planKey": plan["planKey"],
                 "generatorId": gid,

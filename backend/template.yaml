@@ -91,20 +91,20 @@ Parameters:
     NoEcho: true
   NvidiaModelId:
     Type: String
-    Default: nvidia/nemotron-nano-12b-v2-vl
+    Default: nvidia/nemotron-3-nano-omni-30b-a3b-reasoning
   NvidiaApiUrl:
     Type: String
     Default: https://integrate.api.nvidia.com/v1/chat/completions
   NvidiaMaxTokens:
     Type: Number
-    Default: 600
+    Default: 1024
     MinValue: 1
     MaxValue: 8192
   NvidiaTimeoutSeconds:
     Type: Number
-    Default: 5
+    Default: 12
     MinValue: 1
-    MaxValue: 5
+    MaxValue: 12
   AdminToken:
     Type: String
     Default: CHANGE_ME
@@ -498,6 +498,12 @@ Resources:
             ApiId: !Ref HttpApi
             Method: POST
             Path: /submissions/{submissionId}/screen
+        WastePhotoReview:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Method: POST
+            Path: /submissions/{submissionId}/review
         Route6:
           Type: HttpApi
           Properties:

@@ -8,6 +8,7 @@ from collections.abc import Sequence
 from urllib.request import Request, urlopen
 
 from feedsure.common.config import Config, get_config
+from feedsure.screening.failures import ScreeningConfigurationError
 from feedsure.screening.prompt import ScreeningPrompt
 
 
@@ -17,9 +18,9 @@ def invoke_screening(
     """Send validated photos to NVIDIA; the photo handler owns validation and one retry."""
     active = config or get_config()
     if not active.nvidia_api_key.strip():
-        raise ValueError("NVIDIA_API_KEY is required for NVIDIA photo analysis.")
+        raise ScreeningConfigurationError("NVIDIA_API_KEY is required for NVIDIA photo analysis.")
     if not active.nvidia_api_url.startswith("https://"):
-        raise ValueError("NVIDIA_API_URL must use HTTPS.")
+        raise ScreeningConfigurationError("NVIDIA_API_URL must use HTTPS.")
     if not images or len(images) > 2:
         raise ValueError("Provide one or two validated images.")
     if any(not data.startswith((b"\x89PNG\r\n\x1a\n", b"\xff\xd8")) for data in images):
@@ -38,12 +39,13 @@ def invoke_screening(
     payload = {
         "model": active.nvidia_model_id,
         "messages": [
-            {"role": "system", "content": "/no_think\n" + prompt.system},
+            {"role": "system", "content": prompt.system},
             {"role": "user", "content": content},
         ],
         "max_tokens": active.nvidia_max_tokens,
         "temperature": 0,
         "stream": False,
+        "chat_template_kwargs": {"enable_thinking": False},
     }
     request = Request(
         active.nvidia_api_url,

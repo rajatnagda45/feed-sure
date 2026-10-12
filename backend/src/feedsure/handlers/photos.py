@@ -20,6 +20,7 @@ from botocore.config import Config as BotoConfig
 
 from feedsure.common.v3 import ApiError, fields, invalid, revision, stamp
 from feedsure.screening.client import analysis_mode, invoke_screening
+from feedsure.screening.failures import screening_failure
 from feedsure.screening.mock import load_fixture
 from feedsure.screening.prompt import build_photo_prompt
 from feedsure.screening.validate import validate_photo_observations
@@ -392,12 +393,23 @@ class Photos:
         if record.get("photoSha256") and hashlib.sha256(data).hexdigest() != record["photoSha256"]:
             raise ApiError(409, "CONFLICT", "Evidence changed. Attach a new photo.")
 
-    def mutate(self, submission_id: str, request: dict, *, screen: bool) -> dict:
+    def mutate(
+        self, submission_id: str, request: dict, *, screen: bool = False, review: bool = False
+    ) -> dict:
         fields(
-            request, {"expectedPhotoRevision"} if screen else {"expectedPhotoRevision", "photoKey"}
+            request,
+            {"expectedPhotoRevision", "decision", "reason", "evidenceChecked"}
+            if review
+            else {"expectedPhotoRevision"}
+            if screen
+            else {"expectedPhotoRevision", "photoKey"},
         )
         old, actor = self.owned(submission_id)
-        scope = ("SCREEN#" if screen else "PHOTO#") + old["submissionId"]
+        if review:
+            actor = self.s.admin()
+        scope = ("PHOTO_REVIEW#" if review else "SCREEN#" if screen else "PHOTO#") + old[
+            "submissionId"
+        ]
         key, replay = self.s.replay(scope, request)
         if replay is not None:
             return replay
@@ -413,7 +425,42 @@ class Photos:
             raise ApiError(409, "CONFLICT", "A newer readiness confirmation exists.")
         updated = copy.deepcopy(old)
         hazard = None
-        if not screen:
+        if review:
+            from feedsure.common.v3 import text
+
+            if (
+                not isinstance(request.get("decision"), str)
+                or request.get("decision") not in {"VERIFIED", "REJECTED"}
+                or request.get("evidenceChecked") is not True
+            ):
+                invalid("Review the evidence and explicitly confirm your decision.")
+            reason = text(request.get("reason"), "reason", required=True)
+            if not old.get("photoKeys"):
+                invalid("Attach a waste photo before a human review.")
+            data, _ = self.load(self.key(old["photoKeys"][0], gid))
+            self.verify_evidence(old, data)
+            if request["decision"] == "VERIFIED":
+                observations = (old.get("analysis") or {}).get("observations") or {}
+                if observations.get("image_quality") == "not_waste":
+                    invalid(
+                        "Replace the unrelated image with an actual waste photo "
+                        "before verification."
+                    )
+                current = self.s.db.get(
+                    "operations",
+                    {"collectionDate": day, "recordKey": "HAZARD#" + gid},
+                    consistent_read=True,
+                )
+                if current and current["hazard"]["action"] == "ENTER":
+                    invalid("Resolve the outstanding hazard before verifying this photo.")
+            updated["photoReview"] = {
+                "decision": request["decision"],
+                "reason": reason,
+                "actor": actor,
+                "recordedAt": stamp(self.s.now),
+                "photoSha256": old.get("photoSha256"),
+            }
+        elif not screen:
             if "photoKey" not in request:
                 invalid("photoKey is required; use null to remove a photo.")
             photo = request.get("photoKey")
@@ -441,6 +488,7 @@ class Photos:
                 photoSha256=sha256,
                 photoStatus="NOT_CHECKED",
                 analysis=None,
+                photoReview=None,
             )
         else:
             if not old.get("photoKeys"):
@@ -449,7 +497,10 @@ class Photos:
             self.verify_evidence(old, data)
             prompt = build_photo_prompt()
             observation = None
+            failure = None
+            attempts = 0
             for _ in range(2):
+                attempts += 1
                 try:
                     if self.s.config.mock_bedrock:
                         name = self.s.config.mock_bedrock_fixture
@@ -463,8 +514,10 @@ class Photos:
                         raw = invoke_screening([data], prompt, self.s.config)
                     observation = validate_photo_observations(raw)
                     break
-                except Exception:
-                    continue
+                except Exception as error:
+                    failure = screening_failure(error)
+                    if not failure["retryable"]:
+                        break
             status = "NOT_CHECKED"
             if observation:
                 hazard_types = {"glass", "sharp_metal", "battery", "syringe_or_medical_waste"}
@@ -480,6 +533,7 @@ class Photos:
                     )
                     if not current or current["hazard"]["action"] != "ENTER":
                         hazard = {
+                            "hazardId": "h-" + secrets.token_hex(8),
                             "schemaVersion": 3,
                             "generatorId": gid,
                             "collectionDate": day,
@@ -503,10 +557,13 @@ class Photos:
                     )
             updated.update(
                 photoStatus=status,
+                photoReview=None,
                 analysis={
                     "state": "FAILED" if observation is None else "COMPLETE",
                     "mode": analysis_mode(self.s.config),
                     "observations": observation,
+                    "failure": failure if observation is None else None,
+                    "attempts": attempts,
                     "recordedAt": stamp(self.s.now),
                     "limit": "Visible surface only; no safety or whole-load certification.",
                 },

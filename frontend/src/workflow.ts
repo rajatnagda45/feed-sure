@@ -1,5 +1,6 @@
 import {
   GpsEvidence,
+  GeneratorReceipt,
   OperationGenerator,
   PickupOutcome,
   PickupRequest,
@@ -8,6 +9,26 @@ import {
   Reconciliation,
   WeightSource,
 } from "./api";
+import type { CollectionPlanStatus } from "./photoApi";
+
+export function collectionJourney(date: string, ready: boolean, plan: CollectionPlanStatus | null,
+  receipts: GeneratorReceipt[]) {
+  const today = receipts.filter((r) => r.collectionDate === date);
+  return [
+    { key: "ready", label: "Ready", done: ready },
+    { key: "planned", label: "Planned", done: Boolean(plan && !plan.stale) || today.length > 0 },
+    { key: "collected", label: "Collected", done: today.some((r) => r.pickup.kg > 0) },
+    { key: "received", label: "Trip intake recorded", done: today.some((r) => r.pickup.kg > 0 && r.gateRecorded) },
+  ];
+}
+
+export function currentExclusion(generator: OperationGenerator, plan: PlanEnvelope | null, inputRevision: number): string | null {
+  if (generator.unresolvedHazards.length) return "HAZARD_REVIEW";
+  if (!generator.supportedMaterial) return "UNSUPPORTED_MATERIAL";
+  if (generator.readinessStatus !== "READY") return generator.readinessStatus;
+  if (!plan || plan.inputRevision !== inputRevision) return null;
+  return plan.excluded.find((item) => item.generatorId === generator.generatorId)?.reason ?? null;
+}
 
 export const INDIA_TIME_ZONE = "Asia/Kolkata";
 
@@ -187,10 +208,10 @@ export function reconciliationLabel(value: Reconciliation["status"]): string {
 export function exclusionAction(reason: string): string {
   return {
     NOT_READY: "Arrange another collection date.",
-    UNCONFIRMED: "Confirm availability.",
+    UNCONFIRMED: "No confirmation for this date. Ask the supplier to save READY, or contact them and use Record phone confirmation, then re-plan.",
     HAZARD_REVIEW: "Resolve the hazard before loading.",
     UNSUPPORTED_MATERIAL: "Verify the accepted material.",
-    OUT_OF_RADIUS: "Arrange another pickup.",
+    OUT_OF_RADIUS: "Check the plant and pickup locations, then review Maximum distance from plant before re-planning. Otherwise arrange another pickup.",
     CAPACITY: "Increase capacity or defer this stop.",
     WINDOW: "Change the pickup window.",
     SHIFT: "Adjust the shift or defer this stop.",
@@ -224,6 +245,7 @@ export function planMapPoints(
   plan: PlanEnvelope | null,
   generators: OperationGenerator[],
   depot: { id: string; lat: number; lng: number } | null,
+  inputRevision?: number,
 ): MapPoint[] {
   if (!depot) return [];
   const points: MapPoint[] = [{ ...depot, name: "CBG plant", kind: "plant", departureAt: plan?.plan.startAt, returnAt: plan?.plan.returnAt }];
@@ -245,7 +267,8 @@ export function planMapPoints(
       lat: generator.lat,
       lng: generator.lng,
       kind: "excluded",
-      reason: generator.unresolvedHazards.length ? "HAZARD_REVIEW" : excludedById.get(generator.generatorId) ?? generator.readinessStatus,
+      reason: inputRevision !== undefined ? currentExclusion(generator, plan, inputRevision) ?? undefined
+        : generator.unresolvedHazards.length ? "HAZARD_REVIEW" : excludedById.get(generator.generatorId) ?? generator.readinessStatus,
       address: generator.address,
       window: generator.readiness?.window ?? undefined,
       confirmedKg: generator.readiness?.confirmedKg ?? undefined,

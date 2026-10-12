@@ -105,10 +105,10 @@ class Config:
     plant_owner_token: str = ""
     photo_analysis_provider: str = "bedrock"
     nvidia_api_key: str = field(default="", repr=False)
-    nvidia_model_id: str = "nvidia/nemotron-nano-12b-v2-vl"
+    nvidia_model_id: str = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"
     nvidia_api_url: str = "https://integrate.api.nvidia.com/v1/chat/completions"
-    nvidia_max_tokens: int = 600
-    nvidia_timeout_seconds: float = 5
+    nvidia_max_tokens: int = 1024
+    nvidia_timeout_seconds: float = 12
     geocoding_url: str = ""
     routing_provider: str = "auto"
     osrm_base_url: str = "https://router.project-osrm.org"
@@ -198,10 +198,10 @@ def get_config() -> Config:
         photo_max_decoded_bytes=_integer("PHOTO_MAX_DECODED_BYTES", 40_000_000),
         photo_analysis_provider=_string("PHOTO_ANALYSIS_PROVIDER", "bedrock").strip().lower(),
         nvidia_api_key=_string("NVIDIA_API_KEY", ""),
-        nvidia_model_id=_string("NVIDIA_MODEL_ID", "nvidia/nemotron-nano-12b-v2-vl"),
+        nvidia_model_id=_string("NVIDIA_MODEL_ID", "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"),
         nvidia_api_url=_string(
             "NVIDIA_API_URL", "https://integrate.api.nvidia.com/v1/chat/completions"
         ),
-        nvidia_max_tokens=_integer("NVIDIA_MAX_TOKENS", 600),
-        nvidia_timeout_seconds=_number("NVIDIA_TIMEOUT_SECONDS", 5),
+        nvidia_max_tokens=_integer("NVIDIA_MAX_TOKENS", 1024),
+        nvidia_timeout_seconds=_number("NVIDIA_TIMEOUT_SECONDS", 12),
     )

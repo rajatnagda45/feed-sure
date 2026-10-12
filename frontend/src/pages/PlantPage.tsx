@@ -1,3 +1,4 @@
+import { HazardReview } from "../components/HazardReview";
 import { DriverAssignment } from "../components/DriverAssignment";
 
 import { useAccount } from "../auth";
@@ -7,7 +8,6 @@ import { Link } from "react-router-dom";
 import {
   ApiError,
   apiRequest,
-  OperationGenerator,
   OperationsSnapshot,
   PlanDetailsResponse,
   PlanEnvelope,
@@ -19,13 +19,13 @@ import {
   getLatestPlan,
   getOperations,
   getPlanDetails,
-  recordHazardReview,
   saveReadiness,
 } from "../api";
 import { RouteMap } from "../components/RouteMap";
 import { PhotoEvidence } from "../components/PhotoEvidence";
 import {
   exclusionAction,
+  currentExclusion,
   confirmedSupplyKg,
   formatKg,
   formatServiceDate,
@@ -102,7 +102,8 @@ export function PlantPage() {
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [phone, setPhone] = useState<PhoneForm | null>(null);
-  const [hazardReasons, setHazardReasons] = useState<Record<string, string>>({});
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [phoneSaving, setPhoneSaving] = useState(false);
   const [driverAccess, setDriverAccess] = useState<{ token: string; expiresAt: string; planKey: string } | null>(null);
   const [supplyFilter, setSupplyFilter] = useState("all");
   const [driverLinkVisible, setDriverLinkVisible] = useState(false);
@@ -111,6 +112,7 @@ export function PlantPage() {
   const phoneEditor = useRef<HTMLElement>(null);
 
   useEffect(() => {
+    setPhoneError(null);
     if (!phone) return;
     phoneEditor.current?.scrollIntoView({ block: "start" });
     phoneEditor.current?.querySelector<HTMLSelectElement>("select")?.focus({ preventScroll: true });
@@ -151,7 +153,7 @@ export function PlantPage() {
   const activePlan = details?.plan ?? plan;
   const execution = details?.execution ?? null;
   const points = useMemo(
-    () => planMapPoints(activePlan, snapshot?.generators ?? [], snapshot?.depot ?? null),
+    () => planMapPoints(activePlan, snapshot?.generators ?? [], snapshot?.depot ?? null, snapshot?.inputRevision),
     [activePlan, snapshot],
   );
   const statusCounts = snapshot?.generators.reduce<Record<string, number>>((counts, generator) => {
@@ -178,6 +180,13 @@ export function PlantPage() {
   const currentDriverAccess = driverAccess?.planKey === activePlan?.planKey ? driverAccess : null;
   const driverLink = currentDriverAccess && activePlan
     ? `${window.location.origin}/driver/${encodeURIComponent(activePlan.planKey)}?t=${encodeURIComponent(currentDriverAccess.token)}` : "";
+
+  const changeDate = (value: string) => {
+    if (!value || value === date) return;
+    setDate(value); setControlsTouched(false); setMandatoryIds([]); setSnapshot(null);
+    setPlan(null); setDetails(null); setDriverAccess(null); setDriverLinkVisible(false);
+    setPhone(null); setMessage(null);
+  };
 
   const authenticate = (event: FormEvent) => {
     event.preventDefault();
@@ -295,15 +304,17 @@ export function PlantPage() {
 
   const submitPhone = async (event: FormEvent) => {
     event.preventDefault();
-    if (!phone || !adminToken) return;
+    if (!phone || !adminToken || phoneSaving) return;
+    setPhoneError(null);
     const kg = Number(phone.kg);
     if (!phone.confirmedBy.trim() || !phone.reason.trim()
-      || (phone.status === "READY" && (!Number.isFinite(kg) || kg <= 0 || phone.start >= phone.end))) {
-      setError("Phone confirmations require a supervisor label, reason, and valid READY quantity/window.");
+      || (phone.status === "READY" && (!Number.isFinite(kg) || kg <= 0 || kg > 5000 || phone.start >= phone.end))) {
+      setPhoneError("Enter confirmed kg, a valid pickup window, who confirmed availability, and a call note. Selecting Ready alone does not save confirmation.");
       return;
     }
+    setPhoneSaving(true);
     try {
-      await saveReadiness({
+      const response = await saveReadiness({
         generatorId: phone.generatorId,
         collectionDate: date,
         status: phone.status,
@@ -317,30 +328,17 @@ export function PlantPage() {
         reason: phone.reason.trim(),
         lang: "en",
       }, { adminToken });
+      setSnapshot((current) => current?.collectionDate === response.submission.collectionDate ? {
+        ...current, inputRevision: response.inputRevision,
+        generators: current.generators.map((generator) => generator.generatorId === response.submission.generatorId
+          ? { ...generator, readiness: response.submission, readinessStatus: response.submission.status } : generator),
+      } : current);
       setPhone(null);
       setMessage("Phone confirmation saved. Input revision advanced; re-plan before dispatch.");
       setRefreshKey((value) => value + 1);
     } catch (reason) {
-      setError(displayError(reason));
-    }
-  };
-
-  const updateHazard = async (generator: OperationGenerator) => {
-    if (!adminToken) return;
-    const reason = (hazardReasons[generator.generatorId] ?? "").trim();
-    if (!reason) {
-      setError("Add a reason before entering or resolving a hazard.");
-      return;
-    }
-    const action = generator.unresolvedHazards.length ? "RESOLVE" : "ENTER";
-    try {
-      await recordHazardReview(generator.generatorId, adminToken, { collectionDate: date, action, reason });
-      setHazardReasons((current) => ({ ...current, [generator.generatorId]: "" }));
-      setMessage(action === "RESOLVE" ? "Hazard resolved. Re-plan with the new input revision." : "Hazard recorded. The waste supplier is held from planning.");
-      setRefreshKey((value) => value + 1);
-    } catch (reasonValue) {
-      setError(displayError(reasonValue));
-    }
+      setPhoneError(displayError(reason));
+    } finally { setPhoneSaving(false); }
   };
 
   if (!adminToken) {
@@ -369,13 +367,16 @@ export function PlantPage() {
       </header>
 
       <section className="operations-toolbar">
-        <label className="field compact"><span>Planning date · India time</span><input type="date" disabled={planning || dispatching} value={date} onChange={(event) => { const value = event.currentTarget.value; if (!value) return; setDate(value); setControlsTouched(false); setMandatoryIds([]); setSnapshot(null); setPlan(null); setDetails(null); setDriverAccess(null); setDriverLinkVisible(false); setPhone(null); setMessage(null); }} /></label>
+        <label className="field compact"><span>Planning date · India time</span><input type="date" disabled={planning || dispatching} value={date} onChange={(event) => changeDate(event.currentTarget.value)} /></label>
+        <button className="text-button" type="button" disabled={planning || dispatching} onClick={() => changeDate(serviceDateInIndia(new Date(), 0))}>Today</button>
+        <button className="text-button" type="button" disabled={planning || dispatching} onClick={() => changeDate(serviceDateInIndia())}>Tomorrow</button>
         <button className="button button-secondary" type="button" onClick={() => setRefreshKey((value) => value + 1)} disabled={loading}>Refresh data</button>
         {snapshot && <div className="mode-line"><span>Database {snapshot.serviceMode.database}</span><span>Matrix {activePlan?.matrixSource ?? snapshot.serviceMode.matrix}</span><span>Screening {snapshot.serviceMode.screening}</span></div>}
       </section>
 
       {loading && <p className="loading-line page-pad">Refreshing authoritative operations data…</p>}
       {error && <p className="notice error" role="alert">{error}</p>}
+      {snapshot && (activePlan?.matrixSource === "fallback" || snapshot.serviceMode.matrix === "fallback") && <p className="notice warning">Estimated routing: {snapshot.serviceMode.matrix === "fallback" ? "this demo is configured to use distance estimates." : "road routing did not provide this saved matrix."} Distances use straight-line distance with a road allowance, not measured road distance. Check pickup addresses and the distance limit. Ask the operator to enable road routing, then re-plan, if you need road-based estimates.</p>}
       {message && <p className="notice success" aria-live="polite">{message}</p>}
       {details?.alerts.map((alert) => <p className="notice warning" key={alert.code}>{alert.message} {activePlan?.state === "DISPATCHED" ? "The dispatched route remains frozen." : "Re-plan and review the updated inputs before dispatch."}</p>)}
 
@@ -401,7 +402,7 @@ export function PlantPage() {
               {([
                 ["targetKg", "Target kg"], ["truckCapacityKg", "Truck capacity kg"],
                 ["capacityBuffer", "Capacity buffer"], ["serviceMin", "Service min"],
-                ["maxRadiusKm", "Maximum radius km"],
+                ["maxRadiusKm", "Maximum distance from plant (km)"],
               ] as const).map(([key, label]) => (
                 <label className="field compact" key={key}><span>{label}</span><input type="number" min="0" step={key === "capacityBuffer" ? "0.01" : "1"} value={controls[key]} onChange={(event) => { const value = event.currentTarget.value; setControlsTouched(true); setControls((current) => ({ ...current, [key]: value })); }} /></label>
               ))}
@@ -460,28 +461,36 @@ export function PlantPage() {
 
           <section className="supply-panel" id="supply-actions">
             <div className="section-heading"><div><p className="context-line">Authoritative date snapshot</p><h2>Waste suppliers and next actions</h2></div><label className="field compact"><span>Show waste suppliers</span><select value={supplyFilter} onChange={(event) => setSupplyFilter(event.currentTarget.value)}><option value="all">All waste suppliers</option><option value="action">Need attention</option><option value="route">On this route</option></select></label></div>
-            <p className="muted">Mark a promised pickup mandatory before building the draft. A mandatory stop that cannot fit blocks dispatch.</p>
+            <p className="muted">Confirm availability for {formatServiceDate(date)}: ask the supplier to save READY, or contact them and use Record phone confirmation below. Enter kg, source, pickup window, who confirmed and a call note, then save and re-plan. Required pickup is a route commitment; it does not confirm availability.</p>
+            <p className="muted">Ready sites are considered automatically. Select Required pickup to ensure a promised site is included; a constraint conflict blocks dispatch.</p>
+            {activePlan?.state === "DISPATCHED" && <p className="notice warning" id="route-locked">This trip has already been dispatched. Pickup choices are locked to protect the driver’s saved route. Choose another planning date for a new route; later confirmations do not add stops to this trip.</p>}
+            <p className="muted">Plant: {snapshot.depot.lat.toFixed(5)}, {snapshot.depot.lng.toFixed(5)}. The distance limit uses the routing matrix, not a map circle. Check approximate PIN locations in My profile before dispatch.</p>
             <div className="supply-list">
               {snapshot.generators.filter((generator) => supplyFilter === "all" || (supplyFilter === "route"
                 ? activePlan?.plan.stops.some((stop) => stop.generatorId === generator.generatorId)
                 : generator.unresolvedHazards.length || generator.readinessStatus !== "READY" || activePlan?.excluded.some((item) => item.generatorId === generator.generatorId))).map((generator) => {
                 const excluded = activePlan?.excluded.find((item) => item.generatorId === generator.generatorId);
                 const hazardous = generator.unresolvedHazards.length > 0;
+                const reason = currentExclusion(generator, activePlan, snapshot.inputRevision);
+                const historical = activePlan && activePlan.inputRevision !== snapshot.inputRevision;
+                const distance = activePlan?.plantDistances?.[generator.generatorId];
                 return (
                   <article key={generator.generatorId}>
                     <div className="supply-main">
-                      <label className="check-field"><input type="checkbox" disabled={activePlan?.state === "DISPATCHED"} checked={activePlan?.state === "DISPATCHED" ? activePlan.params.mandatoryIds.includes(generator.generatorId) : mandatoryIds.includes(generator.generatorId)} onChange={(event) => { const checked = event.currentTarget.checked; setControlsTouched(true); setMandatoryIds((current) => checked ? [...current, generator.generatorId] : current.filter((id) => id !== generator.generatorId)); }} /><span>Mandatory</span></label>
+                      <label className="check-field"><input type="checkbox" aria-label={`Required pickup: ${generator.name}`} aria-describedby={activePlan?.state === "DISPATCHED" ? "route-locked" : undefined} disabled={planning || dispatching || activePlan?.state === "DISPATCHED"} checked={activePlan?.state === "DISPATCHED" ? activePlan.params.mandatoryIds.includes(generator.generatorId) : mandatoryIds.includes(generator.generatorId)} onChange={(event) => { const checked = event.currentTarget.checked; setControlsTouched(true); setMandatoryIds((current) => checked ? [...current, generator.generatorId] : current.filter((id) => id !== generator.generatorId)); }} /><span>Required pickup</span></label>
                       <div><strong>{generator.name}</strong><span>{generator.address}</span></div>
                       <span className={`status-badge readiness-${generator.readinessStatus.toLowerCase()}`}>{generator.readinessStatus}</span>
                       <div><strong>{formatKg(generator.readiness?.confirmedKg)}</strong><span>{generator.readiness?.window ? `${generator.readiness.window.start}–${generator.readiness.window.end}` : "No confirmed window"}</span></div>
                     </div>
-                    {(excluded || hazardous || generator.readinessStatus !== "READY") && <p className="next-action">{hazardous ? "HAZARD_REVIEW" : excluded?.reason ?? generator.readinessStatus} · {exclusionAction(hazardous ? "HAZARD_REVIEW" : excluded?.reason ?? generator.readinessStatus)}</p>}
+                    {reason && <p className="next-action">{reason} · {exclusionAction(reason)}</p>}
+                    {historical && excluded && <p className="notice warning">Saved {activePlan.state === "DISPATCHED" ? "dispatched trip" : "draft"} excluded this site: {excluded.reason}. Inputs have changed since that plan. Current readiness is shown above. {activePlan.state === "DISPATCHED" ? "Arrange a later collection; this trip stays frozen." : "Re-plan to use the updated confirmation."}</p>}
+                    {distance != null && <p className="muted">Plant-to-site distance in saved plan: {distance.toFixed(1)} km · limit {activePlan?.params.maxRadiusKm} km · {activePlan?.matrixSource === "fallback" ? "estimated fallback, not measured road distance" : activePlan?.matrixSource}. Pickup: {generator.lat.toFixed(5)}, {generator.lng.toFixed(5)}.</p>}
+                    {distance != null && activePlan && distance > activePlan.params.maxRadiusKm && <p className="notice warning">Outside this saved plan's distance limit. Confirming availability alone will not include this site. Verify its location in My profile; if the location is correct, review the collection limit or arrange a separate pickup, then re-plan.</p>}
                     {hazardous && <p className="hazard-detail">Unresolved hazard: {generator.unresolvedHazards.map((hazard) => hazard.reason).join("; ")}</p>}
-                    {generator.readiness && <PhotoEvidence key={generator.readiness.submissionId} submission={generator.readiness} adminToken={adminToken} />}
+                    {generator.readiness && <PhotoEvidence key={`${generator.readiness.submissionId}:${generator.readiness.inputRevision}`} submission={generator.readiness} adminToken={adminToken} onSaved={() => setRefreshKey((value) => value + 1)} />}
+                    <HazardReview key={`${date}:${generator.generatorId}:${generator.unresolvedHazards[0]?.hazardId ?? generator.lastHazardReview?.hazardId ?? "none"}`} generator={generator} date={date} token={adminToken} onSaved={() => setRefreshKey((value) => value + 1)} />
                     <div className="row-actions">
                       <button className="text-button" type="button" onClick={() => setPhone({ generatorId: generator.generatorId, status: "READY", kg: generator.readiness?.confirmedKg ? String(generator.readiness.confirmedKg) : "", source: generator.readiness?.weightSource ?? "ESTIMATE", start: generator.readiness?.window?.start ?? generator.pickupWindow.start, end: generator.readiness?.window?.end ?? generator.pickupWindow.end, confirmedBy: "", reason: "" })}>Record phone confirmation</button>
-                      <input aria-label={`Hazard reason for ${generator.name}`} placeholder={hazardous ? "Resolution reason" : "Hazard reason"} value={hazardReasons[generator.generatorId] ?? ""} onChange={(event) => { const value = event.currentTarget.value; setHazardReasons((current) => ({ ...current, [generator.generatorId]: value })); }} />
-                      <button className="text-button" type="button" onClick={() => void updateHazard(generator)}>{hazardous ? "Resolve hazard" : "Record hazard"}</button>
                     </div>
                   </article>
                 );
@@ -493,13 +502,15 @@ export function PlantPage() {
             <section className="inline-editor" ref={phoneEditor} aria-label="Phone confirmation editor">
               <form onSubmit={(event) => void submitPhone(event)}>
                 <div className="section-heading"><div><p className="context-line">Attributable dispatcher call</p><h2>Phone confirmation</h2><p>{snapshot.generators.find((generator) => generator.generatorId === phone.generatorId)?.name} · {formatServiceDate(date)}</p></div><button className="text-button" type="button" onClick={() => setPhone(null)}>Cancel</button></div>
-                <div className="control-grid">
+                <p>Opening this form does not confirm availability. Complete the required details, then save. The supplier status will change to READY for this date.</p>
+                {phoneError && <p className="notice error" role="alert">{phoneError}</p>}
+                <fieldset className="control-grid login-fields" disabled={phoneSaving}>
                   <label className="field compact"><span>Status</span><select value={phone.status} onChange={(event) => setPhone({ ...phone, status: event.currentTarget.value as PhoneForm["status"] })}><option value="READY">Ready</option><option value="NOT_READY">Not ready</option></select></label>
-                  {phone.status === "READY" && <><label className="field compact"><span>Confirmed kg</span><input type="number" min="0.1" value={phone.kg} onChange={(event) => setPhone({ ...phone, kg: event.currentTarget.value })} /></label><label className="field compact"><span>Source</span><select value={phone.source} onChange={(event) => setPhone({ ...phone, source: event.currentTarget.value as WeightSource })}><option value="SCALE">Scale</option><option value="ESTIMATE">Estimate</option></select></label><label className="field compact"><span>Window start</span><input type="time" value={phone.start} onChange={(event) => setPhone({ ...phone, start: event.currentTarget.value })} /></label><label className="field compact"><span>Window end</span><input type="time" value={phone.end} onChange={(event) => setPhone({ ...phone, end: event.currentTarget.value })} /></label></>}
-                  <label className="field compact"><span>Confirmed by</span><input value={phone.confirmedBy} onChange={(event) => setPhone({ ...phone, confirmedBy: event.currentTarget.value })} /></label>
-                  <label className="field compact"><span>Reason / call note</span><input value={phone.reason} onChange={(event) => setPhone({ ...phone, reason: event.currentTarget.value })} /></label>
-                  <button className="button button-primary" type="submit">Save phone confirmation</button>
-                </div>
+                  {phone.status === "READY" && <><label className="field compact"><span>Confirmed kg (required)</span><input required type="number" min="0.1" max="5000" step="any" value={phone.kg} onChange={(event) => setPhone({ ...phone, kg: event.currentTarget.value })} /></label><label className="field compact"><span>Source</span><select value={phone.source} onChange={(event) => setPhone({ ...phone, source: event.currentTarget.value as WeightSource })}><option value="SCALE">Scale</option><option value="ESTIMATE">Estimate</option></select></label><label className="field compact"><span>Window start (required)</span><input required type="time" value={phone.start} onChange={(event) => setPhone({ ...phone, start: event.currentTarget.value })} /></label><label className="field compact"><span>Window end (required)</span><input required type="time" value={phone.end} onChange={(event) => setPhone({ ...phone, end: event.currentTarget.value })} /></label></>}
+                  <label className="field compact"><span>Confirmed by (required)</span><input required placeholder="Supplier supervisor name" value={phone.confirmedBy} onChange={(event) => setPhone({ ...phone, confirmedBy: event.currentTarget.value })} /></label>
+                  <label className="field compact"><span>Reason / call note (required)</span><input required placeholder="E.g. supervisor confirmed 69.1 kg for tomorrow" value={phone.reason} onChange={(event) => setPhone({ ...phone, reason: event.currentTarget.value })} /></label>
+                  <button className="button button-primary" type="submit">{phoneSaving ? "Saving confirmation..." : "Save phone confirmation"}</button>
+                </fieldset>
               </form>
             </section>
           )}
