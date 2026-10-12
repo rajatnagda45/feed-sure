@@ -41,4 +41,12 @@ def screening_failure(error: Exception) -> dict:
     elif isinstance(error, (ScreeningInvalid, ValueError, KeyError, IndexError, TypeError)):
         code = "INVALID_RESPONSE"
         message = "The model returned invalid observations. Retry with a clear waste photo."
-    return {"code": code, "retryable": retryable, "message": message}
+    result = {"code": code, "retryable": retryable, "message": message}
+    if isinstance(error, HTTPError):
+        result["providerStatus"] = error.code
+        if code == "SERVICE_UNAVAILABLE":
+            result["message"] = (
+                f"The photo service is temporarily unavailable (provider HTTP {error.code}). "
+                "Retry later or request a human check."
+            )
+    return result

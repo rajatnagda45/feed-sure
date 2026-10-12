@@ -11,7 +11,7 @@ export interface PhotoRecord extends ReadinessRecord {
     observations: { items: { type: string; count: number; confidence: number }[];
       image_quality: string; confidence: number; notes: string; hazard: boolean } | null;
     limit: string;
-    failure?: { code: string; message: string; retryable: boolean } | null;
+    failure?: { code: string; message: string; retryable: boolean; providerStatus?: number } | null;
     attempts?: number;
   } | null;
 }

@@ -12,6 +12,7 @@ import struct
 import zlib
 from datetime import timedelta
 from pathlib import Path
+from time import sleep
 from typing import Any
 from urllib.parse import unquote
 
@@ -518,6 +519,8 @@ class Photos:
                     failure = screening_failure(error)
                     if not failure["retryable"]:
                         break
+                    if attempts == 1 and failure["code"] in {"RATE_LIMITED", "SERVICE_UNAVAILABLE"}:
+                        sleep(0.75)
             status = "NOT_CHECKED"
             if observation:
                 hazard_types = {"glass", "sharp_metal", "battery", "syringe_or_medical_waste"}

@@ -273,3 +273,9 @@ Check remaining waste and update confirmations to avoid counting earlier pickups
 Re-plan after cancellation uses POST `/plans` to create a NEW DRAFT from current inputs.
 Review and dispatch that new plan separately. The cancelled plan remains in audit/history.
 No migration is needed; deploy frontend, backend and the new SAM route together.
+
+Screening failure diagnostics include optional `providerStatus` for HTTP failures. Provider
+429/5xx responses pause 0.75 seconds before the single retry, within the bounded request
+budget. No provider response body is exposed. Live testing reproduced one NVIDIA HTTP 503
+followed by two successful identical synthetic-image checks; transient availability can
+still require a later retry or human verification.
