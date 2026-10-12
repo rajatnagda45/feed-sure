@@ -223,3 +223,24 @@ check that ports 5179/8797 are running this PR checkout, rather than the older l
 For live testing: disable Confirm email, register a generator, complete My profile, open its dashboard, save
 readiness and a JPEG/PNG, then refresh to retrieve it. Suspend/reactivate/reset and retry the old
 session. Verify CBG operators and owners cannot manage accounts and failure recovery works.
+
+
+## PIN-code access shortcut
+
+Apply `supabase/migrations/20261011190000_pincode_profile.sql` after
+`20261011180000_self_service_registration.sql`, then restart the API with this code.
+In My profile, enter a six-digit PIN code and select Find PIN code. A single resolved
+area is selected automatically; multiple results require choosing an area. Save profile
+to activate access without confirming an exact map pin. An invalid/unresolved PIN does
+not invent coordinates or activate an incomplete profile. Changing the address or PIN
+clears the selected location, so stale search results cannot activate a different site.
+
+PIN-area coordinates are saved with `locationAccuracy: "pincode"` and `pincode` in the
+private account profile. The operational address explicitly labels them as approximate
+and the entrance as unconfirmed. Users can refine the entrance later; confirming it
+replaces the approximation metadata. Route distances based on a PIN area are approximate,
+not entrance-level directions. Managed Admin/driver account activation is unchanged.
+
+Validation: 124 frontend tests and build passed; 28 SQL tests passed sequentially after
+a concurrent SQL run exhausted local memory. Backend account checks cover rejecting
+invalid metadata and retaining the approximation in the operational site record.

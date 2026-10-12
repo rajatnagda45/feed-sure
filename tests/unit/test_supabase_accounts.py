@@ -446,3 +446,52 @@ def test_registration_settings_accept_opaque_publishable_keys_without_fake_jwt(m
     assert managed.get("/auth/registration").status_code == 200
     assert managed.calls[-1][0] == "/auth/v1/settings"
     assert managed.calls[-1][3] is None
+
+
+def test_pin_area_profile_preserves_precision_in_operational_location(managed):
+    managed.actor = row(role="kitchen")
+    profile = {
+        "lat": 12.95,
+        "lng": 77.57,
+        "type": "hotel",
+        "pincode": "560004",
+        "locationAccuracy": "pincode",
+    }
+    result = managed.post(
+        "/auth/account",
+        headers=AUTH,
+        json={
+            "action": "update",
+            "expectedRevision": 1,
+            "profile": profile,
+        },
+    )
+    assert result.status_code == 200, result.text
+    assert result.json()["profile"] == profile
+    record = managed.state.database.get("generators", {"generatorId": GID})
+    assert record["locationAccuracy"] == "pincode"
+    assert "Approximate PIN-code area 560004" in record["address"]
+
+
+@pytest.mark.parametrize(
+    "metadata",
+    [
+        {"locationAccuracy": "pincode"},
+        {"locationAccuracy": "pincode", "pincode": "123"},
+        {"locationAccuracy": "pincode", "pincode": 560004},
+        {"locationAccuracy": "unknown"},
+    ],
+)
+def test_invalid_pin_metadata_is_rejected_before_profile_write(managed, metadata):
+    managed.actor = row(role="kitchen")
+    result = managed.post(
+        "/auth/account",
+        headers=AUTH,
+        json={
+            "action": "update",
+            "expectedRevision": 1,
+            "profile": {"lat": 12.95, "lng": 77.57, "type": "hotel", **metadata},
+        },
+    )
+    assert result.status_code == 400
+    assert not any(data.get("p_action") == "self_update" for _, _, data, _ in managed.calls)

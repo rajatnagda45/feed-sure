@@ -1,6 +1,6 @@
 import { FormEvent, useState } from "react";
 import { Account, accountRequest } from "../accounts";
-import { LocationPicker } from "./LocationPicker";
+import { LocationPicker, LocationPoint } from "./LocationPicker";
 
 export function ProfileDetails({ account, onSaved }: { account: Account; onSaved: (account: Account) => void }) {
   const [fields, setFields] = useState({ organisation: account.organisation, contact: account.contact, address: account.address });
@@ -8,7 +8,7 @@ export function ProfileDetails({ account, onSaved }: { account: Account; onSaved
   const [capacity, setCapacity] = useState(String(account.capacityKg ?? ""));
   const hasLocation = Number.isFinite(account.profile?.lat) && Number.isFinite(account.profile?.lng);
   const [editingLocation, setEditingLocation] = useState(!hasLocation);
-  const [point, setPoint] = useState<{ lat: number; lng: number } | null>(null);
+  const [point, setPoint] = useState<LocationPoint | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const kitchen = account.role === "kitchen";
@@ -25,7 +25,7 @@ export function ProfileDetails({ account, onSaved }: { account: Account; onSaved
     setBusy(true);
     try {
       const profile = kitchen && (point || (hasLocation && !addressChanged && !editingLocation))
-        ? { ...(point ?? { lat: account.profile!.lat!, lng: account.profile!.lng! }), type } : undefined;
+        ? { ...(point ? {lat: point.lat, lng: point.lng, ...(point.locationAccuracy ? {locationAccuracy: point.locationAccuracy} : {}), ...(point.pincode ? {pincode: point.pincode} : {})} : account.profile!), type } : undefined;
       const result = await accountRequest<Account>("/auth/account", {
         action: "update", expectedRevision: account.revision,
         organisation: fields.organisation.trim(), contact: fields.contact.trim(), address: fields.address.trim(),
@@ -45,13 +45,13 @@ export function ProfileDetails({ account, onSaved }: { account: Account; onSaved
           value={fields[key]} onChange={(event) => setFields({ ...fields, [key]: event.currentTarget.value })} />
       </label>)}
       {kitchen && <><h3>Pickup location</h3>
-        <p role="status">{hasLocation && !addressChanged && !editingLocation ? "Pickup entrance confirmed." : "Confirm the pickup entrance to activate collection access."}</p>
-        {(editingLocation || addressChanged) ? <LocationPicker address={fields.address} initialPoint={hasLocation && !addressChanged ? {lat: account.profile!.lat!, lng: account.profile!.lng!} : undefined} onChange={setPoint} />
+        <p role="status">{hasLocation && !addressChanged && !editingLocation ? (account.profile?.locationAccuracy === "pincode" ? `Approximate PIN-code area (${account.profile.pincode}). Refine the entrance when ready.` : "Pickup entrance confirmed.") : "Find your PIN-code area or confirm an entrance to activate collection access."}</p>
+        {(editingLocation || addressChanged) ? <LocationPicker allowPinArea address={fields.address} initialPoint={hasLocation && !addressChanged ? {lat: account.profile!.lat!, lng: account.profile!.lng!} : undefined} onChange={setPoint} />
           : <button className="button button-secondary" type="button" onClick={() => setEditingLocation(true)}>Update pickup location</button>}
-        <label className="field"><span>Generator type</span><select value={type} disabled={needsConfirmation} onChange={(event) => setType(event.currentTarget.value)}>
+        <label className="field"><span>Generator type</span><select value={type} onChange={(event) => setType(event.currentTarget.value)}>
           <option value="hotel">Hotel</option><option value="hostel_mess">Hostel / mess</option><option value="pg">PG</option><option value="restaurant">Restaurant</option><option value="canteen">Canteen</option>
         </select></label>
-        {needsConfirmation && account.status === "PENDING" && <p>You can save your contact details now and confirm the pin later. Access activates automatically when your pickup location is complete.</p>}
+        {needsConfirmation && account.status === "PENDING" && <p>Find your PIN-code area, then save to activate access. Exact map-pin confirmation is optional.</p>}
       </>}
       {["cbg", "owner"].includes(account.role) && <label className="field"><span>Plant intake capacity (kg/day)</span><input type="number" required min="0.01" max="1000000000" step="any" value={capacity} onChange={(event) => setCapacity(event.currentTarget.value)} /></label>}
       {error && <p className="inline-error" role="alert">{error}</p>}

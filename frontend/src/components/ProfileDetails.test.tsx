@@ -1,5 +1,6 @@
 import { act, create, ReactTestRenderer } from "react-test-renderer";
 import { afterEach, expect, it, vi } from "vitest";
+import { LocationPicker } from "./LocationPicker";
 import { ProfileDetails } from "./ProfileDetails";
 import { Account, accountRequest } from "../accounts";
 vi.mock("../accounts", () => ({ accountRequest: vi.fn() }));
@@ -30,4 +31,21 @@ it("preserves entries on a failed save and allows retry", async () => {
   expect(JSON.stringify(tree.toJSON())).toContain("Connection interrupted");
   expect(tree.root.findAllByType("input")[0].props.value).toBe("Test site");
   expect(tree.root.findByType("fieldset").props.disabled).toBe(false);
+});
+
+it("saves a resolved PIN area without claiming entrance confirmation", async () => {
+  const saved=vi.fn(); vi.mocked(accountRequest).mockResolvedValue({...account,status:"ACTIVE",revision:2});
+  await act(async () => {tree=create(<ProfileDetails account={account} onSaved={saved}/>);});
+  await act(async () => {tree.root.findByType(LocationPicker).props.onChange({lat:12.95,lng:77.57,pincode:"560004",locationAccuracy:"pincode",label:"Postal area"});});
+  await act(async () => {await tree.root.findByType("form").props.onSubmit({preventDefault:vi.fn()});});
+  expect(accountRequest).toHaveBeenCalledWith("/auth/account", expect.objectContaining({profile:{lat:12.95,lng:77.57,type:"hotel",pincode:"560004",locationAccuracy:"pincode"}}));
+});
+it("preserves approximate precision when an active user saves other profile details", async () => {
+  const profile={type:"hotel",lat:12.95,lng:77.57,pincode:"560004",locationAccuracy:"pincode" as const};
+  vi.mocked(accountRequest).mockResolvedValue({...account,status:"ACTIVE",profile,revision:2});
+  await act(async () => {tree=create(<ProfileDetails account={{...account,status:"ACTIVE",profile}} onSaved={vi.fn()}/>);});
+  expect(JSON.stringify(tree.toJSON())).toContain("Approximate PIN-code area");
+  expect(JSON.stringify(tree.toJSON())).not.toContain("Pickup entrance confirmed.");
+  await act(async () => {await tree.root.findByType("form").props.onSubmit({preventDefault:vi.fn()});});
+  expect(accountRequest).toHaveBeenCalledWith("/auth/account",expect.objectContaining({profile}));
 });
