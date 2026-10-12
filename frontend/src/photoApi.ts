@@ -3,13 +3,20 @@ import { ApiError, apiRequest, createIdempotencyKey, ReadinessRecord, PhotoStatu
 
 export interface PhotoRecord extends ReadinessRecord {
   photoRevision?: number;
+  photoReview?: { decision: "VERIFIED" | "REJECTED"; reason: string; recordedAt: string;
+    actor: { id: string; type: string } } | null;
   analysis?: {
     state: "FAILED" | "COMPLETE";
     mode: "mock" | "aws" | "nvidia";
     observations: { items: { type: string; count: number; confidence: number }[];
       image_quality: string; confidence: number; notes: string; hazard: boolean } | null;
     limit: string;
+    failure?: { code: string; message: string; retryable: boolean } | null;
+    attempts?: number;
   } | null;
+}
+export function photoFailureText(record: PhotoRecord): string {
+  return record.analysis?.failure?.message ?? "Analysis could not complete. Retry or ask the dispatcher for a human check.";
 }
 export interface PhotoUpload {
   key: string;

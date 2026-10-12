@@ -241,3 +241,20 @@ Plan envelopes include `plantDistances`, a generator-ID map of outbound plant-to
 ### Human verification of a hazard
 
 The admin-only hazard review endpoint accepts optional `expectedHazardId` on `RESOLVE`; a changed flag returns 409. New AI-generated flags also have a stable `hazardId`. Operations generator rows expose nullable `lastHazardReview` after resolution, including the server-authenticated actor, time and reason. The UI requires a reason and explicit human confirmation, displays the saved review, and refreshes planning inputs. Resolution clears the hold but never rewrites the model observation, automatically dispatches a route, or certifies a load. Existing historical flags without IDs remain reviewable.
+
+### Waste-photo verification and screening failures
+
+POST `/submissions/{submissionId}/review` is dispatcher-only. Send `expectedPhotoRevision`,
+`decision` (`VERIFIED` or `REJECTED`), `evidenceChecked:true`, and a nonblank `reason`, with
+an idempotency key. A human check records `photoReview` with authenticated reviewer, UTC time,
+reason and the reviewed image hash. It preserves readiness and never clears a hazard.
+Unrelated-image observations cannot be verified; replace the photo first. Photo changes or
+re-screening invalidate the earlier review. Stale revisions return 409. No migration is needed.
+
+Failed analysis keeps `NOT_CHECKED` and provides `analysis.failure` with a safe code, message
+and retryable flag, plus attempt count. Codes distinguish timeout, credentials, rate limit,
+service outage, configuration and invalid response. Transient failures retry once; rejected
+credentials/configuration stop immediately. No provider exception text or credential is returned.
+The selected NVIDIA model uses concise observation output and a 12-second per-attempt timeout;
+keep the two-attempt budget below the existing 29-second Lambda limit. Human review and pickup
+checks are required when screening cannot complete. A photo review is not a load certificate.

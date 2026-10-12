@@ -1206,13 +1206,15 @@ class Service:
                 if hazard and hazard["hazard"]["action"] == "ENTER"
                 else None,
             }
-        photo_match = re.fullmatch(r"/submissions/([^/]+)/(photo|screen|evidence)", path)
+        photo_match = re.fullmatch(r"/submissions/([^/]+)/(photo|screen|evidence|review)", path)
         if photo_match:
             sid, action = photo_match.groups()
             if action == "evidence" and method == "GET":
                 return Photos(self).evidence(sid)
-            if action in {"photo", "screen"} and method == "POST":
-                return Photos(self).mutate(sid, body(self.event), screen=action == "screen")
+            if action in {"photo", "screen", "review"} and method == "POST":
+                return Photos(self).mutate(
+                    sid, body(self.event), screen=action == "screen", review=action == "review"
+                )
         if method == "GET" and path in {"/operations", "/submissions"}:
             self.admin()
             day = service_date(query.get("date"))

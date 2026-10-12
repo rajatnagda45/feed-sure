@@ -208,7 +208,7 @@ export function reconciliationLabel(value: Reconciliation["status"]): string {
 export function exclusionAction(reason: string): string {
   return {
     NOT_READY: "Arrange another collection date.",
-    UNCONFIRMED: "Confirm availability.",
+    UNCONFIRMED: "No confirmation for this date. Ask the supplier to save READY, or contact them and use Record phone confirmation, then re-plan.",
     HAZARD_REVIEW: "Resolve the hazard before loading.",
     UNSUPPORTED_MATERIAL: "Verify the accepted material.",
     OUT_OF_RADIUS: "Check the plant and pickup locations, then review Maximum distance from plant before re-planning. Otherwise arrange another pickup.",

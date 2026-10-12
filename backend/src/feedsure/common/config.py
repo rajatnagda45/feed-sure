@@ -108,7 +108,7 @@ class Config:
     nvidia_model_id: str = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"
     nvidia_api_url: str = "https://integrate.api.nvidia.com/v1/chat/completions"
     nvidia_max_tokens: int = 1024
-    nvidia_timeout_seconds: float = 10
+    nvidia_timeout_seconds: float = 12
     geocoding_url: str = ""
     routing_provider: str = "auto"
     osrm_base_url: str = "https://router.project-osrm.org"
@@ -203,5 +203,5 @@ def get_config() -> Config:
             "NVIDIA_API_URL", "https://integrate.api.nvidia.com/v1/chat/completions"
         ),
         nvidia_max_tokens=_integer("NVIDIA_MAX_TOKENS", 1024),
-        nvidia_timeout_seconds=_number("NVIDIA_TIMEOUT_SECONDS", 10),
+        nvidia_timeout_seconds=_number("NVIDIA_TIMEOUT_SECONDS", 12),
     )

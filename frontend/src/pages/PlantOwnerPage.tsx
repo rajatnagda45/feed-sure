@@ -165,7 +165,7 @@ export function PlantOwnerPage() {
       {loading && <p role="status">Loading dispatched trips…</p>}
       {error && <p className="notice error" role="alert">{error}</p>}
       {notice && <p className="notice" role="status">{notice}</p>}
-      {data && data.trips.length === 0 && <section className="owner-trip"><h2>No dispatched trips for {formatServiceDate(date)}</h2><p>The admin must review and dispatch a route before it appears here.</p></section>}
+      {data && data.trips.length === 0 && <section className="owner-trip"><h2>No dispatched trips for {formatServiceDate(date)}</h2><p>This desk records net waste received at the plant and compares it with driver pickup records. A saved draft is not a dispatched trip.</p><ol><li>Confirm supplier availability for this same date.</li><li>Build, review and dispatch the route in Operations.</li><li>The driver records pickup outcomes; return here to record net received kg and its weight source.</li></ol><p>If the trip was dispatched for another date, select that date above and refresh. Local demo trips reset when its API restarts; account profiles remain saved.</p><Link className="button button-secondary" to="/admin">Open collection operations</Link></section>}
       {data?.trips.map((trip) => <IntakeTripPanel key={trip.planKey} trip={trip} token={token} refresh={refreshAfterWrite} onSaving={setSaving} />)}
     </div>
   </main>;

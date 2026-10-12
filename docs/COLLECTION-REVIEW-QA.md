@@ -66,3 +66,30 @@ planning inputs but left a draft's Planned stage highlighted until refresh. Phot
 updates now immediately mark the local draft stale. Two component regression checks
 verify the draft becomes pending while a dispatched trip retains its recorded state.
 No hosted users or data were changed. Live model examples do not establish accuracy.
+
+## Manual-testing follow-up
+
+Intermittent screening failures now return safe diagnostics and the attempt count instead
+of swallowing the cause. Credential/configuration failures do not perform a futile second
+request. Transient failures still retry once. The provider timeout is 12 seconds per attempt
+and observation notes are kept concise. A live synthetic-image comparison rejected the
+optional `response_format=json_object` flag but passed without it; that flag is not used.
+Failures never imply successful photo validation or erase readiness.
+
+Dispatchers can open Review saved photo, explicitly check the exact photo and actual waste,
+enter a reason, and confirm or reject the waste-photo check. Reviews retain actor, UTC time
+and image hash, are audited/idempotent and reject stale revisions. Unrelated images cannot
+be marked verified; outstanding hazards must be resolved separately. Replacing/removing
+a photo or re-screening invalidates the old review. Suppliers see the saved human review.
+
+Availability instructions now specify the selected date, supplier READY or attributable
+phone confirmation, and re-planning. Distance-limit warnings explain that confirmation alone
+does not overcome an out-of-radius location. Routing fallback distinguishes configured
+estimates from missing road results. The owner empty state explains draft/dispatch/pickup/
+net-intake steps and date selection. No locations or service limits are silently changed.
+
+Final follow-up validation: 379 backend tests and 133 frontend tests passed; three existing
+opt-in frontend skips remain. Production build, Ruff and whitespace checks passed. The
+live NVIDIA verifier passed all six collection scenarios. A fresh synthetic photo rejection
+through the human-review HTTP endpoint preserved READY/80 kg, recorded reviewer/time and
+replayed idempotently. No hosted records were changed.

@@ -19,6 +19,7 @@ ROUTES = [
     ("GET", "/submissions"),
     ("POST", "/submissions"),
     ("POST", "/submissions/{submissionId}/screen"),
+    ("POST", "/submissions/{submissionId}/review"),
     ("POST", "/submissions/{submissionId}/photo"),
     ("GET", "/submissions/{submissionId}/evidence"),
     ("GET", "/generators/{generatorId}/readiness"),

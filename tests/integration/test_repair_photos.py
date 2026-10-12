@@ -347,6 +347,8 @@ def test_nvidia_photo_analysis_persists_hazard_and_survives_timeout(photo_http, 
     record = failed.json()["submission"]
     assert record["analysis"]["mode"] == "nvidia" and record["analysis"]["state"] == "FAILED"
     assert record["photoStatus"] == "NOT_CHECKED" and record["status"] == "READY"
+    assert record["analysis"]["failure"]["code"] == "TIMEOUT"
+    assert record["analysis"]["attempts"] == 2
     assert "private-test-key" not in failed.text
     refreshed = http.get(f"/generators/{GID}/readiness?date={DAY}", headers=auth(http)).json()
     assert refreshed["unresolvedHazard"]["action"] == "ENTER"
@@ -617,3 +619,81 @@ def test_human_verification_is_authorized_attributed_and_rejects_stale_flag(phot
     assert site["unresolvedHazards"] == []
     assert site["lastHazardReview"] == review
     assert snapshot["inputRevision"] == result.json()["inputRevision"]
+
+
+def test_human_photo_review_is_scoped_audited_and_invalidated_by_photo_change(photo_http):
+    http = photo_http
+    record, _ = attached(http)
+    admin = {"X-Admin-Token": http.state.config.admin_token}
+    payload = {
+        "decision": "VERIFIED",
+        "reason": "Actual food scraps checked on site",
+        "evidenceChecked": True,
+    }
+    assert mutation(http, record, "review", payload, headers=auth(http)).status_code == 401
+    assert (
+        mutation(
+            http,
+            record,
+            "review",
+            {**payload, "evidenceChecked": False},
+            key="no-check",
+            headers=admin,
+        ).status_code
+        == 400
+    )
+    result = mutation(http, record, "review", payload, key="human-check", headers=admin)
+    assert result.status_code == 200, result.text
+    assert (
+        mutation(http, record, "review", payload, key="human-check", headers=admin).json()
+        == result.json()
+    )
+    reviewed = result.json()["submission"]
+    assert reviewed["photoReview"]["actor"] == {"type": "ADMIN", "id": "dispatcher"}
+    assert reviewed["photoReview"]["recordedAt"]
+    assert reviewed["photoReview"]["decision"] == "VERIFIED"
+    assert reviewed["status"] == "READY" and reviewed["confirmedKg"] == 100
+    assert (
+        mutation(http, record, "review", payload, key="stale-review", headers=admin).status_code
+        == 409
+    )
+    removed = mutation(http, reviewed, "photo", {"photoKey": None}, key="replace-review")
+    assert removed.json()["submission"]["photoReview"] is None
+
+
+def test_unrelated_image_cannot_be_human_verified_but_can_be_rejected(photo_http, monkeypatch):
+    http = photo_http
+    record, _ = attached(http)
+    http.state.config = replace(http.state.config, mock_bedrock=False)
+    monkeypatch.setattr(
+        "feedsure.handlers.photos.invoke_screening",
+        lambda *args: json.dumps(
+            {
+                "items": [],
+                "hazard": False,
+                "image_quality": "not_waste",
+                "confidence": 0.99,
+                "notes": "An unrelated poster.",
+            }
+        ),
+    )
+    record = mutation(http, record, "screen", key="poster-check").json()["submission"]
+    admin = {"X-Admin-Token": http.state.config.admin_token}
+    payload = {"decision": "VERIFIED", "reason": "Photo inspected", "evidenceChecked": True}
+    assert (
+        mutation(
+            http, record, "review", payload, key="no-poster-verification", headers=admin
+        ).status_code
+        == 400
+    )
+    result = mutation(
+        http,
+        record,
+        "review",
+        {**payload, "decision": "REJECTED"},
+        key="reject-poster",
+        headers=admin,
+    )
+    assert result.status_code == 200
+    assert result.json()["submission"]["photoReview"]["decision"] == "REJECTED"
+    assert result.json()["submission"]["status"] == "READY"

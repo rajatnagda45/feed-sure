@@ -55,8 +55,8 @@ For the ordinary local shim or Lambda, set `PHOTO_ANALYSIS_PROVIDER=nvidia`,
 `NVIDIA_API_KEY` to your private key, and `MOCK_BEDROCK=false`. The defaults are
 `NVIDIA_MODEL_ID=nvidia/nemotron-3-nano-omni-30b-a3b-reasoning`,
 `NVIDIA_API_URL=https://integrate.api.nvidia.com/v1/chat/completions`,
-`NVIDIA_MAX_TOKENS=1024`, and `NVIDIA_TIMEOUT_SECONDS=10`.
-The ten-second per-attempt timeout leaves room for one retry inside the 29-second Lambda budget. Existing stacks must explicitly update their saved parameter values. The request uses `chat_template_kwargs.enable_thinking=false` to obtain the validated JSON observation without reasoning text.
+`NVIDIA_MAX_TOKENS=1024`, and `NVIDIA_TIMEOUT_SECONDS=12`.
+The twelve-second per-attempt timeout leaves room for one retry inside the 29-second Lambda budget. Existing stacks must explicitly update their saved parameter values. The request uses `chat_template_kwargs.enable_thinking=false` to obtain the validated JSON observation without reasoning text.
 `MOCK_BEDROCK=true` still overrides both providers with fixtures.
 Missing keys, failed requests or invalid observations leave the photo `NOT_CHECKED` and
 readiness saved. Existing unresolved hazards still require human resolution.
